@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  html, body { margin: 0; font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif; background: #F7FAFC; color: #0F172A; font-feature-settings: "rlig" 1, "calt" 1; -webkit-font-smoothing: antialiased; }
+  ::placeholder { color: #64748B; opacity: 1; }
+  a { color: #B84F20; } a:hover { color: #92400E; }
+</style>
+</helmet>
+
+<div style="width:390px;height:844px;overflow-y:auto;background:#F7FAFC;box-sizing:border-box;">
+
+  <header style="position:sticky;top:0;z-index:5;background:#EAF3FA;border-bottom:1px solid #CFE4F2;">
+    <div style="padding:14px 20px;display:flex;align-items:center;justify-content:space-between;">
+      <div style="display:flex;align-items:center;gap:8px;">
+        <svg width="22" height="22" viewBox="0 0 64 64" fill="none">
+          <circle cx="32" cy="32" r="26" stroke="#1B4965" stroke-width="6"></circle>
+          <circle cx="32" cy="32" r="6" fill="#B84F20"></circle>
+          <line x1="32" y1="32" x2="52" y2="19" stroke="#B84F20" stroke-width="6" stroke-linecap="round"></line>
+          <line x1="32" y1="32" x2="12" y2="19" stroke="#B84F20" stroke-width="6" stroke-linecap="round"></line>
+        </svg>
+        <span style="font-size:18px;font-weight:700;letter-spacing:-0.025em;">Mototeca</span>
+      </div>
+      <button style="height:36px;padding:0 14px;border-radius:8px;font-size:13px;font-weight:500;border:1px solid #E2E8F0;background:white;cursor:pointer;">Sair</button>
+    </div>
+    <div style="padding:0 20px 12px;font-size:13px;color:#1B4965;font-weight:500;">Bem-vindo, {{ shopName }}</div>
+  </header>
+
+  <main style="padding:20px 20px 32px;display:flex;flex-direction:column;gap:20px;">
+
+    <div style="border:1px solid #CFE4F2;background:#EAF3FA;border-radius:10px;padding:14px 16px;display:flex;align-items:baseline;justify-content:space-between;">
+      <span style="font-size:13px;color:#1B4965;font-weight:500;">Serviços registrados este mês</span>
+      <span style="font-size:22px;font-weight:700;color:#1B4965;">{{ monthCount }}</span>
+    </div>
+
+    <div style="border:1px solid #E2E8F0;background:white;border-radius:10px;box-shadow:0 1px 2px 0 rgb(0 0 0 / .05);padding:18px;display:flex;flex-direction:column;gap:10px;">
+      <div style="font-size:16px;font-weight:600;">Buscar Veículo</div>
+      <div style="font-size:13px;color:#64748B;margin-top:-6px;">Consulte o histórico pela placa</div>
+      <div style="display:flex;gap:8px;">
+        <input value="{{ dashPlateQuery }}" oninput="{{ setDashPlateQuery }}" placeholder="ABC1D23" style="text-transform:uppercase;flex:1;height:44px;border-radius:8px;border:1px solid #E2E8F0;padding:0 12px;font-size:16px;font-family:'JetBrains Mono',monospace;outline:none;box-sizing:border-box;min-width:0;">
+        <button style="height:44px;padding:0 18px;border-radius:8px;font-size:14px;font-weight:500;border:1px solid #E2E8F0;background:white;cursor:pointer;white-space:nowrap;">Buscar</button>
+      </div>
+    </div>
+
+    <div style="border:1px solid transparent;background:#1B4965;border-radius:10px;box-shadow:0 1px 2px 0 rgb(0 0 0 / .05);padding:18px;display:flex;flex-direction:column;gap:4px;">
+      <div style="font-size:16px;font-weight:600;color:#F8FAFC;">Novo Registro</div>
+      <div style="font-size:13px;color:#CFE4F2;margin-bottom:8px;">Lançar um serviço realizado agora</div>
+      <button style="height:44px;border-radius:8px;font-size:14px;font-weight:600;border:1px solid transparent;background:#F8FAFC;color:#1B4965;cursor:pointer;">Criar Registro</button>
+    </div>
+
+    <div>
+      <h2 style="margin:0 0 12px;font-size:16px;font-weight:600;">Registros Recentes</h2>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <sc-for list="{{ recentRecords }}" as="rec" hint-placeholder-count="4">
+          <div style="border:1px solid #E2E8F0;background:white;border-radius:10px;box-shadow:0 1px 2px 0 rgb(0 0 0 / .05);padding:12px 14px;">
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;">
+              <div style="display:flex;flex-direction:column;gap:3px;min-width:0;">
+                <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                  <span style="font-weight:600;font-family:'JetBrains Mono',monospace;font-size:12px;">{{ rec.plate }}</span>
+                  <span style="font-size:13px;font-weight:500;">{{ rec.vehicleLabel }}</span>
+                </div>
+                <div style="font-size:12px;color:#64748B;">{{ rec.opsLabel }}</div>
+                <div style="font-size:12px;color:#64748B;">{{ rec.date }} · {{ rec.km }} km</div>
+              </div>
+              <span style="display:inline-flex;align-items:center;border-radius:9999px;padding:3px 10px;font-size:11px;font-weight:600;background:#F1F5F9;color:#B84F20;white-space:nowrap;">{{ rec.mechanic }}</span>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+var OFICINA_RECORDS = OFICINA_RECORDS || [
+  { date: '02/06/2026', plate: 'ABC1D23', vehicleLabel: 'Honda CG 160 Start', ops: ['Troca de óleo e filtro', 'Corrente, relação e coroa'], km: 18420, mechanic: 'José Carlos' },
+  { date: '28/05/2026', plate: 'BRA2E19', vehicleLabel: 'Yamaha Fazer 250 Blueflex', ops: ['Pneus', 'Suspensão'], km: 32180, mechanic: 'José Carlos' },
+  { date: '30/09/2025', plate: 'ABC1D23', vehicleLabel: 'Honda CG 160 Start', ops: ['Revisão programada'], km: 13500, mechanic: 'José Carlos' },
+];
+
+class Component extends DCLogic {
+  state = { dashPlateQuery: '' };
+  setDashPlateQuery = (e) => this.setState({ dashPlateQuery: e.target.value });
+
+  renderVals() {
+    const recentRecords = OFICINA_RECORDS.map((r) => ({ ...r, opsLabel: r.ops.join(', ') }));
+    return {
+      shopName: 'Oficina do Zé',
+      monthCount: OFICINA_RECORDS.length,
+      dashPlateQuery: this.state.dashPlateQuery, setDashPlateQuery: this.setDashPlateQuery,
+      recentRecords,
+    };
+  }
+}
+</script>
+</body>
+</html>

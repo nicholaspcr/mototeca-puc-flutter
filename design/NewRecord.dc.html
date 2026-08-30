@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  html, body { margin: 0; font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif; background: #F7FAFC; color: #0F172A; font-feature-settings: "rlig" 1, "calt" 1; -webkit-font-smoothing: antialiased; }
+  ::placeholder { color: #64748B; opacity: 1; }
+  a { color: #B84F20; } a:hover { color: #92400E; }
+</style>
+</helmet>
+
+<div style="width:390px;height:844px;overflow-y:auto;background:#F7FAFC;box-sizing:border-box;">
+
+  <header style="position:sticky;top:0;z-index:5;background:#EAF3FA;border-bottom:1px solid #CFE4F2;">
+    <div style="padding:14px 20px;display:flex;align-items:center;gap:10px;">
+      <button style="width:32px;height:32px;border-radius:8px;border:1px solid #CFE4F2;background:white;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1B4965" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <span style="font-size:16px;font-weight:700;letter-spacing:-0.025em;">Novo Registro</span>
+    </div>
+  </header>
+
+  <main style="padding:18px 20px 32px;display:flex;flex-direction:column;gap:16px;">
+
+    <div style="border:1px solid #E2E8F0;background:white;border-radius:10px;box-shadow:0 1px 2px 0 rgb(0 0 0 / .05);padding:16px;">
+      <h3 style="margin:0 0 12px;font-size:15px;font-weight:600;">Veículo</h3>
+      <div style="display:flex;gap:8px;">
+        <input value="{{ nrPlateQuery }}" oninput="{{ setNrPlateQuery }}" placeholder="ABC1D23" style="text-transform:uppercase;flex:1;min-width:0;height:44px;border-radius:8px;border:1px solid #E2E8F0;padding:0 12px;font-size:16px;font-family:'JetBrains Mono',monospace;outline:none;box-sizing:border-box;">
+        <button onclick="{{ nrSearch }}" style="height:44px;padding:0 16px;border-radius:8px;font-size:14px;font-weight:500;border:1px solid #E2E8F0;background:white;cursor:pointer;">Buscar</button>
+      </div>
+
+      <sc-if value="{{ nrNotFound }}" hint-placeholder-val="{{ false }}">
+        <div style="margin-top:14px;padding:12px 14px;border-radius:8px;background:rgba(234,179,8,.12);border:1px solid rgba(234,179,8,.4);font-size:13px;line-height:1.4;">
+          Veículo não encontrado. Um novo cadastro será criado ao salvar este registro para a placa <strong>{{ nrPlateQueryUpper }}</strong>.
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ nrHasVehicle }}" hint-placeholder-val="{{ false }}">
+        <div style="margin-top:14px;padding:14px;border-radius:8px;background:#F1F5F9;">
+          <div style="font-size:13px;font-weight:600;">{{ nrVehicleLabel }} · <span style="font-family:'JetBrains Mono',monospace;">{{ nrVehiclePlate }}</span></div>
+          <div style="font-size:12px;color:#64748B;margin-top:4px;">Proprietário: {{ nrOwnerName }}</div>
+          <div style="font-size:12px;color:#64748B;">Última km registrada: {{ nrLastKm }} km</div>
+        </div>
+      </sc-if>
+    </div>
+
+    <sc-if value="{{ nrShowForm }}" hint-placeholder-val="{{ false }}">
+      <div style="border:1px solid #E2E8F0;background:white;border-radius:10px;box-shadow:0 1px 2px 0 rgb(0 0 0 / .05);padding:16px;">
+        <h3 style="margin:0 0 12px;font-size:15px;font-weight:600;">Operação Realizada</h3>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;">
+          <sc-for list="{{ opsList }}" as="op" hint-placeholder-count="12">
+            <button onclick="{{ op.toggle }}" style="{{ op.style }}">{{ op.label }}</button>
+          </sc-for>
+        </div>
+      </div>
+
+      <div style="border:1px solid #E2E8F0;background:white;border-radius:10px;box-shadow:0 1px 2px 0 rgb(0 0 0 / .05);padding:16px;">
+        <h3 style="margin:0 0 12px;font-size:15px;font-weight:600;">Detalhes</h3>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <div style="display:flex;flex-direction:column;gap:7px;">
+            <label style="font-size:13px;font-weight:500;">Km atual</label>
+            <input type="number" value="{{ nrKm }}" oninput="{{ setNrKm }}" placeholder="18500" style="height:44px;border-radius:8px;border:1px solid #E2E8F0;padding:0 10px;font-size:16px;outline:none;box-sizing:border-box;width:100%;">
+          </div>
+          <div style="display:flex;flex-direction:column;gap:7px;">
+            <label style="font-size:13px;font-weight:500;">Valor (R$)</label>
+            <input type="number" value="{{ nrCost }}" oninput="{{ setNrCost }}" placeholder="245.00" style="height:44px;border-radius:8px;border:1px solid #E2E8F0;padding:0 10px;font-size:16px;outline:none;box-sizing:border-box;width:100%;">
+          </div>
+        </div>
+
+        <div style="margin-top:16px;">
+          <label style="font-size:13px;font-weight:500;">Peças utilizadas</label>
+          <div style="display:flex;flex-direction:column;gap:10px;margin-top:8px;">
+            <sc-for list="{{ nrParts }}" as="part" hint-placeholder-count="1">
+              <div style="display:flex;flex-direction:column;gap:6px;padding:10px;border:1px solid #E2E8F0;border-radius:8px;">
+                <input value="{{ part.name }}" oninput="{{ part.setName }}" placeholder="Nome da peça" style="height:40px;border-radius:6px;border:1px solid #E2E8F0;padding:0 10px;font-size:14px;outline:none;box-sizing:border-box;width:100%;">
+                <div style="display:grid;grid-template-columns:1fr 1fr 36px;gap:6px;">
+                  <input type="number" value="{{ part.qty }}" oninput="{{ part.setQty }}" placeholder="Qtd" style="height:36px;border-radius:6px;border:1px solid #E2E8F0;padding:0 8px;font-size:13px;outline:none;box-sizing:border-box;width:100%;">
+                  <input type="number" value="{{ part.cost }}" oninput="{{ part.setCost }}" placeholder="Valor" style="height:36px;border-radius:6px;border:1px solid #E2E8F0;padding:0 8px;font-size:13px;outline:none;box-sizing:border-box;width:100%;">
+                  <button onclick="{{ part.remove }}" style="height:36px;width:36px;border-radius:6px;border:1px solid #E2E8F0;background:white;cursor:pointer;color:#EF4444;display:flex;align-items:center;justify-content:center;padding:0;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                  </button>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+          <button onclick="{{ addPart }}" style="margin-top:8px;height:38px;padding:0 12px;border-radius:8px;font-size:13px;font-weight:500;border:1px solid #E2E8F0;background:white;cursor:pointer;width:100%;">+ Adicionar peça</button>
+        </div>
+
+        <div style="margin-top:16px;display:flex;flex-direction:column;gap:7px;">
+          <label style="font-size:13px;font-weight:500;">Observações</label>
+          <textarea value="{{ nrNotes }}" oninput="{{ setNrNotes }}" placeholder="Detalhes do serviço, recomendações para a próxima visita..." rows="3" style="border-radius:8px;border:1px solid #E2E8F0;padding:10px 12px;font-size:14px;font-family:inherit;outline:none;resize:vertical;box-sizing:border-box;width:100%;"></textarea>
+        </div>
+
+        <div style="margin-top:16px;">
+          <label style="font-size:13px;font-weight:500;">Fotos (antes/depois)</label>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px;">
+            <div style="height:120px;">
+              <x-import component-from-global-scope="image-slot" from="./image-slot.js" id="photo-before" placeholder="Foto antes" hint-size="100%,120px"></x-import>
+            </div>
+            <div style="height:120px;">
+              <x-import component-from-global-scope="image-slot" from="./image-slot.js" id="photo-after" placeholder="Foto depois" hint-size="100%,120px"></x-import>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <button style="height:48px;border-radius:8px;font-size:15px;font-weight:600;border:1px solid transparent;background:#1B4965;color:#F8FAFC;cursor:pointer;">Salvar Registro</button>
+        <button style="height:44px;border-radius:8px;font-size:14px;font-weight:500;border:1px solid #E2E8F0;background:white;cursor:pointer;">Cancelar</button>
+      </div>
+    </sc-if>
+  </main>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+var OPS_TAXONOMY = OPS_TAXONOMY || [
+  'Troca de óleo e filtro', 'Revisão programada', 'Freios (pastilhas, discos, fluido)',
+  'Corrente, relação e coroa', 'Pneus', 'Elétrica / bateria', 'Velas / ignição',
+  'Suspensão', 'Embreagem', 'Carburação / injeção eletrônica', 'Funilaria / pintura', 'Outro'
+];
+
+var VEHICLES = VEHICLES || [
+  { plate: 'ABC1D23', make: 'Honda', model: 'CG 160 Start', year: 2022, owner: 'Marcos Vinícius Souza', km: 18420 },
+  { plate: 'BRA2E19', make: 'Yamaha', model: 'Fazer 250 Blueflex', year: 2021, owner: 'Ana Paula Ferreira', km: 32180 },
+  { plate: 'RIO4F56', make: 'Honda', model: 'PCX 160', year: 2023, owner: 'Beatriz Almeida Costa', km: 9040 },
+];
+
+class Component extends DCLogic {
+  state = {
+    nrPlateQuery: '', nrVehicle: null, nrSearched: false,
+    nrOps: [], nrKm: '', nrCost: '', nrNotes: '',
+    nrParts: [{ name: '', qty: 1, cost: '' }],
+  };
+
+  setNrPlateQuery = (e) => this.setState({ nrPlateQuery: e.target.value });
+  nrSearch = () => {
+    const p = (this.state.nrPlateQuery || '').trim().toUpperCase();
+    const v = VEHICLES.find(v => v.plate === p) || null;
+    this.setState({ nrVehicle: v, nrSearched: true, nrOps: [], nrKm: v ? v.km : '', nrCost: '', nrNotes: '', nrParts: [{ name: '', qty: 1, cost: '' }] });
+  };
+  toggleOp = (op) => () => {
+    const has = this.state.nrOps.includes(op);
+    this.setState({ nrOps: has ? this.state.nrOps.filter(o => o !== op) : [...this.state.nrOps, op] });
+  };
+  setNrKm = (e) => this.setState({ nrKm: e.target.value });
+  setNrCost = (e) => this.setState({ nrCost: e.target.value });
+  setNrNotes = (e) => this.setState({ nrNotes: e.target.value });
+  addPart = () => this.setState({ nrParts: [...this.state.nrParts, { name: '', qty: 1, cost: '' }] });
+  updatePart = (i, field, value) => {
+    const parts = this.state.nrParts.map((p, idx) => idx === i ? { ...p, [field]: value } : p);
+    this.setState({ nrParts: parts });
+  };
+  removePart = (i) => () => this.setState({ nrParts: this.state.nrParts.filter((_, idx) => idx !== i) });
+
+  renderVals() {
+    const s = this.state;
+    const nrVehicle = s.nrVehicle;
+    const opsList = OPS_TAXONOMY.map(op => {
+      const active = s.nrOps.includes(op);
+      return {
+        label: op, toggle: this.toggleOp(op),
+        style: { height: 38, padding: '0 14px', borderRadius: 9999, fontSize: 13, fontWeight: 500, cursor: 'pointer', background: active ? '#1B4965' : '#EAF3FA', color: active ? '#F8FAFC' : '#B84F20', border: '1px solid transparent' }
+      };
+    });
+    const nrParts = s.nrParts.map((p, i) => ({
+      name: p.name, qty: p.qty, cost: p.cost,
+      setName: (e) => this.updatePart(i, 'name', e.target.value),
+      setQty: (e) => this.updatePart(i, 'qty', e.target.value),
+      setCost: (e) => this.updatePart(i, 'cost', e.target.value),
+      remove: this.removePart(i),
+    }));
+
+    return {
+      nrPlateQuery: s.nrPlateQuery, setNrPlateQuery: this.setNrPlateQuery, nrSearch: this.nrSearch,
+      nrPlateQueryUpper: (s.nrPlateQuery || '').toUpperCase(),
+      nrNotFound: s.nrSearched && !nrVehicle,
+      nrHasVehicle: !!nrVehicle,
+      nrShowForm: !!nrVehicle || s.nrSearched,
+      nrVehicleLabel: nrVehicle ? `${nrVehicle.make} ${nrVehicle.model} (${nrVehicle.year})` : '',
+      nrVehiclePlate: nrVehicle ? nrVehicle.plate : '',
+      nrOwnerName: nrVehicle ? nrVehicle.owner : '',
+      nrLastKm: nrVehicle ? nrVehicle.km : '',
+      opsList,
+      nrKm: s.nrKm, setNrKm: this.setNrKm,
+      nrCost: s.nrCost, setNrCost: this.setNrCost,
+      nrNotes: s.nrNotes, setNrNotes: this.setNrNotes,
+      nrParts, addPart: this.addPart,
+    };
+  }
+}
+</script>
+</body>
+</html>

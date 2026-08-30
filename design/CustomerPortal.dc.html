@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  html, body { margin: 0; font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif; background: #F7FAFC; color: #0F172A; font-feature-settings: "rlig" 1, "calt" 1; -webkit-font-smoothing: antialiased; }
+  ::placeholder { color: #64748B; opacity: 1; }
+  a { color: #B84F20; } a:hover { color: #92400E; }
+</style>
+</helmet>
+
+<div style="width:390px;height:844px;overflow-y:auto;background:#F7FAFC;box-sizing:border-box;">
+
+  <header style="position:sticky;top:0;z-index:5;background:#EAF3FA;border-bottom:1px solid #CFE4F2;">
+    <div style="padding:16px 20px;">
+      <div style="display:flex;align-items:center;gap:9px;">
+        <svg width="24" height="24" viewBox="0 0 64 64" fill="none">
+          <circle cx="32" cy="32" r="26" stroke="#1B4965" stroke-width="6"></circle>
+          <circle cx="32" cy="32" r="6" fill="#B84F20"></circle>
+          <line x1="32" y1="32" x2="52" y2="19" stroke="#B84F20" stroke-width="6" stroke-linecap="round"></line>
+          <line x1="32" y1="32" x2="12" y2="19" stroke="#B84F20" stroke-width="6" stroke-linecap="round"></line>
+        </svg>
+        <span style="font-size:19px;font-weight:700;letter-spacing:-0.025em;">Mototeca</span>
+      </div>
+      <div style="font-size:13px;color:#64748B;margin-top:4px;line-height:1.4;">Consulte o histórico de manutenção de qualquer moto pela placa</div>
+    </div>
+  </header>
+
+  <main style="padding:18px 20px 32px;">
+    <div style="display:flex;gap:8px;margin-bottom:24px;">
+      <input value="{{ custPlateQuery }}" oninput="{{ setCustPlateQuery }}" placeholder="Ex: ABC1D23" style="text-transform:uppercase;flex:1;min-width:0;height:44px;border-radius:8px;border:1px solid #E2E8F0;padding:0 12px;font-size:16px;font-family:'JetBrains Mono',monospace;outline:none;box-sizing:border-box;">
+      <button onclick="{{ custSearch }}" style="height:44px;padding:0 18px;border-radius:8px;font-size:14px;font-weight:600;border:1px solid transparent;background:#1B4965;color:#F8FAFC;cursor:pointer;white-space:nowrap;">Consultar</button>
+    </div>
+
+    <sc-if value="{{ custNotFound }}" hint-placeholder-val="{{ false }}">
+      <div style="padding:28px 20px;text-align:center;color:#64748B;font-size:13px;border:1px solid #E2E8F0;border-radius:10px;">Nenhum veículo encontrado para essa placa.</div>
+    </sc-if>
+
+    <sc-if value="{{ custHasVehicle }}" hint-placeholder-val="{{ false }}">
+      <div style="border:1px solid #E2E8F0;background:white;border-radius:10px;box-shadow:0 1px 2px 0 rgb(0 0 0 / .05);padding:16px;margin-bottom:20px;display:flex;flex-direction:column;gap:10px;">
+        <div>
+          <div style="font-size:17px;font-weight:600;">{{ custVehicleLabel }}</div>
+          <div style="font-size:13px;color:#64748B;margin-top:4px;">Placa <span style="font-family:'JetBrains Mono',monospace;font-weight:500;color:#0F172A;">{{ custVehiclePlate }}</span> · {{ custVehicleColor }} · {{ custVehicleKm }} km atuais</div>
+        </div>
+        <button onclick="{{ custDownload }}" style="height:40px;border-radius:8px;font-size:13px;font-weight:500;border:1px solid #E2E8F0;background:white;cursor:pointer;">Baixar PDF</button>
+      </div>
+
+      <h2 style="margin:0 0 12px;font-size:16px;font-weight:600;">Histórico de Serviços</h2>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <sc-for list="{{ custHistory }}" as="rec" hint-placeholder-count="3">
+          <div style="border:1px solid #E2E8F0;background:white;border-radius:10px;box-shadow:0 1px 2px 0 rgb(0 0 0 / .05);padding:14px 16px;">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">
+              <div style="font-size:13px;font-weight:600;">{{ rec.opsLabel }}</div>
+              <span style="font-size:12px;color:#64748B;white-space:nowrap;">{{ rec.date }}</span>
+            </div>
+            <div style="font-size:12px;color:#64748B;margin-top:4px;">{{ rec.oficina }} · {{ rec.mechanic }} · {{ rec.km }} km</div>
+            <p style="font-size:13px;color:#0F172A;margin:8px 0 0;line-height:1.4;">{{ rec.notes }}</p>
+          </div>
+        </sc-for>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ custEmpty }}" hint-placeholder-val="{{ true }}">
+      <p style="text-align:center;font-size:12px;color:#64748B;margin-top:20px;line-height:1.5;">Não é necessário criar conta para consultar o histórico. Um cadastro só é pedido para reivindicar a propriedade da moto.</p>
+    </sc-if>
+  </main>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+var VEHICLES = VEHICLES || [
+  {
+    plate: 'ABC1D23', make: 'Honda', model: 'CG 160 Start', year: 2022, color: 'Vermelha', km: 18420,
+    history: [
+      { date: '02/06/2026', oficina: 'Oficina do Zé', mechanic: 'José Carlos', ops: ['Troca de óleo e filtro', 'Corrente, relação e coroa'], km: 18420, notes: 'Óleo 10w30 semissintético trocado, corrente limpa e lubrificada.' },
+      { date: '14/02/2026', oficina: 'Moto Center Silva', mechanic: 'Carlos Silva', ops: ['Freios (pastilhas, discos, fluido)'], km: 16100, notes: 'Pastilhas dianteira e traseira substituídas, fluido de freio verificado.' },
+      { date: '30/09/2025', oficina: 'Oficina do Zé', mechanic: 'José Carlos', ops: ['Revisão programada'], km: 13500, notes: 'Revisão programada dos 13 mil km, nenhuma pendência encontrada.' },
+    ]
+  },
+  {
+    plate: 'BRA2E19', make: 'Yamaha', model: 'Fazer 250 Blueflex', year: 2021, color: 'Preta', km: 32180,
+    history: [
+      { date: '28/05/2026', oficina: 'Oficina do Zé', mechanic: 'José Carlos', ops: ['Pneus', 'Suspensão'], km: 32180, notes: 'Par de pneus trocado, suspensão dianteira regulada.' },
+      { date: '11/01/2026', oficina: 'Auto Peças e Motos Ipiranga', mechanic: 'Roberto Nunes', ops: ['Velas / ignição', 'Elétrica / bateria'], km: 29800, notes: 'Velas trocadas, bateria testada e recarregada.' },
+    ]
+  },
+  {
+    plate: 'RIO4F56', make: 'Honda', model: 'PCX 160', year: 2023, color: 'Branca', km: 9040,
+    history: [
+      { date: '20/06/2026', oficina: 'Moto Center Silva', mechanic: 'Carlos Silva', ops: ['Troca de óleo e filtro'], km: 9040, notes: 'Troca de óleo dentro do prazo, sem observações.' },
+    ]
+  },
+];
+
+class Component extends DCLogic {
+  state = { custPlateQuery: '', custVehicle: null, custSearched: false };
+
+  setCustPlateQuery = (e) => this.setState({ custPlateQuery: e.target.value });
+  custSearch = () => {
+    const p = (this.state.custPlateQuery || '').trim().toUpperCase();
+    const v = VEHICLES.find(v => v.plate === p) || null;
+    this.setState({ custVehicle: v, custSearched: true });
+  };
+  custDownload = () => {};
+
+  renderVals() {
+    const s = this.state;
+    const custVehicle = s.custVehicle;
+    const custHistory = custVehicle ? custVehicle.history.map(h => ({ ...h, opsLabel: h.ops.join(', ') })).slice().reverse() : [];
+    return {
+      custPlateQuery: s.custPlateQuery, setCustPlateQuery: this.setCustPlateQuery, custSearch: this.custSearch,
+      custNotFound: s.custSearched && !custVehicle,
+      custHasVehicle: !!custVehicle,
+      custEmpty: !s.custSearched,
+      custVehicleLabel: custVehicle ? `${custVehicle.make} ${custVehicle.model} (${custVehicle.year})` : '',
+      custVehiclePlate: custVehicle ? custVehicle.plate : '',
+      custVehicleColor: custVehicle ? custVehicle.color : '',
+      custVehicleKm: custVehicle ? custVehicle.km : '',
+      custHistory,
+      custDownload: this.custDownload,
+    };
+  }
+}
+</script>
+</body>
+</html>

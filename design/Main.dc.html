@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  html, body { margin: 0; font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif; background: #F7FAFC; color: #0F172A; font-feature-settings: "rlig" 1, "calt" 1; -webkit-font-smoothing: antialiased; }
+  ::placeholder { color: #64748B; opacity: 1; }
+  a { color: #B84F20; } a:hover { color: #92400E; }
+</style>
+</helmet>
+
+<div style="width:390px;height:844px;overflow-y:auto;background:#F7FAFC;box-sizing:border-box;">
+  <div style="min-height:100%;display:flex;flex-direction:column;justify-content:center;padding:32px 20px;box-sizing:border-box;">
+    <div style="display:flex;flex-direction:column;gap:24px;">
+
+      <div style="text-align:center;">
+        <div style="display:inline-flex;align-items:center;gap:9px;">
+          <svg width="30" height="30" viewBox="0 0 64 64" fill="none">
+            <circle cx="32" cy="32" r="26" stroke="#1B4965" stroke-width="5"></circle>
+            <circle cx="32" cy="32" r="5" fill="#B84F20"></circle>
+            <line x1="32" y1="32" x2="52" y2="19" stroke="#B84F20" stroke-width="5" stroke-linecap="round"></line>
+            <line x1="32" y1="32" x2="12" y2="19" stroke="#B84F20" stroke-width="5" stroke-linecap="round"></line>
+          </svg>
+          <h1 style="margin:0;font-size:26px;font-weight:700;letter-spacing:-0.025em;">Mototeca</h1>
+        </div>
+        <p style="margin:6px 0 0;color:#64748B;font-size:14px;">Histórico de manutenção de motos</p>
+      </div>
+
+      <div style="display:flex;border-radius:8px;border:1px solid #E2E8F0;overflow:hidden;">
+        <button onclick="{{ setRoleOficina }}" style="{{ roleTabStyleOficina }}">Sou da oficina</button>
+        <button onclick="{{ setRoleProprietario }}" style="{{ roleTabStyleProprietario }}">Sou proprietário</button>
+      </div>
+
+      <div style="border:1px solid #E2E8F0;background:white;border-radius:10px;box-shadow:0 1px 2px 0 rgb(0 0 0 / .05);">
+        <div style="padding:22px 20px 0;display:flex;flex-direction:column;gap:6px;">
+          <div style="font-size:22px;font-weight:600;letter-spacing:-0.025em;line-height:1;">Entrar</div>
+          <sc-if value="{{ isRoleOficina }}" hint-placeholder-val="{{ true }}">
+            <div style="font-size:14px;color:#64748B;">Acesse o painel da sua oficina</div>
+          </sc-if>
+          <sc-if value="{{ isRoleProprietario }}">
+            <div style="font-size:14px;color:#64748B;">Acesse o histórico das suas motos</div>
+          </sc-if>
+        </div>
+        <div style="padding:16px 20px 20px;">
+          <form onsubmit="{{ submitLogin }}" style="display:flex;flex-direction:column;gap:14px;">
+            <sc-if value="{{ isRoleOficina }}" hint-placeholder-val="{{ true }}">
+              <div style="display:flex;flex-direction:column;gap:7px;">
+                <label style="font-size:14px;font-weight:500;line-height:1;">CNPJ da oficina</label>
+                <input value="{{ loginCnpj }}" oninput="{{ setLoginCnpj }}" placeholder="00.000.000/0001-00" style="display:flex;height:44px;width:100%;border-radius:8px;border:1px solid #E2E8F0;background:white;padding:0 12px;font-size:16px;font-family:inherit;color:inherit;outline:none;box-sizing:border-box;">
+              </div>
+              <div style="display:flex;flex-direction:column;gap:7px;">
+                <label style="font-size:14px;font-weight:500;line-height:1;">Senha</label>
+                <input type="password" value="{{ loginPass }}" oninput="{{ setLoginPass }}" placeholder="Sua senha" style="display:flex;height:44px;width:100%;border-radius:8px;border:1px solid #E2E8F0;background:white;padding:0 12px;font-size:16px;font-family:inherit;color:inherit;outline:none;box-sizing:border-box;">
+              </div>
+            </sc-if>
+            <sc-if value="{{ isRoleProprietario }}">
+              <div style="display:flex;flex-direction:column;gap:7px;">
+                <label style="font-size:14px;font-weight:500;line-height:1;">Celular</label>
+                <input value="{{ loginPhone }}" oninput="{{ setLoginPhone }}" placeholder="(31) 90000-0000" style="display:flex;height:44px;width:100%;border-radius:8px;border:1px solid #E2E8F0;background:white;padding:0 12px;font-size:16px;font-family:inherit;color:inherit;outline:none;box-sizing:border-box;">
+              </div>
+              <div style="display:flex;flex-direction:column;gap:7px;">
+                <label style="font-size:14px;font-weight:500;line-height:1;">Código recebido por WhatsApp</label>
+                <input value="{{ loginOtp }}" oninput="{{ setLoginOtp }}" placeholder="000000" style="display:flex;height:44px;width:100%;border-radius:8px;border:1px solid #E2E8F0;background:white;padding:0 12px;font-size:16px;font-family:inherit;color:inherit;outline:none;box-sizing:border-box;">
+              </div>
+            </sc-if>
+            <button type="submit" style="width:100%;height:48px;border-radius:8px;font-size:15px;font-weight:600;border:1px solid transparent;background:#1B4965;color:#F8FAFC;cursor:pointer;margin-top:2px;">Entrar</button>
+            <p style="text-align:center;font-size:14px;color:#64748B;margin:0;">
+              Não tem conta? <a href="#" style="text-underline-offset:4px;">Cadastre sua oficina</a>
+            </p>
+          </form>
+        </div>
+      </div>
+
+      <p style="text-align:center;font-size:12px;color:#64748B;margin:0;padding:0 8px;">
+        Consultar o histórico de uma moto não exige cadastro — use o Portal do Proprietário.
+      </p>
+    </div>
+  </div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = {
+    loginRole: 'oficina',
+    loginCnpj: '', loginPass: '', loginPhone: '', loginOtp: '',
+  };
+
+  setRole = (r) => () => this.setState({ loginRole: r });
+  setLoginCnpj = (e) => this.setState({ loginCnpj: e.target.value });
+  setLoginPass = (e) => this.setState({ loginPass: e.target.value });
+  setLoginPhone = (e) => this.setState({ loginPhone: e.target.value });
+  setLoginOtp = (e) => this.setState({ loginOtp: e.target.value });
+  submitLogin = (e) => { e.preventDefault(); };
+
+  roleTabBase = { flex: 1, height: 44, fontSize: 14, fontWeight: 500, border: 'none', cursor: 'pointer' };
+
+  renderVals() {
+    const s = this.state;
+    const roleTabStyle = (role) => {
+      const active = s.loginRole === role;
+      return { ...this.roleTabBase, background: active ? '#1B4965' : 'white', color: active ? '#F8FAFC' : '#0F172A' };
+    };
+    return {
+      isRoleOficina: s.loginRole === 'oficina', isRoleProprietario: s.loginRole === 'proprietario',
+      setRoleOficina: this.setRole('oficina'), setRoleProprietario: this.setRole('proprietario'),
+      roleTabStyleOficina: roleTabStyle('oficina'), roleTabStyleProprietario: roleTabStyle('proprietario'),
+      loginCnpj: s.loginCnpj, setLoginCnpj: this.setLoginCnpj,
+      loginPass: s.loginPass, setLoginPass: this.setLoginPass,
+      loginPhone: s.loginPhone, setLoginPhone: this.setLoginPhone,
+      loginOtp: s.loginOtp, setLoginOtp: this.setLoginOtp,
+      submitLogin: this.submitLogin,
+    };
+  }
+}
+</script>
+</body>
+</html>
