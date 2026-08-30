@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  html, body { margin: 0; font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif; background: #F7FAFC; color: #0F172A; font-feature-settings: "rlig" 1, "calt" 1; -webkit-font-smoothing: antialiased; }
+  ::placeholder { color: #64748B; opacity: 1; }
+  a { color: #B84F20; } a:hover { color: #92400E; }
+</style>
+</helmet>
+
+<div style="width:390px;height:844px;overflow-y:auto;background:#F7FAFC;box-sizing:border-box;">
+
+  <header style="position:sticky;top:0;z-index:5;background:#EAF3FA;border-bottom:1px solid #CFE4F2;">
+    <div style="padding:14px 20px;display:flex;align-items:center;gap:10px;">
+      <button style="width:32px;height:32px;border-radius:8px;border:1px solid #CFE4F2;background:white;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1B4965" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <span style="font-size:16px;font-weight:700;letter-spacing:-0.025em;">Cadastrar Veículo</span>
+    </div>
+  </header>
+
+  <main style="padding:18px 20px 32px;display:flex;flex-direction:column;gap:16px;">
+    <p style="margin:0;font-size:13px;color:#64748B;line-height:1.5;">Cadastre a moto pela placa — o histórico de manutenção fica vinculado a ela e acompanha o veículo mesmo se for atendido em outra oficina.</p>
+
+    <div style="border:1px solid #E2E8F0;background:white;border-radius:10px;box-shadow:0 1px 2px 0 rgb(0 0 0 / .05);padding:16px;">
+      <form onsubmit="{{ submitRegister }}" style="display:flex;flex-direction:column;gap:14px;">
+        <div style="display:flex;flex-direction:column;gap:7px;">
+          <label style="font-size:13px;font-weight:500;">Placa</label>
+          <input value="{{ plate }}" oninput="{{ setPlate }}" placeholder="ABC1D23" style="text-transform:uppercase;height:44px;border-radius:8px;border:1px solid #E2E8F0;padding:0 12px;font-size:16px;font-family:'JetBrains Mono',monospace;outline:none;box-sizing:border-box;width:100%;">
+          <span style="font-size:11px;color:#64748B;">Formato antigo ou Mercosul, sem hífen</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:7px;">
+          <label style="font-size:13px;font-weight:500;">Chassi</label>
+          <input value="{{ chassi }}" oninput="{{ setChassi }}" placeholder="9BWZZZ377VT004251" style="text-transform:uppercase;height:44px;border-radius:8px;border:1px solid #E2E8F0;padding:0 12px;font-size:15px;font-family:'JetBrains Mono',monospace;outline:none;box-sizing:border-box;width:100%;">
+          <span style="font-size:11px;color:#64748B;">17 caracteres</span>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+          <div style="display:flex;flex-direction:column;gap:7px;">
+            <label style="font-size:13px;font-weight:500;">Marca</label>
+            <input value="{{ make }}" oninput="{{ setMake }}" placeholder="Honda" style="height:44px;border-radius:8px;border:1px solid #E2E8F0;padding:0 12px;font-size:16px;outline:none;box-sizing:border-box;width:100%;">
+          </div>
+          <div style="display:flex;flex-direction:column;gap:7px;">
+            <label style="font-size:13px;font-weight:500;">Modelo</label>
+            <input value="{{ model }}" oninput="{{ setModel }}" placeholder="CG 160" style="height:44px;border-radius:8px;border:1px solid #E2E8F0;padding:0 12px;font-size:16px;outline:none;box-sizing:border-box;width:100%;">
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:7px;">
+          <label style="font-size:13px;font-weight:500;">Ano</label>
+          <input type="number" value="{{ year }}" oninput="{{ setYear }}" placeholder="2022" style="height:44px;border-radius:8px;border:1px solid #E2E8F0;padding:0 12px;font-size:16px;outline:none;box-sizing:border-box;width:100%;">
+        </div>
+        <button type="submit" style="width:100%;height:48px;border-radius:8px;font-size:15px;font-weight:600;border:1px solid transparent;background:#1B4965;color:#F8FAFC;cursor:pointer;margin-top:2px;">Cadastrar Veículo</button>
+      </form>
+    </div>
+  </main>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { plate: '', chassi: '', make: '', model: '', year: '' };
+  setPlate = (e) => this.setState({ plate: e.target.value });
+  setChassi = (e) => this.setState({ chassi: e.target.value });
+  setMake = (e) => this.setState({ make: e.target.value });
+  setModel = (e) => this.setState({ model: e.target.value });
+  setYear = (e) => this.setState({ year: e.target.value });
+  submitRegister = (e) => { e.preventDefault(); };
+
+  renderVals() {
+    const s = this.state;
+    return {
+      plate: s.plate, setPlate: this.setPlate,
+      chassi: s.chassi, setChassi: this.setChassi,
+      make: s.make, setMake: this.setMake,
+      model: s.model, setModel: this.setModel,
+      year: s.year, setYear: this.setYear,
+      submitRegister: this.submitRegister,
+    };
+  }
+}
+</script>
+</body>
+</html>
