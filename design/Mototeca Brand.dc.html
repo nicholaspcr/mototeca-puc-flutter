@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  html, body { margin: 0; font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif; background: #FFFFFF; color: #0F172A; -webkit-font-smoothing: antialiased; }
+</style>
+</helmet>
+
+<div style="min-height:100vh;background:#FFFFFF;">
+  <header style="border-bottom:1px solid #E2E8F0;padding:32px 16px;">
+    <div style="max-width:1080px;margin:0 auto;">
+      <div style="font-size:13px;font-weight:500;color:#64748B;text-transform:uppercase;letter-spacing:0.06em;">Identidade Visual</div>
+      <h1 style="margin:6px 0 0;font-size:30px;font-weight:700;letter-spacing:-0.025em;">Mototeca — Paleta e Logotipo</h1>
+      <p style="margin:8px 0 0;font-size:14px;color:#64748B;max-width:640px;">Esquema complementar: azul petróleo como cor primária (confiança, precisão técnica) e laranja ferrugem como único acento quente (links, seleção). Os dois ficam a ~180° na roda de cores — contraste genuíno em vez de tons vizinhos.</p>
+    </div>
+  </header>
+
+  <main style="max-width:1080px;margin:0 auto;padding:40px 16px 64px;display:flex;flex-direction:column;gap:56px;">
+
+    <!-- ===================== LOGO ===================== -->
+    <section>
+      <h2 style="margin:0 0 20px;font-size:20px;font-weight:600;">Logotipo</h2>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;">
+
+        <div style="border:1px solid #E2E8F0;border-radius:8px;background:#FFFFFF;padding:40px 24px;display:flex;flex-direction:column;align-items:center;gap:16px;">
+          <div style="display:flex;align-items:center;gap:12px;">
+            <svg width="44" height="44" viewBox="0 0 64 64" fill="none">
+              <circle cx="32" cy="32" r="26" stroke="#1B4965" stroke-width="5"></circle>
+              <circle cx="32" cy="32" r="5" fill="#B84F20"></circle>
+              <line x1="32" y1="32" x2="52" y2="19" stroke="#B84F20" stroke-width="5" stroke-linecap="round"></line>
+              <line x1="32" y1="32" x2="12" y2="19" stroke="#B84F20" stroke-width="5" stroke-linecap="round"></line>
+            </svg>
+            <span style="font-size:28px;font-weight:700;letter-spacing:-0.02em;color:#0F172A;">Mototeca</span>
+          </div>
+          <span style="font-size:12px;color:#64748B;">Lockup principal · fundo claro</span>
+        </div>
+
+        <div style="border:1px solid #E2E8F0;border-radius:8px;background:#0F172A;padding:40px 24px;display:flex;flex-direction:column;align-items:center;gap:16px;">
+          <div style="display:flex;align-items:center;gap:12px;">
+            <svg width="44" height="44" viewBox="0 0 64 64" fill="none">
+              <circle cx="32" cy="32" r="26" stroke="#D9622B" stroke-width="5"></circle>
+              <circle cx="32" cy="32" r="5" fill="#FFFFFF"></circle>
+              <line x1="32" y1="32" x2="52" y2="19" stroke="#FFFFFF" stroke-width="5" stroke-linecap="round"></line>
+              <line x1="32" y1="32" x2="12" y2="19" stroke="#FFFFFF" stroke-width="5" stroke-linecap="round"></line>
+            </svg>
+            <span style="font-size:28px;font-weight:700;letter-spacing:-0.02em;color:#FFFFFF;">Mototeca</span>
+          </div>
+          <span style="font-size:12px;color:#94A3B8;">Versão reversa · fundo grafite (laranja mantém contraste onde o azul desapareceria)</span>
+        </div>
+
+        <div style="border:1px solid #E2E8F0;border-radius:8px;background:#FFFFFF;padding:40px 24px;display:flex;flex-direction:column;align-items:center;gap:16px;">
+          <div style="width:72px;height:72px;border-radius:18px;background:#0F172A;display:flex;align-items:center;justify-content:center;">
+            <svg width="40" height="40" viewBox="0 0 64 64" fill="none">
+              <circle cx="32" cy="32" r="26" stroke="#D9622B" stroke-width="6"></circle>
+              <circle cx="32" cy="32" r="5.5" fill="#FFFFFF"></circle>
+              <line x1="32" y1="32" x2="52" y2="19" stroke="#FFFFFF" stroke-width="6" stroke-linecap="round"></line>
+              <line x1="32" y1="32" x2="12" y2="19" stroke="#FFFFFF" stroke-width="6" stroke-linecap="round"></line>
+            </svg>
+          </div>
+          <span style="font-size:12px;color:#64748B;">Marca isolada · ícone de app / favicon</span>
+        </div>
+      </div>
+      <p style="margin:16px 0 0;font-size:13px;color:#64748B;max-width:640px;">Marca: aro (roda) em azul petróleo com cubo e raios em laranja ferrugem — referência direta a roda de moto / velocímetro, expressando o par complementar. No fundo escuro e no ícone de app, o aro vira laranja para manter contraste (azul sobre grafite quase some). Peso de traço (5px em 64px) alinhado ao stroke 2px dos ícones Lucide usados no console.</p>
+    </section>
+
+    <!-- ===================== COLOR PALETTE ===================== -->
+    <section>
+      <h2 style="margin:0 0 20px;font-size:20px;font-weight:600;">Paleta de Cores</h2>
+
+      <div style="font-size:13px;font-weight:600;color:#64748B;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:12px;">Marca</div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:32px;">
+        <div style="border:1px solid #E2E8F0;border-radius:8px;overflow:hidden;">
+          <div style="height:88px;background:#1B4965;"></div>
+          <div style="padding:12px 14px;">
+            <div style="font-size:14px;font-weight:600;">Azul Petróleo</div>
+            <div style="font-size:12px;color:#64748B;font-family:'JetBrains Mono',monospace;margin-top:2px;">#1B4965</div>
+            <div style="font-size:12px;color:#64748B;margin-top:6px;">Cor primária: botões, estados ativos, aro do logo</div>
+          </div>
+        </div>
+        <div style="border:1px solid #E2E8F0;border-radius:8px;overflow:hidden;">
+          <div style="height:88px;background:#B84F20;"></div>
+          <div style="padding:12px 14px;">
+            <div style="font-size:14px;font-weight:600;">Laranja Ferrugem</div>
+            <div style="font-size:12px;color:#64748B;font-family:'JetBrains Mono',monospace;margin-top:2px;">#B84F20</div>
+            <div style="font-size:12px;color:#64748B;margin-top:6px;">Acento: links, badges, chips selecionados</div>
+          </div>
+        </div>
+        <div style="border:1px solid #E2E8F0;border-radius:8px;overflow:hidden;">
+          <div style="height:88px;background:#0F172A;"></div>
+          <div style="padding:12px 14px;">
+            <div style="font-size:14px;font-weight:600;">Grafite</div>
+            <div style="font-size:12px;color:#64748B;font-family:'JetBrains Mono',monospace;margin-top:2px;">#0F172A</div>
+            <div style="font-size:12px;color:#64748B;margin-top:6px;">Texto principal, superfícies escuras</div>
+          </div>
+        </div>
+        <div style="border:1px solid #E2E8F0;border-radius:8px;overflow:hidden;">
+          <div style="height:88px;background:#FFFFFF;"></div>
+          <div style="padding:12px 14px;">
+            <div style="font-size:14px;font-weight:600;">Branco</div>
+            <div style="font-size:12px;color:#64748B;font-family:'JetBrains Mono',monospace;margin-top:2px;">#FFFFFF</div>
+            <div style="font-size:12px;color:#64748B;margin-top:6px;">Fundo de página e cartões</div>
+          </div>
+        </div>
+      </div>
+      <p style="margin:-20px 0 32px;font-size:12px;color:#64748B;">Azul e laranja ficam a ~180° na roda de cores (par complementar) — o par com maior contraste perceptual possível, em vez de tons próximos que competem entre si.</p>
+
+      <div style="font-size:13px;font-weight:600;color:#64748B;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:12px;">Azul Petróleo — escala</div>
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:16px;margin-bottom:32px;">
+        <div style="border:1px solid #E2E8F0;border-radius:8px;overflow:hidden;">
+          <div style="height:72px;background:#EAF3FA;"></div>
+          <div style="padding:10px 12px;">
+            <div style="font-size:13px;font-weight:600;">Azul 50</div>
+            <div style="font-size:11px;color:#64748B;font-family:'JetBrains Mono',monospace;">#EAF3FA</div>
+            <div style="font-size:11px;color:#64748B;margin-top:4px;">Fundo tintado sutil, badges informativos</div>
+          </div>
+        </div>
+        <div style="border:1px solid #E2E8F0;border-radius:8px;overflow:hidden;">
+          <div style="height:72px;background:#CFE4F2;"></div>
+          <div style="padding:10px 12px;">
+            <div style="font-size:13px;font-weight:600;">Azul 100</div>
+            <div style="font-size:11px;color:#64748B;font-family:'JetBrains Mono',monospace;">#CFE4F2</div>
+            <div style="font-size:11px;color:#64748B;margin-top:4px;">Hover leve sobre fundo branco</div>
+          </div>
+        </div>
+        <div style="border:1px solid #E2E8F0;border-radius:8px;overflow:hidden;">
+          <div style="height:72px;background:#7EB8DD;"></div>
+          <div style="padding:10px 12px;">
+            <div style="font-size:13px;font-weight:600;">Azul 300</div>
+            <div style="font-size:11px;color:#64748B;font-family:'JetBrains Mono',monospace;">#7EB8DD</div>
+            <div style="font-size:11px;color:#64748B;margin-top:4px;">Bordas/divisores na cor da marca</div>
+          </div>
+        </div>
+        <div style="border:1px solid #E2E8F0;border-radius:8px;overflow:hidden;">
+          <div style="height:72px;background:#2D7AA9;"></div>
+          <div style="padding:10px 12px;">
+            <div style="font-size:13px;font-weight:600;color:white;">Azul 500</div>
+            <div style="font-size:11px;color:#DCEEFB;font-family:'JetBrains Mono',monospace;">#2D7AA9</div>
+            <div style="font-size:11px;color:#DCEEFB;margin-top:4px;">Hover de botão primário</div>
+          </div>
+        </div>
+        <div style="border:1px solid #E2E8F0;border-radius:8px;overflow:hidden;">
+          <div style="height:72px;background:#1B4965;"></div>
+          <div style="padding:10px 12px;">
+            <div style="font-size:13px;font-weight:600;color:white;">Azul 700 (base)</div>
+            <div style="font-size:11px;color:#B9D2E0;font-family:'JetBrains Mono',monospace;">#1B4965</div>
+            <div style="font-size:11px;color:#B9D2E0;margin-top:4px;">Cor primária sólida — botões, ativos</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="font-size:13px;font-weight:600;color:#64748B;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:12px;">Laranja Ferrugem — escala</div>
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:16px;margin-bottom:32px;">
+        <div style="border:1px solid #E2E8F0;border-radius:8px;overflow:hidden;">
+          <div style="height:72px;background:#FCF2EE;"></div>
+          <div style="padding:10px 12px;">
+            <div style="font-size:13px;font-weight:600;">Laranja 50</div>
+            <div style="font-size:11px;color:#64748B;font-family:'JetBrains Mono',monospace;">#FCF2EE</div>
+            <div style="font-size:11px;color:#64748B;margin-top:4px;">Fundo tintado sutil (alertas leves)</div>
+          </div>
+        </div>
+        <div style="border:1px solid #E2E8F0;border-radius:8px;overflow:hidden;">
+          <div style="height:72px;background:#F7DFD4;"></div>
+          <div style="padding:10px 12px;">
+            <div style="font-size:13px;font-weight:600;">Laranja 100</div>
+            <div style="font-size:11px;color:#64748B;font-family:'JetBrains Mono',monospace;">#F7DFD4</div>
+            <div style="font-size:11px;color:#64748B;margin-top:4px;">Fundo de chip/badge não selecionado</div>
+          </div>
+        </div>
+        <div style="border:1px solid #E2E8F0;border-radius:8px;overflow:hidden;">
+          <div style="height:72px;background:#E89F7D;"></div>
+          <div style="padding:10px 12px;">
+            <div style="font-size:13px;font-weight:600;">Laranja 300</div>
+            <div style="font-size:11px;color:#64748B;font-family:'JetBrains Mono',monospace;">#E89F7D</div>
+            <div style="font-size:11px;color:#64748B;margin-top:4px;">Bordas/divisores na cor de acento</div>
+          </div>
+        </div>
+        <div style="border:1px solid #E2E8F0;border-radius:8px;overflow:hidden;">
+          <div style="height:72px;background:#DD6F3C;"></div>
+          <div style="padding:10px 12px;">
+            <div style="font-size:13px;font-weight:600;">Laranja 500</div>
+            <div style="font-size:11px;color:#5C2A11;font-family:'JetBrains Mono',monospace;">#DD6F3C</div>
+            <div style="font-size:11px;color:#5C2A11;margin-top:4px;">Hover de link/estado ativo mais claro</div>
+          </div>
+        </div>
+        <div style="border:1px solid #E2E8F0;border-radius:8px;overflow:hidden;">
+          <div style="height:72px;background:#B84F20;"></div>
+          <div style="padding:10px 12px;">
+            <div style="font-size:13px;font-weight:600;color:white;">Laranja 700 (base)</div>
+            <div style="font-size:11px;color:#F3D2BE;font-family:'JetBrains Mono',monospace;">#B84F20</div>
+            <div style="font-size:11px;color:#F3D2BE;margin-top:4px;">Cor de acento sólida — links, chips</div>
+          </div>
+        </div>
+      </div>
+      <p style="margin:-20px 0 32px;font-size:12px;color:#64748B;">Mesma hue e saturação em toda a escala, variando só a luminosidade — dá tons para fundo sutil, borda e hover sem inventar cores novas fora da paleta.</p>
+
+      <div style="border:1px solid #E2E8F0;border-radius:8px;padding:20px 24px;margin-bottom:32px;">
+        <div style="font-size:14px;font-weight:600;margin-bottom:12px;">Regras de uso da escala</div>
+        <div style="display:flex;flex-direction:column;gap:10px;font-size:13px;color:#0F172A;">
+          <div><strong>700 (base)</strong> é o único tom que pode levar texto branco por cima — Azul 700 em botões preenchidos, Laranja 700 como cor de texto/link direto sobre branco. Nenhum outro degrau da escala tem contraste suficiente para isso.</div>
+          <div><strong>50 / 100</strong> são só para fundo — tintas de cartão, badge ou chip em estado neutro. Nunca recebem texto branco por cima; usam texto Grafite #0F172A ou o próprio 700 da mesma escala.</div>
+          <div><strong>300</strong> é só estrutura, nunca texto nem preenchimento de botão — bordas, divisores e traços decorativos na cor da marca (falha contraste nos dois sentidos).</div>
+          <div><strong>500</strong> é o tom de interação: hover/pressed do preenchimento Azul 700 (ainda passa ~4.7:1 com texto branco). Na escala Laranja — que só existe como texto/acento, não como botão preenchido — 500 não tem papel direto; se um chip preenchido em laranja for criado no futuro, o 700 é o estado selecionado e o 500 seu hover, na mesma lógica do azul.</div>
+          <div><strong>Combinação complementar:</strong> só encoste Azul e Laranja um no outro no grau 700 (botão azul ao lado de link laranja, por exemplo) — ou com um neutro entre eles. Nunca dois tons médios da mesma intensidade das duas escalas lado a lado (ex.: Azul 500 encostado no Laranja 500): cores complementares de saturação/luminosidade parecidas vibram visualmente uma contra a outra.</div>
+        </div>
+      </div>
+
+      <div style="font-size:13px;font-weight:600;color:#64748B;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:12px;">Neutros (compartilhados com o console)</div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:32px;">
+        <div style="border:1px solid #E2E8F0;border-radius:8px;overflow:hidden;">
+          <div style="height:88px;background:#F8FAFC;"></div>
+          <div style="padding:12px 14px;">
+            <div style="font-size:14px;font-weight:600;">Slate 50</div>
+            <div style="font-size:12px;color:#64748B;font-family:'JetBrains Mono',monospace;margin-top:2px;">#F8FAFC</div>
+            <div style="font-size:12px;color:#64748B;margin-top:6px;">Fundo alternativo sutil</div>
+          </div>
+        </div>
+        <div style="border:1px solid #E2E8F0;border-radius:8px;overflow:hidden;">
+          <div style="height:88px;background:#F1F5F9;"></div>
+          <div style="padding:12px 14px;">
+            <div style="font-size:14px;font-weight:600;">Slate 100</div>
+            <div style="font-size:12px;color:#64748B;font-family:'JetBrains Mono',monospace;margin-top:2px;">#F1F5F9</div>
+            <div style="font-size:12px;color:#64748B;margin-top:6px;">Superfícies secundárias, chips, hover</div>
+          </div>
+        </div>
+        <div style="border:1px solid #E2E8F0;border-radius:8px;overflow:hidden;">
+          <div style="height:88px;background:#E2E8F0;"></div>
+          <div style="padding:12px 14px;">
+            <div style="font-size:14px;font-weight:600;">Slate 200</div>
+            <div style="font-size:12px;color:#64748B;font-family:'JetBrains Mono',monospace;margin-top:2px;">#E2E8F0</div>
+            <div style="font-size:12px;color:#64748B;margin-top:6px;">Bordas de cartões, inputs, divisores</div>
+          </div>
+        </div>
+        <div style="border:1px solid #E2E8F0;border-radius:8px;overflow:hidden;">
+          <div style="height:88px;background:#64748B;"></div>
+          <div style="padding:12px 14px;">
+            <div style="font-size:14px;font-weight:600;color:white;">Slate 500</div>
+            <div style="font-size:12px;color:#CBD5E1;font-family:'JetBrains Mono',monospace;margin-top:2px;">#64748B</div>
+            <div style="font-size:12px;color:#CBD5E1;margin-top:6px;">Texto secundário, legendas, metadados</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="font-size:13px;font-weight:600;color:#64748B;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:12px;">Semânticas</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;">
+        <div style="border:1px solid #E2E8F0;border-radius:8px;overflow:hidden;">
+          <div style="height:88px;background:#22C55E;"></div>
+          <div style="padding:12px 14px;">
+            <div style="font-size:14px;font-weight:600;">Sucesso</div>
+            <div style="font-size:12px;color:#64748B;font-family:'JetBrains Mono',monospace;margin-top:2px;">#22C55E</div>
+            <div style="font-size:12px;color:#64748B;margin-top:6px;">Registro salvo, confirmações</div>
+          </div>
+        </div>
+        <div style="border:1px solid #E2E8F0;border-radius:8px;overflow:hidden;">
+          <div style="height:88px;background:#EAB308;"></div>
+          <div style="padding:12px 14px;">
+            <div style="font-size:14px;font-weight:600;">Aviso</div>
+            <div style="font-size:12px;color:#64748B;font-family:'JetBrains Mono',monospace;margin-top:2px;">#EAB308</div>
+            <div style="font-size:12px;color:#64748B;margin-top:6px;">Veículo não encontrado, pendências</div>
+          </div>
+        </div>
+        <div style="border:1px solid #E2E8F0;border-radius:8px;overflow:hidden;">
+          <div style="height:88px;background:#EF4444;"></div>
+          <div style="padding:12px 14px;">
+            <div style="font-size:14px;font-weight:600;">Erro</div>
+            <div style="font-size:12px;color:#64748B;font-family:'JetBrains Mono',monospace;margin-top:2px;">#EF4444</div>
+            <div style="font-size:12px;color:#64748B;margin-top:6px;">Falhas, exclusões, campos inválidos</div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+</x-dc>
+</body>
+</html>
