@@ -1,0 +1,42 @@
+syntax = "proto3";
+
+package mototeca.vehicle.v1;
+
+import "google/protobuf/timestamp.proto";
+
+message Vehicle {
+  string id = 1;
+  string plate = 2;
+  string chassi = 3;
+  string make = 4;
+  string model = 5;
+  int32 year = 6;
+  optional string current_owner_id = 7;
+  google.protobuf.Timestamp created_at = 8;
+}
+
+message GetVehicleByPlateRequest {
+  string plate = 1;
+}
+
+message GetVehicleByPlateResponse {
+  Vehicle vehicle = 1;
+}
+
+message CreateVehicleRequest {
+  string plate = 1;
+  string chassi = 2;
+  string make = 3;
+  string model = 4;
+  int32 year = 5;
+}
+
+message CreateVehicleResponse {
+  Vehicle vehicle = 1;
+}
+
+service VehicleService {
+  // Returns NOT_FOUND if the plate has no history yet.
+  rpc GetVehicleByPlate(GetVehicleByPlateRequest) returns (GetVehicleByPlateResponse);
+  rpc CreateVehicle(CreateVehicleRequest) returns (CreateVehicleResponse);
+}
