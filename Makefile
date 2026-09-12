@@ -38,3 +38,7 @@ db-down: ## Stop the local Postgres container
 
 db-logs: ## Tail the Postgres container logs
 	docker compose logs -f db
+
+e2e: ## Smoke-test the API end to end inside the compose network (needs `docker compose up -d api`)
+	docker run --rm --network mototeca_default \
+		-v "$$PWD/scripts/e2e.sh:/e2e.sh:ro" curlimages/curl:latest sh /e2e.sh
