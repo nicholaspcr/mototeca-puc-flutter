@@ -1,0 +1,123 @@
+syntax = "proto3";
+
+package mototeca.service.v1;
+
+import "google/protobuf/timestamp.proto";
+
+// Mirrors the service_type enum in db/migrations/0001_init.sql and the chips on
+// the Novo Registro screen. A record carries one or more of these.
+enum ServiceType {
+  SERVICE_TYPE_UNSPECIFIED = 0;
+  SERVICE_TYPE_OIL_CHANGE = 1;
+  SERVICE_TYPE_SCHEDULED_REVIEW = 2;
+  SERVICE_TYPE_BRAKES = 3;
+  SERVICE_TYPE_CHAIN_AND_SPROCKET = 4;
+  SERVICE_TYPE_TIRES = 5;
+  SERVICE_TYPE_ELECTRICAL = 6;
+  SERVICE_TYPE_SPARK_PLUGS = 7;
+  SERVICE_TYPE_SUSPENSION = 8;
+  SERVICE_TYPE_CLUTCH = 9;
+  SERVICE_TYPE_FUEL_INJECTION = 10;
+  SERVICE_TYPE_BODYWORK = 11;
+  SERVICE_TYPE_OTHER = 12;
+}
+
+enum PhotoPhase {
+  PHOTO_PHASE_UNSPECIFIED = 0;
+  PHOTO_PHASE_BEFORE = 1;
+  PHOTO_PHASE_AFTER = 2;
+}
+
+message Part {
+  string name = 1;
+  int32 quantity = 2;
+  // Money is always integer cents — never a float.
+  optional int32 cost_cents = 3;
+}
+
+message Attachment {
+  string id = 1;
+  string url = 2;
+  // "photo" or "invoice".
+  string kind = 3;
+  // Only set on photos.
+  PhotoPhase phase = 4;
+}
+
+// The vehicle fields safe to return on the public plate lookup: no chassi, no
+// owner id (see ARCHITECTURE.md section 8 — shared history never leaks PII).
+message VehicleSummary {
+  string plate = 1;
+  string make = 2;
+  string model = 3;
+  int32 year = 4;
+}
+
+message ServiceRecord {
+  string id = 1;
+  VehicleSummary vehicle = 2;
+  string workshop_name = 3;
+  optional string mechanic_name = 4;
+  repeated ServiceType operations = 5;
+  int32 mileage_km = 6;
+  optional int32 cost_cents = 7;
+  optional string notes = 8;
+  repeated Part parts = 9;
+  repeated Attachment attachments = 10;
+  google.protobuf.Timestamp created_at = 11;
+}
+
+message CreateServiceRecordRequest {
+  // The vehicle must already exist; register it first via VehicleService.
+  string plate = 1;
+  optional string mechanic_name = 2;
+  repeated ServiceType operations = 3;
+  int32 mileage_km = 4;
+  optional int32 cost_cents = 5;
+  optional string notes = 6;
+  repeated Part parts = 7;
+}
+
+message CreateServiceRecordResponse {
+  ServiceRecord record = 1;
+}
+
+message GetServiceRecordRequest {
+  string id = 1;
+}
+
+message GetServiceRecordResponse {
+  ServiceRecord record = 1;
+}
+
+message ListServiceRecordsByPlateRequest {
+  string plate = 1;
+}
+
+message ListServiceRecordsByPlateResponse {
+  VehicleSummary vehicle = 1;
+  // Newest first.
+  repeated ServiceRecord records = 2;
+}
+
+message ListWorkshopServiceRecordsRequest {
+  int32 limit = 1;
+}
+
+message ListWorkshopServiceRecordsResponse {
+  repeated ServiceRecord records = 1;
+  // Records this workshop created in the current calendar month — the
+  // dashboard's headline number.
+  int32 count_this_month = 2;
+}
+
+service ServiceRecordService {
+  // Requires a workshop token; the record is attributed to that workshop.
+  rpc CreateServiceRecord(CreateServiceRecordRequest) returns (CreateServiceRecordResponse);
+  // Public: the whole point of the product is reading history without an account.
+  rpc GetServiceRecord(GetServiceRecordRequest) returns (GetServiceRecordResponse);
+  // Public: history across every workshop, looked up by plate.
+  rpc ListServiceRecordsByPlate(ListServiceRecordsByPlateRequest) returns (ListServiceRecordsByPlateResponse);
+  // Requires a workshop token; scoped to the caller's own records.
+  rpc ListWorkshopServiceRecords(ListWorkshopServiceRecordsRequest) returns (ListWorkshopServiceRecordsResponse);
+}
