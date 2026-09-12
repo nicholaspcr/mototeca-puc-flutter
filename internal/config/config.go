@@ -5,7 +5,13 @@ package config
 import (
 	"fmt"
 	"os"
+	"time"
+
+	"mototeca-backend/internal/auth"
 )
+
+// defaultAuthTokenTTL keeps a stolen token useful for hours, not weeks.
+const defaultAuthTokenTTL = 12 * time.Hour
 
 // Config holds the API's runtime configuration.
 type Config struct {
@@ -22,6 +28,12 @@ type Config struct {
 	// OTelEndpoint is the OTLP collector endpoint, used when
 	// OTelExporter == "otlp". Empty uses the exporter's own default.
 	OTelEndpoint string
+	// AuthSecret signs workshop session tokens. Required, and never defaulted:
+	// a fallback key would silently make every deployment forgeable.
+	AuthSecret string
+	// AuthTokenTTL is how long a workshop session stays valid. Tokens are
+	// self-contained and cannot be revoked early, so this is kept short.
+	AuthTokenTTL time.Duration
 }
 
 // Load reads Config from the environment and validates required fields.
@@ -32,10 +44,15 @@ func Load() (Config, error) {
 		LogFormat:    os.Getenv("LOG_FORMAT"),
 		OTelExporter: os.Getenv("OTEL_EXPORTER"),
 		OTelEndpoint: os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT"),
+		AuthSecret:   os.Getenv("AUTH_SECRET"),
+		AuthTokenTTL: defaultAuthTokenTTL,
 	}
 
 	if cfg.DatabaseURL == "" {
 		return Config{}, fmt.Errorf("DATABASE_URL not configured")
+	}
+	if len(cfg.AuthSecret) < auth.MinSecretLength {
+		return Config{}, fmt.Errorf("AUTH_SECRET must be set to at least %d characters", auth.MinSecretLength)
 	}
 	if cfg.Port == "" {
 		cfg.Port = "8080"
