@@ -1,0 +1,46 @@
+syntax = "proto3";
+
+package mototeca.workshop.v1;
+
+import "google/protobuf/timestamp.proto";
+
+message Workshop {
+  string id = 1;
+  string cnpj = 2;
+  string name = 3;
+  optional string address = 4;
+  bool verified = 5;
+  google.protobuf.Timestamp created_at = 6;
+}
+
+message CreateWorkshopRequest {
+  string cnpj = 1;
+  string name = 2;
+  optional string address = 3;
+  // Plaintext only in transit; stored as a bcrypt digest.
+  string password = 4;
+}
+
+message CreateWorkshopResponse {
+  Workshop workshop = 1;
+  // Issued on signup so the app goes straight to the dashboard.
+  string token = 2;
+}
+
+message LoginRequest {
+  string cnpj = 1;
+  string password = 2;
+}
+
+message LoginResponse {
+  Workshop workshop = 1;
+  string token = 2;
+}
+
+service WorkshopService {
+  // Returns ALREADY_EXISTS when the CNPJ is already registered.
+  rpc CreateWorkshop(CreateWorkshopRequest) returns (CreateWorkshopResponse);
+  // Returns UNAUTHENTICATED for both an unknown CNPJ and a wrong password,
+  // so the response cannot be used to enumerate registered workshops.
+  rpc Login(LoginRequest) returns (LoginResponse);
+}

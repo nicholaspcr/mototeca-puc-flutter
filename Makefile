@@ -20,8 +20,11 @@ test: ## Run backend unit tests (no database required)
 test-integration: ## Run backend integration tests against $DATABASE_URL (needs `make db-up`)
 	go test -tags=integration ./cmd/... ./internal/...
 
-migrate: ## Apply db/migrations/0001_init.sql to $DATABASE_URL
-	psql "$$DATABASE_URL" -f db/migrations/0001_init.sql
+migrate: ## Apply every db/migrations/*.sql to $DATABASE_URL, in order
+	@for f in db/migrations/*.sql; do \
+		echo "applying $$f"; \
+		psql "$$DATABASE_URL" -v ON_ERROR_STOP=1 -f "$$f" >/dev/null || exit 1; \
+	done
 
 generate: ## Regenerate Go/TypeScript code from proto/**/*.proto
 	buf generate
