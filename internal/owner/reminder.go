@@ -2,21 +2,19 @@ package owner
 
 import "fmt"
 
-// OilChangeIntervalKm is how far the app assumes a bike goes between oil
-// changes. A real product would vary this by model and by what the manual
-// says; one constant is enough to make the reminder useful and is honest
-// about being an estimate.
+// OilChangeIntervalKm is an estimate. A real product would read it from the
+// model's manual rather than assume one figure for every bike.
 const OilChangeIntervalKm = 3000
 
-// dueSoonKm is how close to the interval counts as "coming up" rather than
-// "fine" — roughly a month of city riding.
+// dueSoonKm — roughly a month of city riding.
 const dueSoonKm = 600
 
-// Reminder describes where a bike stands against its next oil change,
-// derived entirely from the service history.
+// Reminder is where a bike stands against its next oil change.
 type Reminder struct {
 	Text  string
 	IsDue bool
+	// 0 when no oil change was ever recorded.
+	DueAtKm int
 }
 
 func (v OwnedVehicle) Reminder() Reminder {
@@ -33,18 +31,21 @@ func (v OwnedVehicle) Reminder() Reminder {
 	switch {
 	case remaining <= 0:
 		return Reminder{
-			Text:  fmt.Sprintf("Troca de óleo atrasada em %d km", -remaining),
-			IsDue: true,
+			Text:    fmt.Sprintf("Troca de óleo atrasada em %d km", -remaining),
+			IsDue:   true,
+			DueAtKm: dueAt,
 		}
 	case remaining <= dueSoonKm:
 		return Reminder{
-			Text:  fmt.Sprintf("Troca de óleo em %d km", remaining),
-			IsDue: true,
+			Text:    fmt.Sprintf("Troca de óleo em %d km", remaining),
+			IsDue:   true,
+			DueAtKm: dueAt,
 		}
 	default:
 		return Reminder{
-			Text:  fmt.Sprintf("Em dia · próxima troca em %d km", remaining),
-			IsDue: false,
+			Text:    fmt.Sprintf("Em dia · próxima troca em %d km", remaining),
+			IsDue:   false,
+			DueAtKm: dueAt,
 		}
 	}
 }

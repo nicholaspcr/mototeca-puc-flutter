@@ -7,13 +7,19 @@ enum ServiceOperation {
   oilChange('SERVICE_TYPE_OIL_CHANGE', 'Troca de óleo e filtro'),
   scheduledReview('SERVICE_TYPE_SCHEDULED_REVIEW', 'Revisão programada'),
   brakes('SERVICE_TYPE_BRAKES', 'Freios (pastilhas, discos, fluido)'),
-  chainAndSprocket('SERVICE_TYPE_CHAIN_AND_SPROCKET', 'Corrente, relação e coroa'),
+  chainAndSprocket(
+    'SERVICE_TYPE_CHAIN_AND_SPROCKET',
+    'Corrente, relação e coroa',
+  ),
   tires('SERVICE_TYPE_TIRES', 'Pneus'),
   electrical('SERVICE_TYPE_ELECTRICAL', 'Elétrica / bateria'),
   sparkPlugs('SERVICE_TYPE_SPARK_PLUGS', 'Velas / ignição'),
   suspension('SERVICE_TYPE_SUSPENSION', 'Suspensão'),
   clutch('SERVICE_TYPE_CLUTCH', 'Embreagem'),
-  fuelInjection('SERVICE_TYPE_FUEL_INJECTION', 'Carburação / injeção eletrônica'),
+  fuelInjection(
+    'SERVICE_TYPE_FUEL_INJECTION',
+    'Carburação / injeção eletrônica',
+  ),
   bodywork('SERVICE_TYPE_BODYWORK', 'Funilaria / pintura'),
   other('SERVICE_TYPE_OTHER', 'Outro');
 

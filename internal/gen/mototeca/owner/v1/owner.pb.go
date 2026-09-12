@@ -323,8 +323,14 @@ type OwnedVehicle struct {
 	Reminder string `protobuf:"bytes,5,opt,name=reminder,proto3" json:"reminder,omitempty"`
 	// True when the next service is due now or overdue.
 	ReminderIsDue bool `protobuf:"varint,6,opt,name=reminder_is_due,json=reminderIsDue,proto3" json:"reminder_is_due,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	// Odometer reading the next oil change is due at, and the interval it was
+	// worked out from. Both 0 when no oil change was ever recorded, so there is
+	// nothing to count from. Sent so the app can draw the progress bar from the
+	// same numbers the text was derived from, instead of re-deriving the rule.
+	NextOilChangeKm     int32 `protobuf:"varint,7,opt,name=next_oil_change_km,json=nextOilChangeKm,proto3" json:"next_oil_change_km,omitempty"`
+	OilChangeIntervalKm int32 `protobuf:"varint,8,opt,name=oil_change_interval_km,json=oilChangeIntervalKm,proto3" json:"oil_change_interval_km,omitempty"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
 }
 
 func (x *OwnedVehicle) Reset() {
@@ -397,6 +403,20 @@ func (x *OwnedVehicle) GetReminderIsDue() bool {
 		return x.ReminderIsDue
 	}
 	return false
+}
+
+func (x *OwnedVehicle) GetNextOilChangeKm() int32 {
+	if x != nil {
+		return x.NextOilChangeKm
+	}
+	return 0
+}
+
+func (x *OwnedVehicle) GetOilChangeIntervalKm() int32 {
+	if x != nil {
+		return x.OilChangeIntervalKm
+	}
+	return 0
 }
 
 type ListMyVehiclesRequest struct {
@@ -590,14 +610,16 @@ const file_mototeca_owner_v1_owner_proto_rawDesc = "" +
 	"\bpassword\x18\x02 \x01(\tR\bpassword\"U\n" +
 	"\rLoginResponse\x12.\n" +
 	"\x05owner\x18\x01 \x01(\v2\x18.mototeca.owner.v1.OwnerR\x05owner\x12\x14\n" +
-	"\x05token\x18\x02 \x01(\tR\x05token\"\xc1\x02\n" +
+	"\x05token\x18\x02 \x01(\tR\x05token\"\xa3\x03\n" +
 	"\fOwnedVehicle\x12=\n" +
 	"\avehicle\x18\x01 \x01(\v2#.mototeca.service.v1.VehicleSummaryR\avehicle\x12,\n" +
 	"\x12current_mileage_km\x18\x02 \x01(\x05R\x10currentMileageKm\x12#\n" +
 	"\rservice_count\x18\x03 \x01(\x05R\fserviceCount\x12J\n" +
 	"\flast_service\x18\x04 \x01(\v2\".mototeca.service.v1.ServiceRecordH\x00R\vlastService\x88\x01\x01\x12\x1a\n" +
 	"\breminder\x18\x05 \x01(\tR\breminder\x12&\n" +
-	"\x0freminder_is_due\x18\x06 \x01(\bR\rreminderIsDueB\x0f\n" +
+	"\x0freminder_is_due\x18\x06 \x01(\bR\rreminderIsDue\x12+\n" +
+	"\x12next_oil_change_km\x18\a \x01(\x05R\x0fnextOilChangeKm\x123\n" +
+	"\x16oil_change_interval_km\x18\b \x01(\x05R\x13oilChangeIntervalKmB\x0f\n" +
 	"\r_last_service\"\x17\n" +
 	"\x15ListMyVehiclesRequest\"U\n" +
 	"\x16ListMyVehiclesResponse\x12;\n" +

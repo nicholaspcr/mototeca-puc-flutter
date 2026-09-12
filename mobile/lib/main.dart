@@ -6,6 +6,7 @@ import 'screens/dashboard_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/my_vehicles_screen.dart';
 import 'screens/new_record_screen.dart';
+import 'screens/owner_register_screen.dart';
 import 'screens/reminders_screen.dart';
 import 'screens/service_detail_screen.dart';
 import 'screens/vehicle_register_screen.dart';
@@ -22,6 +23,7 @@ class Routes {
   static const dashboard = '/oficina';
   static const newRecord = '/oficina/registro/novo';
   static const vehicleRegister = '/veiculo/cadastro';
+  static const ownerRegister = '/proprietario/cadastro';
   static const myVehicles = '/proprietario';
   static const reminders = '/proprietario/lembretes';
   static const customerPortal = '/consulta';
@@ -77,6 +79,7 @@ class _MototecaAppState extends State<MototecaApp> {
         Routes.login: (_) => const LoginScreen(),
         Routes.workshopRegister: (_) => const WorkshopRegisterScreen(),
         Routes.dashboard: (_) => const DashboardScreen(),
+        Routes.ownerRegister: (_) => const OwnerRegisterScreen(),
         Routes.myVehicles: (_) => const MyVehiclesScreen(),
         Routes.reminders: (_) => const RemindersScreen(),
         Routes.customerPortal: (_) => const CustomerPortalScreen(),
@@ -97,8 +100,9 @@ class _MototecaAppState extends State<MototecaApp> {
           settings: settings,
         ),
         Routes.vehicleRegister => MaterialPageRoute(
-          builder: (_) =>
-              VehicleRegisterScreen(initialPlate: settings.arguments as String?),
+          builder: (_) => VehicleRegisterScreen(
+            initialPlate: settings.arguments as String?,
+          ),
           settings: settings,
         ),
         _ => null,

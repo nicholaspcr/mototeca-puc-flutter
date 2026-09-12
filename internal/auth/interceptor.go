@@ -29,9 +29,8 @@ func Interceptor(signer *Signer) connect.UnaryInterceptorFunc {
 
 			subject, err := signer.Verify(token, time.Now())
 			if err != nil {
-				// A token that was sent but is bad is an error, not an
-				// anonymous request — otherwise an expired session silently
-				// degrades into a confusing "not found".
+				// A bad token is an error, not an anonymous request: otherwise
+				// an expired session degrades into a confusing "not found".
 				return nil, connect.NewError(connect.CodeUnauthenticated, errors.New("invalid or expired session"))
 			}
 
@@ -70,9 +69,7 @@ func SubjectFrom(ctx context.Context) (Subject, bool) {
 	return subject, ok && subject.ID != ""
 }
 
-// require returns the id of an authenticated subject of the wanted kind. A
-// token of the other kind is rejected exactly like no token at all, so the
-// error can't be used to probe which accounts exist.
+// require rejects the wrong kind of token exactly like no token at all.
 func require(ctx context.Context, want Kind, message string) (string, error) {
 	subject, ok := SubjectFrom(ctx)
 	if !ok || subject.Kind != want {

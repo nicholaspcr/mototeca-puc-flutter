@@ -3,10 +3,8 @@ import 'package:flutter/material.dart';
 import '../api/api_exception.dart';
 import '../theme.dart';
 
-/// Shows a failed API call to the user.
-///
-/// [ApiException.message] is already written for a person — the backend owns
-/// the wording so the two sides can't disagree about what went wrong.
+/// Shows a failed API call. The backend owns the wording, so the two sides
+/// can't disagree about what went wrong.
 void showApiError(BuildContext context, Object error) {
   final message = switch (error) {
     ApiException e => e.message,
@@ -77,11 +75,18 @@ class MtEmptyState extends StatelessWidget {
             Text(
               message,
               textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 13, color: MtColors.slate500, height: 1.5),
+              style: const TextStyle(
+                fontSize: 13,
+                color: MtColors.slate500,
+                height: 1.5,
+              ),
             ),
             if (onRetry != null) ...[
               const SizedBox(height: 14),
-              OutlinedButton(onPressed: onRetry, child: const Text('Tentar de novo')),
+              OutlinedButton(
+                onPressed: onRetry,
+                child: const Text('Tentar de novo'),
+              ),
             ],
           ],
         ),

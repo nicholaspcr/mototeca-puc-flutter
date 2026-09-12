@@ -37,8 +37,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Future<void> _reload() async {
     final reloaded = AppScope.read(context).serviceRecords.workshopFeed();
-    // Block body, not an arrow: an arrow would hand setState a closure
-    // returning the Future, which Flutter rejects.
+    // Block body: an arrow would hand setState a Future-returning closure.
     setState(() {
       _feed = reloaded;
     });
@@ -50,8 +49,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     Navigator.pushReplacementNamed(context, Routes.login);
   }
 
-  /// Both the search box and the "Criar Registro" button land on Novo
-  /// Registro; searching just pre-fills the plate.
+  /// Searching just pre-fills the plate on Novo Registro.
   Future<void> _openNewRecord({String? plate}) async {
     final created = await Navigator.pushNamed(
       context,
@@ -128,7 +126,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     if (records.isEmpty) {
       return const [
         MtEmptyState(
-          message: 'Nenhum serviço registrado ainda.\n'
+          message:
+              'Nenhum serviço registrado ainda.\n'
               'Use "Criar Registro" para lançar o primeiro.',
           icon: Icons.build_outlined,
         ),
@@ -142,7 +141,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
     ];
   }
 
-  Widget _monthBanner(AsyncSnapshot<WorkshopFeed> snapshot, WorkshopFeed? feed) {
+  Widget _monthBanner(
+    AsyncSnapshot<WorkshopFeed> snapshot,
+    WorkshopFeed? feed,
+  ) {
     final count = feed?.countThisMonth;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -323,7 +325,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
             if (record.mechanicName != null) ...[
               const SizedBox(width: 10),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 3,
+                ),
                 decoration: BoxDecoration(
                   color: MtColors.slate100,
                   borderRadius: BorderRadius.circular(9999),

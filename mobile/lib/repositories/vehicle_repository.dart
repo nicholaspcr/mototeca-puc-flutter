@@ -16,7 +16,9 @@ class VehicleRepository {
       final body = await _client.call('$_service/GetVehicleByPlate', {
         'plate': normalizePlate(plate),
       });
-      return Vehicle.fromJson(body['vehicle'] as Map<String, dynamic>? ?? const {});
+      return Vehicle.fromJson(
+        body['vehicle'] as Map<String, dynamic>? ?? const {},
+      );
     } on ApiException catch (e) {
       if (e.code == ApiErrorCode.notFound) return null;
       rethrow;
@@ -37,6 +39,8 @@ class VehicleRepository {
       'model': model.trim(),
       'year': year,
     });
-    return Vehicle.fromJson(body['vehicle'] as Map<String, dynamic>? ?? const {});
+    return Vehicle.fromJson(
+      body['vehicle'] as Map<String, dynamic>? ?? const {},
+    );
   }
 }

@@ -17,7 +17,10 @@ String formatCents(int cents) {
 /// nonsense". Deliberately integer-only: parsing money as a double loses
 /// centavos.
 int? parseCents(String raw) {
-  final cleaned = raw.trim().replaceAll(RegExp(r'[R$\s.]'), '').replaceAll(',', '.');
+  final cleaned = raw
+      .trim()
+      .replaceAll(RegExp(r'[R$\s.]'), '')
+      .replaceAll(',', '.');
   if (cleaned.isEmpty) return null;
 
   final parts = cleaned.split('.');
@@ -52,7 +55,12 @@ class Part {
 
 /// A photo or the invoice attached to a record.
 class Attachment {
-  const Attachment({required this.id, required this.url, required this.kind, this.phase});
+  const Attachment({
+    required this.id,
+    required this.url,
+    required this.kind,
+    this.phase,
+  });
 
   final String id;
   final String url;
@@ -118,7 +126,9 @@ class ServiceRecord {
     ),
     workshopName: json['workshopName'] as String? ?? '',
     mechanicName: json['mechanicName'] as String?,
-    operations: ServiceOperation.listFromWire(json['operations'] as List<dynamic>?),
+    operations: ServiceOperation.listFromWire(
+      json['operations'] as List<dynamic>?,
+    ),
     mileageKm: (json['mileageKm'] as num?)?.toInt() ?? 0,
     costCents: (json['costCents'] as num?)?.toInt(),
     notes: json['notes'] as String?,
@@ -130,7 +140,8 @@ class ServiceRecord {
         .toList(),
     // The server sends RFC 3339 UTC; a malformed value falls back to now
     // rather than taking the whole history down.
-    createdAt: DateTime.tryParse(json['createdAt'] as String? ?? '') ?? DateTime.now(),
+    createdAt:
+        DateTime.tryParse(json['createdAt'] as String? ?? '') ?? DateTime.now(),
   );
 
   static List<ServiceRecord> listFromJson(List<dynamic>? raw) =>

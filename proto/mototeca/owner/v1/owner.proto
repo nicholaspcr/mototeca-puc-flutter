@@ -48,6 +48,12 @@ message OwnedVehicle {
   string reminder = 5;
   // True when the next service is due now or overdue.
   bool reminder_is_due = 6;
+  // Odometer reading the next oil change is due at, and the interval it was
+  // worked out from. Both 0 when no oil change was ever recorded, so there is
+  // nothing to count from. Sent so the app can draw the progress bar from the
+  // same numbers the text was derived from, instead of re-deriving the rule.
+  int32 next_oil_change_km = 7;
+  int32 oil_change_interval_km = 8;
 }
 
 message ListMyVehiclesRequest {}

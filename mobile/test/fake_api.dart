@@ -17,6 +17,23 @@ class FakeApi {
   /// Procedures that should fail, mapped to the Connect error to return.
   final failures = <String, ({int status, String code, String message})>{};
 
+  static const ownerJson = {
+    'id': 'owner-1',
+    'name': 'Marcos Souza',
+    'phone': '31990001234',
+  };
+
+  static const ownedVehicleJson = {
+    'vehicle': vehicleSummaryJson,
+    'currentMileageKm': 18420,
+    'serviceCount': 3,
+    'lastService': recordJson,
+    'reminder': 'Troca de óleo em 580 km',
+    'reminderIsDue': true,
+    'nextOilChangeKm': 19000,
+    'oilChangeIntervalKm': 3000,
+  };
+
   static const workshopJson = {
     'id': 'workshop-1',
     'cnpj': '11222333000181',
@@ -46,7 +63,10 @@ class FakeApi {
     'vehicle': vehicleSummaryJson,
     'workshopName': 'Oficina do Zé',
     'mechanicName': 'José Carlos',
-    'operations': ['SERVICE_TYPE_OIL_CHANGE', 'SERVICE_TYPE_CHAIN_AND_SPROCKET'],
+    'operations': [
+      'SERVICE_TYPE_OIL_CHANGE',
+      'SERVICE_TYPE_CHAIN_AND_SPROCKET',
+    ],
     'mileageKm': 18420,
     'costCents': 24500,
     'notes': 'Óleo trocado, corrente lubrificada.',
@@ -62,7 +82,10 @@ class FakeApi {
 
     final failure = failures[procedure];
     if (failure != null) {
-      return _json({'code': failure.code, 'message': failure.message}, failure.status);
+      return _json({
+        'code': failure.code,
+        'message': failure.message,
+      }, failure.status);
     }
 
     return switch (procedure) {
@@ -75,25 +98,42 @@ class FakeApi {
       'mototeca.vehicle.v1.VehicleService/CreateVehicle' => _json({
         'vehicle': vehicleJson,
       }),
-      'mototeca.service.v1.ServiceRecordService/ListWorkshopServiceRecords' => _json({
-        'records': [recordJson],
-        'countThisMonth': 1,
-      }),
-      'mototeca.service.v1.ServiceRecordService/ListServiceRecordsByPlate' => _json({
-        'vehicle': vehicleSummaryJson,
-        'records': [recordJson],
-      }),
+      'mototeca.service.v1.ServiceRecordService/ListWorkshopServiceRecords' =>
+        _json({
+          'records': [recordJson],
+          'countThisMonth': 1,
+        }),
+      'mototeca.service.v1.ServiceRecordService/ListServiceRecordsByPlate' =>
+        _json({
+          'vehicle': vehicleSummaryJson,
+          'records': [recordJson],
+        }),
       'mototeca.service.v1.ServiceRecordService/CreateServiceRecord' ||
       'mototeca.service.v1.ServiceRecordService/GetServiceRecord' => _json({
         'record': recordJson,
       }),
-      _ => _json({'code': 'unimplemented', 'message': 'no fake for $procedure'}, 501),
+      'mototeca.owner.v1.OwnerService/CreateOwner' ||
+      'mototeca.owner.v1.OwnerService/Login' => _json({
+        'owner': ownerJson,
+        'token': 'fake-owner-token',
+      }),
+      'mototeca.owner.v1.OwnerService/ListMyVehicles' => _json({
+        'vehicles': [ownedVehicleJson],
+      }),
+      'mototeca.owner.v1.OwnerService/ClaimVehicle' => _json({
+        'vehicle': ownedVehicleJson,
+      }),
+      _ => _json({
+        'code': 'unimplemented',
+        'message': 'no fake for $procedure',
+      }, 501),
     };
   });
 
   /// An AppState wired to this fake, ready to hand to MototecaApp.
-  AppState get state =>
-      AppState(client: ApiClient(baseUrl: 'http://fake', httpClient: client));
+  AppState get state => AppState(
+    client: ApiClient(baseUrl: 'http://fake', httpClient: client),
+  );
 
   static http.Response _json(Map<String, dynamic> body, [int status = 200]) =>
       http.Response(

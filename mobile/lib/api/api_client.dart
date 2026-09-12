@@ -4,11 +4,9 @@ import 'package:http/http.dart' as http;
 
 import 'api_exception.dart';
 
-/// Calls the Go backend over Connect's JSON mode.
-///
-/// Connect serves the same endpoints for gRPC and for plain HTTP+JSON, so a
-/// unary RPC is just `POST /<package>.<Service>/<Method>` with a JSON body —
-/// no generated Dart code, no separate REST layer (ARCHITECTURE.md section 5).
+/// Calls the Go backend over Connect's JSON mode: a unary RPC is just
+/// `POST /<package>.<Service>/<Method>` with a JSON body, so no generated
+/// Dart code and no separate REST layer (ARCHITECTURE.md §5).
 class ApiClient {
   ApiClient({String? baseUrl, http.Client? httpClient})
     : baseUrl = baseUrl ?? defaultBaseUrl,
@@ -53,8 +51,7 @@ class ApiClient {
           )
           .timeout(_timeout);
     } on Exception {
-      // Socket errors, DNS failures and timeouts are all "the server didn't
-      // answer" as far as the user is concerned.
+      // Socket, DNS and timeout all read as "the server didn't answer".
       throw const ApiException.offline();
     }
 

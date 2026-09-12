@@ -6,10 +6,8 @@ for the product/domain context, data model, and infra rationale. This file is
 the "get running" doc.
 
 This repo holds the **Go backend API** (repo root) and the **Flutter app**
-(`mobile/`). The oficina flow and the public plate lookup run against the real
-API; the proprietário screens (Minhas Motos, Lembretes) still render sample
-data, because owner sign-in is phone+OTP and there is no SMS/WhatsApp sender
-yet. `design/` holds the screen mockups the UI was built from.
+(`mobile/`). Every screen runs against the real API — there is no sample data
+left in the app. `design/` holds the screen mockups the UI was built from.
 
 ## Stack
 
@@ -31,6 +29,10 @@ stubs (ARCHITECTURE.md section 5).
 |---|---|---|
 | `workshop.v1.WorkshopService/CreateWorkshop` | public | Cadastrar Oficina |
 | `workshop.v1.WorkshopService/Login` | public | Login (oficina) |
+| `owner.v1.OwnerService/CreateOwner` | public | Criar Conta |
+| `owner.v1.OwnerService/Login` | public | Login (proprietário) |
+| `owner.v1.OwnerService/ListMyVehicles` | **owner token** | Minhas Motos, Lembretes |
+| `owner.v1.OwnerService/ClaimVehicle` | **owner token** | Cadastrar nova moto |
 | `vehicle.v1.VehicleService/CreateVehicle` | public | Cadastrar Veículo |
 | `vehicle.v1.VehicleService/GetVehicleByPlate` | public | Novo Registro (busca) |
 | `service.v1.ServiceRecordService/CreateServiceRecord` | **workshop token** | Novo Registro (salvar) |
@@ -43,19 +45,22 @@ All procedure names are prefixed with `mototeca.` — e.g.
 
 ### Auth
 
-`Login` and `CreateWorkshop` return a `token`; send it back as
+Signing up or signing in returns a `token`; send it back as
 `Authorization: Bearer <token>`. It is an HMAC-signed string carrying the
-workshop id and an expiry (12h), so verifying costs no database round-trip —
-the trade-off is that it cannot be revoked before it expires. Passwords are
-stored as bcrypt digests. A workshop can only ever write records under its own
-name: the handler takes the workshop id from the token, never from the request
-body.
+account **kind** (workshop or owner), its id, and an expiry (12h), so verifying
+costs no database round-trip — the trade-off is that it cannot be revoked
+before it expires. Passwords are bcrypt digests.
 
-`Login` returns the same `unauthenticated` error for an unknown CNPJ and a
-wrong password, so it can't be used to discover which shops are registered.
-`Login`, `CreateWorkshop` and the public plate lookup are rate-limited per
-caller address (in-process — a multi-instance deployment needs a shared
-store).
+The kind is inside the signed payload, so an owner's token is rejected on a
+workshop endpoint and vice versa. A workshop can only write records under its
+own name, and an owner only sees their own bikes: both ids come from the token,
+never from the request body.
+
+Every login returns the same `unauthenticated` error for an unknown
+CNPJ/phone as for a wrong password, so it can't be used to discover who is
+registered. Both logins, both signups and the public plate lookup are
+rate-limited per caller address (in-process — a multi-instance deployment needs
+a shared store).
 
 ## Calling the API (Flutter side)
 
@@ -124,7 +129,8 @@ internal/
   server/               http.ServeMux wiring, Connect interceptors (logging, otel, rate limit)
   auth/                bcrypt passwords, HMAC session tokens, auth interceptor
   vehicle/             domain vertical slice — the template (see below)
-  workshop/            signup + login
+  workshop/            oficina signup + login
+  owner/               proprietário signup + login, their bikes, reminders
   servicerecord/       the core: records, operations, parts
   gen/                 generated Go protobuf/Connect code — do not edit
 proto/mototeca/…/*.proto   API contracts, source of truth for gen/
@@ -142,7 +148,6 @@ lib/models/        Dart mirrors of the proto messages, hand-written
 lib/repositories/  one per service — where procedure names live
 lib/state/         AppScope/AppState — the session and the repositories
 lib/screens/       one file per screen, matching design/NAVIGATION.md
-lib/data/          sample data, proprietário side only
 test/fixtures/     JSON captured from the real API, used by contract_test.dart
 ```
 
@@ -178,7 +183,7 @@ make db-up / db-down / db-logs   # local Postgres container
 make migrate                      # apply every db/migrations/*.sql
 make e2e                           # end-to-end smoke test (needs `docker compose up -d api`)
 
-cd mobile && flutter test          # 36 tests: API client, contract, navigation
+cd mobile && flutter test          # API client, contract and navigation tests
 cd mobile && flutter analyze
 ```
 

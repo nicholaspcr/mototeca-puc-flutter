@@ -18,6 +18,7 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _cnpj = TextEditingController();
+  final _phone = TextEditingController();
   final _password = TextEditingController();
 
   LoginRole _role = LoginRole.oficina;
@@ -28,29 +29,33 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   void dispose() {
     _cnpj.dispose();
+    _phone.dispose();
     _password.dispose();
     super.dispose();
   }
 
   Future<void> _submit() async {
-    // The proprietário side still runs on sample data: owner sign-in is
-    // phone+OTP, which needs an SMS/WhatsApp sender the backend doesn't have
-    // yet. See mobile/README.md.
-    if (!_isOficina) {
-      Navigator.pushReplacementNamed(context, Routes.myVehicles);
-      return;
-    }
-
     setState(() => _busy = true);
     try {
       final state = AppScope.read(context);
-      final session = await state.workshops.login(
-        cnpj: _cnpj.text,
-        password: _password.text,
-      );
-      if (!mounted) return;
-      state.signIn(session);
-      Navigator.pushReplacementNamed(context, Routes.dashboard);
+
+      if (_isOficina) {
+        final session = await state.workshops.login(
+          cnpj: _cnpj.text,
+          password: _password.text,
+        );
+        if (!mounted) return;
+        state.signIn(session);
+        Navigator.pushReplacementNamed(context, Routes.dashboard);
+      } else {
+        final session = await state.owners.login(
+          phone: _phone.text,
+          password: _password.text,
+        );
+        if (!mounted) return;
+        state.signInAsOwner(session);
+        Navigator.pushReplacementNamed(context, Routes.myVehicles);
+      }
     } catch (error) {
       if (!mounted) return;
       showApiError(context, error);
@@ -216,12 +221,18 @@ class _LoginScreenState extends State<LoginScreen> {
               controller: _password,
             ),
           ] else ...[
-            const MtField(label: 'Celular', hint: '(31) 90000-0000'),
+            MtField(
+              label: 'Celular',
+              hint: '(31) 90000-0000',
+              controller: _phone,
+              keyboardType: TextInputType.phone,
+            ),
             const SizedBox(height: 14),
-            const MtField(
-              label: 'Código recebido por WhatsApp',
-              hint: '000000',
-              mono: true,
+            MtField(
+              label: 'Senha',
+              hint: 'Sua senha',
+              obscure: true,
+              controller: _password,
             ),
           ],
           const SizedBox(height: 18),
@@ -243,11 +254,15 @@ class _LoginScreenState extends State<LoginScreen> {
           Center(
             child: TextButton(
               key: const Key('login-cadastrar-oficina'),
-              onPressed: () =>
-                  Navigator.pushNamed(context, Routes.workshopRegister),
-              child: const Text(
-                'Não tem conta? Cadastre sua oficina',
-                style: TextStyle(color: MtColors.rust),
+              onPressed: () => Navigator.pushNamed(
+                context,
+                _isOficina ? Routes.workshopRegister : Routes.ownerRegister,
+              ),
+              child: Text(
+                _isOficina
+                    ? 'Não tem conta? Cadastre sua oficina'
+                    : 'Não tem conta? Cadastre-se',
+                style: const TextStyle(color: MtColors.rust),
               ),
             ),
           ),

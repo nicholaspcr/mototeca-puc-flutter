@@ -18,10 +18,8 @@ var ErrInvalidToken = errors.New("invalid token")
 // MinSecretLength keeps a trivially guessable signing key out of production.
 const MinSecretLength = 32
 
-// Kind is the sort of account a token belongs to. It is part of the signed
-// payload, so an owner's token can never be replayed as a workshop's: the two
-// flows have different powers (a workshop writes history, an owner only reads
-// their own bikes).
+// Kind is part of the signed payload, so an owner's token can never be
+// replayed as a workshop's.
 type Kind string
 
 const (
@@ -75,8 +73,7 @@ func (s *Signer) Issue(subject Subject, now time.Time) (string, error) {
 	if subject.ID == "" {
 		return "", errors.New("subject id is required")
 	}
-	// ':' separates the fields, so an id containing one would let a crafted id
-	// shift the expiry field.
+	// A ':' in the id would shift the expiry field.
 	if strings.Contains(subject.ID, ":") {
 		return "", errors.New("subject id must not contain ':'")
 	}
@@ -103,8 +100,7 @@ func (s *Signer) Verify(token string, now time.Time) (Subject, error) {
 		return Subject{}, ErrInvalidToken
 	}
 
-	// Constant-time: a byte-by-byte compare leaks how much of a forged
-	// signature was correct.
+	// Constant-time: a plain compare leaks how much of a forgery was right.
 	if !hmac.Equal(signature, s.sign(payload)) {
 		return Subject{}, ErrInvalidToken
 	}

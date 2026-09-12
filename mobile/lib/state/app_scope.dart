@@ -1,19 +1,22 @@
 import 'package:flutter/widgets.dart';
 
 import '../api/api_client.dart';
+import '../models/owner.dart';
 import '../models/workshop.dart';
+import '../repositories/owner_repository.dart';
 import '../repositories/service_record_repository.dart';
 import '../repositories/vehicle_repository.dart';
 import '../repositories/workshop_repository.dart';
 
-/// Holds the signed-in workshop and the repositories the screens call.
+/// Holds the signed-in account and the repositories the screens call.
 ///
-/// Deliberately a plain [ChangeNotifier] behind an [InheritedNotifier] rather
-/// than a state-management package: the app has exactly one piece of shared
-/// state (the session), and a dependency would cost more than it saves.
+/// A plain [ChangeNotifier] rather than a state-management package: the app
+/// has one piece of shared state, and a dependency would cost more than it
+/// saves. A session is a workshop or an owner, never both.
 class AppState extends ChangeNotifier {
   AppState({ApiClient? client}) : _client = client ?? ApiClient() {
     workshops = WorkshopRepository(_client);
+    owners = OwnerRepository(_client);
     vehicles = VehicleRepository(_client);
     serviceRecords = ServiceRecordRepository(_client);
   }
@@ -21,24 +24,40 @@ class AppState extends ChangeNotifier {
   final ApiClient _client;
 
   late final WorkshopRepository workshops;
+  late final OwnerRepository owners;
   late final VehicleRepository vehicles;
   late final ServiceRecordRepository serviceRecords;
 
   Workshop? _workshop;
+  Owner? _owner;
 
-  /// The signed-in oficina, or null when nobody is signed in.
+  /// The signed-in oficina, or null when nobody is signed in as one.
   Workshop? get workshop => _workshop;
-  bool get isSignedIn => _workshop != null;
 
-  /// Stores the session and puts its token on every later request.
+  /// The signed-in proprietário, or null.
+  Owner? get owner => _owner;
+
+  bool get isSignedIn => _workshop != null || _owner != null;
+
+  /// Stores a workshop session and puts its token on every later request.
   void signIn(WorkshopSession session) {
     _workshop = session.workshop;
+    _owner = null;
+    _client.authToken = session.token;
+    notifyListeners();
+  }
+
+  /// Signing in as one kind clears the other, so a stale token is never sent.
+  void signInAsOwner(OwnerSession session) {
+    _owner = session.owner;
+    _workshop = null;
     _client.authToken = session.token;
     notifyListeners();
   }
 
   void signOut() {
     _workshop = null;
+    _owner = null;
     _client.authToken = null;
     notifyListeners();
   }

@@ -46,10 +46,8 @@ class _VehicleRegisterScreenState extends State<VehicleRegisterScreen> {
 
     setState(() => _saving = true);
     try {
-      // Field-level rules (plate format, 17-char chassi, year range) live in
-      // the backend so the two sides cannot disagree; the message it returns
-      // is what the user sees.
-      await AppScope.read(context).vehicles.create(
+      // Field rules live in the backend so the two sides can't disagree.
+      final created = await AppScope.read(context).vehicles.create(
         plate: _plate.text,
         chassi: _chassi.text,
         make: _make.text,
@@ -58,7 +56,8 @@ class _VehicleRegisterScreenState extends State<VehicleRegisterScreen> {
       );
       if (!mounted) return;
       showSuccess(context, 'Veículo cadastrado.');
-      Navigator.pop(context, true);
+      // The plate, not a flag: callers re-search or claim with it.
+      Navigator.pop(context, created.plate);
     } catch (error) {
       if (!mounted) return;
       showApiError(context, error);

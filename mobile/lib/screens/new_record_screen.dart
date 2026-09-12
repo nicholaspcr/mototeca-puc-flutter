@@ -81,7 +81,8 @@ class _NewRecordScreenState extends State<NewRecordScreen> {
 
     setState(() => _searching = true);
     try {
-      final vehicle = await AppScope.read(context).vehicles.findByPlate(_plate.text);
+      final vehicle = await AppScope.read(context).vehicles
+          .findByPlate(_plate.text);
       if (!mounted) return;
       setState(() {
         _vehicle = vehicle;
@@ -235,7 +236,9 @@ class _NewRecordScreenState extends State<NewRecordScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
               decoration: BoxDecoration(
                 color: MtColors.warning.withValues(alpha: 0.12),
-                border: Border.all(color: MtColors.warning.withValues(alpha: 0.4)),
+                border: Border.all(
+                  color: MtColors.warning.withValues(alpha: 0.4),
+                ),
                 borderRadius: BorderRadius.circular(MtSizes.controlRadius),
               ),
               child: Column(
@@ -256,7 +259,10 @@ class _NewRecordScreenState extends State<NewRecordScreen> {
                         Routes.vehicleRegister,
                         arguments: normalizePlate(_plate.text),
                       );
-                      if (created == true && mounted) await _search();
+                      if (created is String && mounted) {
+                        _plate.text = created;
+                        await _search();
+                      }
                     },
                     child: const Text('Cadastrar veículo'),
                   ),
@@ -275,7 +281,10 @@ class _NewRecordScreenState extends State<NewRecordScreen> {
               ),
               child: Text(
                 '${_vehicle!.labelWithYear} · ${_vehicle!.plate}',
-                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
           ],
