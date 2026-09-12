@@ -1,6 +1,6 @@
 # Navegação entre telas
 
-Mapa de telas e rotas do app Flutter. As telas são os artboards em `design/` (390×844); o mockup ao vivo está em https://claude.ai/code/artifact/d6cc8a70-1503-4f85-ac17-220bb3a631cc.
+Mapa de telas e rotas do app Flutter. As telas são os artboards em `design/` (393×852); o mockup ao vivo está em https://claude.ai/code/artifact/d6cc8a70-1503-4f85-ac17-220bb3a631cc.
 
 ## Rotas
 

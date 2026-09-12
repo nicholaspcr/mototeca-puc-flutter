@@ -13,9 +13,9 @@ import 'package:mototeca/screens/service_detail_screen.dart';
 import 'package:mototeca/screens/vehicle_register_screen.dart';
 import 'package:mototeca/screens/workshop_register_screen.dart';
 
-/// Mounts the app on a phone-sized surface (390x844, the design viewport).
+/// Mounts the app on a phone-sized surface (393x852 — iPhone 15 Pro).
 Future<void> pumpApp(WidgetTester tester) async {
-  tester.view.physicalSize = const Size(390 * 3, 844 * 3);
+  tester.view.physicalSize = const Size(393 * 3, 852 * 3);
   tester.view.devicePixelRatio = 3.0;
   addTearDown(() {
     tester.view.resetPhysicalSize();

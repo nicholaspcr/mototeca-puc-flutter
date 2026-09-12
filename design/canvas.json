@@ -1,18 +1,18 @@
 {
   "artboards": [
-    { "file": "Main.dc.html", "x": 0, "y": 0, "w": 390, "h": 844, "is_interactive": true },
-    { "file": "WorkshopRegister.dc.html", "x": 490, "y": 0, "w": 390, "h": 844, "is_interactive": false },
+    { "file": "Main.dc.html", "x": 0, "y": 0, "w": 393, "h": 852, "is_interactive": true },
+    { "file": "WorkshopRegister.dc.html", "x": 490, "y": 0, "w": 393, "h": 852, "is_interactive": false },
 
-    { "file": "Dashboard.dc.html", "x": 0, "y": 1020, "w": 390, "h": 844, "is_interactive": true },
-    { "file": "NewRecord.dc.html", "x": 490, "y": 1020, "w": 390, "h": 844, "is_interactive": true },
-    { "file": "VehicleRegister.dc.html", "x": 980, "y": 1020, "w": 390, "h": 844, "is_interactive": true },
+    { "file": "Dashboard.dc.html", "x": 0, "y": 1020, "w": 393, "h": 852, "is_interactive": true },
+    { "file": "NewRecord.dc.html", "x": 490, "y": 1020, "w": 393, "h": 852, "is_interactive": true },
+    { "file": "VehicleRegister.dc.html", "x": 980, "y": 1020, "w": 393, "h": 852, "is_interactive": true },
 
-    { "file": "MyVehicles.dc.html", "x": 0, "y": 2040, "w": 390, "h": 844, "is_interactive": false },
-    { "file": "CustomerPortal.dc.html", "x": 490, "y": 2040, "w": 390, "h": 844, "is_interactive": true },
-    { "file": "ServiceDetail.dc.html", "x": 980, "y": 2040, "w": 390, "h": 844, "is_interactive": false },
-    { "file": "Reminders.dc.html", "x": 1470, "y": 2040, "w": 390, "h": 844, "is_interactive": false },
+    { "file": "MyVehicles.dc.html", "x": 0, "y": 2040, "w": 393, "h": 852, "is_interactive": false },
+    { "file": "CustomerPortal.dc.html", "x": 490, "y": 2040, "w": 393, "h": 852, "is_interactive": true },
+    { "file": "ServiceDetail.dc.html", "x": 980, "y": 2040, "w": 393, "h": 852, "is_interactive": false },
+    { "file": "Reminders.dc.html", "x": 1470, "y": 2040, "w": 393, "h": 852, "is_interactive": false },
 
-    { "file": "About.dc.html", "x": 0, "y": 3060, "w": 390, "h": 844, "is_interactive": false }
+    { "file": "About.dc.html", "x": 0, "y": 3060, "w": 393, "h": 852, "is_interactive": false }
   ],
   "annotations": [
     { "id": "note-entrada", "x": 0, "y": -70, "w": 880, "text": "Entrada — login e cadastro da oficina" },

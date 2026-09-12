@@ -15,7 +15,7 @@ const args = process.argv.slice(2);
 const outDir = resolve(argVal('--out') ?? join(HERE, 'exports'));
 const scale = argVal('--scale') ?? '3';
 const viewportOnly = args.includes('--viewport');
-const W = 390, H = 844;
+const W = 393, H = 852;
 
 function argVal(flag) {
   const i = args.indexOf(flag);
@@ -185,7 +185,7 @@ function buildStatic(src, setup, { full = false } = {}) {
   const setupFn = setup ? `function (c) { ${setup} }` : 'null';
   // Full captures let the frame grow past the viewport so nothing is cut off.
   const frameCss = full
-    ? '#__dc_root>div{height:auto !important;min-height:844px;overflow:visible !important}'
+    ? '#__dc_root>div{height:auto !important;min-height:852px;overflow:visible !important}'
     : '#__dc_root>div{overflow:hidden !important}';
 
   return `<!doctype html>
