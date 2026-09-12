@@ -10,12 +10,15 @@ import (
 	"syscall"
 	"time"
 
+	"mototeca-backend/internal/auth"
 	"mototeca-backend/internal/config"
 	"mototeca-backend/internal/db"
 	"mototeca-backend/internal/logging"
 	"mototeca-backend/internal/server"
+	"mototeca-backend/internal/servicerecord"
 	"mototeca-backend/internal/telemetry"
 	"mototeca-backend/internal/vehicle"
+	"mototeca-backend/internal/workshop"
 )
 
 func main() {
@@ -48,8 +51,19 @@ func main() {
 	}
 	defer pool.Close()
 
-	vehicleHandler := vehicle.NewHandler(vehicle.NewRepository(pool), logger)
-	mux, err := server.NewMux(vehicleHandler, logger)
+	signer, err := auth.NewSigner(cfg.AuthSecret, cfg.AuthTokenTTL)
+	if err != nil {
+		logger.Error("configuring auth", "err", err)
+		os.Exit(1)
+	}
+
+	handlers := server.Handlers{
+		Vehicle:       vehicle.NewHandler(vehicle.NewRepository(pool), logger),
+		Workshop:      workshop.NewHandler(workshop.NewRepository(pool), signer, logger),
+		ServiceRecord: servicerecord.NewHandler(servicerecord.NewRepository(pool), logger),
+	}
+
+	mux, err := server.NewMux(handlers, signer, logger)
 	if err != nil {
 		logger.Error("building http mux", "err", err)
 		os.Exit(1)
