@@ -1,6 +1,6 @@
 # Mototeca — Screen Mockups + Brand
 
-Phone-sized (390×844) mockups of the app's screens, plus brand colors/logo. Product context: [`../ARCHITECTURE.md`](../ARCHITECTURE.md).
+Phone-sized (393×852) mockups of the app's screens, plus brand colors/logo. Product context: [`../ARCHITECTURE.md`](../ARCHITECTURE.md).
 
 Live canvas: https://claude.ai/code/artifact/d6cc8a70-1503-4f85-ac17-220bb3a631cc
 
