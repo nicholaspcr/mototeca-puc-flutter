@@ -114,7 +114,7 @@ class Component extends DCLogic {
   renderVals() {
     const s = this.state;
     const custVehicle = s.custVehicle;
-    const custHistory = custVehicle ? custVehicle.history.map(h => ({ ...h, opsLabel: h.ops.join(', ') })).slice().reverse() : [];
+    const custHistory = custVehicle ? custVehicle.history.map(h => ({ ...h, opsLabel: h.ops.join(', ') })) : [];
     return {
       custPlateQuery: s.custPlateQuery, setCustPlateQuery: this.setCustPlateQuery, custSearch: this.custSearch,
       custNotFound: s.custSearched && !custVehicle,
