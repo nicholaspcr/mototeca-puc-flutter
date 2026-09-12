@@ -168,7 +168,7 @@ class Component extends DCLogic {
       const active = s.nrOps.includes(op);
       return {
         label: op, toggle: this.toggleOp(op),
-        style: { height: 38, padding: '0 14px', borderRadius: 9999, fontSize: 13, fontWeight: 500, cursor: 'pointer', background: active ? '#1B4965' : '#EAF3FA', color: active ? '#F8FAFC' : '#B84F20', border: '1px solid transparent' }
+        style: { height: 38, padding: '0 13px', borderRadius: 9999, fontSize: 13, fontWeight: active ? 600 : 500, cursor: 'pointer', background: active ? '#EAF3FA' : '#FFFFFF', color: active ? '#1B4965' : '#0F172A', border: active ? '1px solid #1B4965' : '1px solid #E2E8F0' }
       };
     });
     const nrParts = s.nrParts.map((p, i) => ({
