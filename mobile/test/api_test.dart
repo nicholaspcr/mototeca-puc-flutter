@@ -12,7 +12,7 @@ import 'package:mototeca/repositories/vehicle_repository.dart';
 import 'package:mototeca/repositories/workshop_repository.dart';
 
 /// Captures the last request so tests can assert on what went over the wire.
-class _Recorder {
+class Recorder {
   late http.Request request;
   Map<String, dynamic> get body =>
       jsonDecode(request.body) as Map<String, dynamic>;
@@ -21,7 +21,7 @@ class _Recorder {
 ApiClient clientReturning(
   Object responseBody, {
   int status = 200,
-  _Recorder? recorder,
+  Recorder? recorder,
 }) {
   final mock = MockClient((request) async {
     recorder?.request = request;
@@ -37,7 +37,7 @@ ApiClient clientReturning(
 void main() {
   group('ApiClient', () {
     test('posts to the Connect procedure path with a JSON body', () async {
-      final recorder = _Recorder();
+      final recorder = Recorder();
       final client = clientReturning({'ok': true}, recorder: recorder);
 
       await client.call('pkg.v1.Service/Method', {'a': 1});
@@ -49,7 +49,7 @@ void main() {
     });
 
     test('omits the Authorization header when signed out', () async {
-      final recorder = _Recorder();
+      final recorder = Recorder();
       final client = clientReturning({}, recorder: recorder);
 
       await client.call('pkg.v1.Service/Method', {});
@@ -58,7 +58,7 @@ void main() {
     });
 
     test('sends the bearer token once signed in', () async {
-      final recorder = _Recorder();
+      final recorder = Recorder();
       final client = clientReturning({}, recorder: recorder)..authToken = 'tok-123';
 
       await client.call('pkg.v1.Service/Method', {});
@@ -109,7 +109,7 @@ void main() {
 
   group('VehicleRepository', () {
     test('normalizes the plate before sending it', () async {
-      final recorder = _Recorder();
+      final recorder = Recorder();
       final repo = VehicleRepository(
         clientReturning({
           'vehicle': {'id': '1', 'plate': 'ABC1D23', 'make': 'Honda', 'model': 'CG', 'year': 2022},
@@ -140,7 +140,7 @@ void main() {
 
   group('ServiceRecordRepository', () {
     test('sends operations as protobuf enum names', () async {
-      final recorder = _Recorder();
+      final recorder = Recorder();
       final repo = ServiceRecordRepository(
         clientReturning({'record': _recordJson()}, recorder: recorder),
       );
@@ -161,7 +161,7 @@ void main() {
     });
 
     test('omits optional fields that are blank rather than sending empty strings', () async {
-      final recorder = _Recorder();
+      final recorder = Recorder();
       final repo = ServiceRecordRepository(
         clientReturning({'record': _recordJson()}, recorder: recorder),
       );
@@ -222,7 +222,7 @@ void main() {
 
   group('WorkshopRepository', () {
     test('strips CNPJ punctuation before sending', () async {
-      final recorder = _Recorder();
+      final recorder = Recorder();
       final repo = WorkshopRepository(
         clientReturning({
           'workshop': {'id': 'w1', 'cnpj': '11222333000181', 'name': 'Oficina'},

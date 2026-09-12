@@ -28,13 +28,13 @@ class MyVehiclesScreen extends StatelessWidget {
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
               ),
               Text(
-                '${mockVehicles.length} veículos',
+                '${mockOwnerVehicles.length} veículos',
                 style: const TextStyle(fontSize: 12, color: MtColors.slate500),
               ),
             ],
           ),
           const SizedBox(height: 16),
-          for (final vehicle in mockVehicles) ...[
+          for (final vehicle in mockOwnerVehicles) ...[
             _vehicleTile(context, vehicle),
             const SizedBox(height: 16),
           ],
@@ -92,7 +92,7 @@ class MyVehiclesScreen extends StatelessWidget {
     );
   }
 
-  Widget _vehicleTile(BuildContext context, Vehicle vehicle) {
+  Widget _vehicleTile(BuildContext context, OwnerVehicle vehicle) {
     final due = vehicle.reminderIsDue;
 
     return InkWell(
@@ -100,10 +100,7 @@ class MyVehiclesScreen extends StatelessWidget {
       onTap: () => Navigator.pushNamed(
         context,
         Routes.serviceDetail,
-        arguments: ServiceDetailArgs(
-          vehicle: vehicle,
-          record: vehicle.history.first,
-        ),
+        arguments: ServiceDetailArgs(record: vehicle.history.first),
       ),
       borderRadius: BorderRadius.circular(MtSizes.cardRadius),
       child: MtCard(
@@ -137,7 +134,7 @@ class MyVehiclesScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '${vehicle.year} · ${vehicle.color} · ${vehicle.mileageKm} km',
+                    '${vehicle.year} · ${vehicle.color} · ${vehicle.currentMileageKm} km',
                     style: const TextStyle(
                       fontSize: 12,
                       color: MtColors.slate500,

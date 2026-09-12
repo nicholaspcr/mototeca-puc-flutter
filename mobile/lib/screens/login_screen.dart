@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../main.dart';
+import '../state/app_scope.dart';
 import '../theme.dart';
+import '../widgets/feedback.dart';
 import '../widgets/mt_widgets.dart';
 
 enum LoginRole { oficina, proprietario }
@@ -15,15 +17,46 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
+  final _cnpj = TextEditingController();
+  final _password = TextEditingController();
+
   LoginRole _role = LoginRole.oficina;
+  bool _busy = false;
 
   bool get _isOficina => _role == LoginRole.oficina;
 
-  void _submit() {
-    Navigator.pushReplacementNamed(
-      context,
-      _isOficina ? Routes.dashboard : Routes.myVehicles,
-    );
+  @override
+  void dispose() {
+    _cnpj.dispose();
+    _password.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    // The proprietário side still runs on sample data: owner sign-in is
+    // phone+OTP, which needs an SMS/WhatsApp sender the backend doesn't have
+    // yet. See mobile/README.md.
+    if (!_isOficina) {
+      Navigator.pushReplacementNamed(context, Routes.myVehicles);
+      return;
+    }
+
+    setState(() => _busy = true);
+    try {
+      final state = AppScope.read(context);
+      final session = await state.workshops.login(
+        cnpj: _cnpj.text,
+        password: _password.text,
+      );
+      if (!mounted) return;
+      state.signIn(session);
+      Navigator.pushReplacementNamed(context, Routes.dashboard);
+    } catch (error) {
+      if (!mounted) return;
+      showApiError(context, error);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
   }
 
   @override
@@ -168,13 +201,20 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
           const SizedBox(height: 16),
           if (_isOficina) ...[
-            const MtField(
+            MtField(
               label: 'CNPJ da oficina',
               hint: '00.000.000/0001-00',
               mono: true,
+              controller: _cnpj,
+              keyboardType: TextInputType.number,
             ),
             const SizedBox(height: 14),
-            const MtField(label: 'Senha', hint: 'Sua senha', obscure: true),
+            MtField(
+              label: 'Senha',
+              hint: 'Sua senha',
+              obscure: true,
+              controller: _password,
+            ),
           ] else ...[
             const MtField(label: 'Celular', hint: '(31) 90000-0000'),
             const SizedBox(height: 14),
@@ -187,8 +227,17 @@ class _LoginScreenState extends State<LoginScreen> {
           const SizedBox(height: 18),
           ElevatedButton(
             key: const Key('login-entrar'),
-            onPressed: _submit,
-            child: const Text('Entrar'),
+            onPressed: _busy ? null : _submit,
+            child: _busy
+                ? const SizedBox(
+                    height: 18,
+                    width: 18,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                : const Text('Entrar'),
           ),
           const SizedBox(height: 12),
           Center(
