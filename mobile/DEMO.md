@@ -1,12 +1,37 @@
 # Como demonstrar o app em aula
 
-App Flutter com navegação funcional entre as 10 telas. Rotas em [`../design/NAVIGATION.md`](../design/NAVIGATION.md).
+App Flutter com navegação funcional entre as 10 telas, falando com a API Go
+real. Rotas em [`../design/NAVIGATION.md`](../design/NAVIGATION.md).
 
-O Flutter está em `~/.develop/flutter/bin` — se `flutter` não for encontrado, rode antes:
+O Flutter está em `~/.develop/flutter/bin` — se `flutter` não for encontrado,
+rode antes:
 
 ```bash
 export PATH="$HOME/.develop/flutter/bin:$PATH"
 ```
+
+## Antes de tudo: subir o backend
+
+O fluxo da oficina e a consulta por placa gravam e leem do banco de verdade, ou
+seja, precisam da API no ar. O jeito mais curto é o Docker:
+
+```bash
+cd mototeca
+docker compose up -d          # sobe Postgres + API em :8080
+make migrate                   # aplica as migrations (só na primeira vez)
+```
+
+Confira com `curl -s localhost:8080/healthz -o /dev/null -w '%{http_code}\n'`
+— deve responder `200`.
+
+Para popular dados de exemplo (uma oficina, uma moto e um serviço), rode
+`make e2e`: ele exercita todos os endpoints e deixa o banco com conteúdo para
+a demonstração.
+
+> As telas de **proprietário** (Minhas Motos e Lembretes) ainda usam dados de
+> exemplo — o login do proprietário é por celular + código no WhatsApp, que
+> depende de um provedor de SMS que o backend ainda não tem. Elas funcionam na
+> demonstração normalmente, só não vêm do banco.
 
 ## Opção 1 — Chrome, ao vivo (recomendada)
 
@@ -15,7 +40,9 @@ cd mototeca/mobile
 flutter run -d chrome
 ```
 
-Abre o app no Chrome em ~30s. É o app real rodando, com hot reload (tecla `r`) se precisar mexer em algo na hora. O app já se desenha com largura de celular (393 pt) e fundo cinza em volta, então fica com cara de telefone no projetor sem precisar do DevTools.
+Abre o app no Chrome em ~30s, com hot reload (tecla `r`). O app já se desenha
+com largura de celular (393 pt) e fundo cinza em volta, então fica com cara de
+telefone no projetor sem precisar do DevTools.
 
 **Ponto fraco:** compila na hora. Se a aula for corrida, use a opção 2.
 
@@ -28,42 +55,72 @@ cd mototeca/mobile
 flutter build web --release
 ```
 
-Na aula (abre instantâneo, funciona sem internet):
+Na aula:
 
 ```bash
 cd mototeca/mobile/build/web && python3 -m http.server 8080
 ```
 
-Depois abra `http://localhost:8080`.
+Cuidado: a API também usa a 8080. Suba o servidor estático em outra porta
+(`python3 -m http.server 8081`) ou aponte o app para outro endereço com
+`--dart-define=MOTOTECA_API_URL=http://localhost:8080` no momento do build.
 
 ## Opção 3 — Celular de verdade
 
-Precisa do Android SDK, que **não está instalado** nesta máquina. Se quiser essa opção, instale o Android Studio, rode `flutter doctor` até o item Android ficar ✓, e então:
+Precisa do Android SDK, que **não está instalado** nesta máquina. Se quiser
+essa opção, instale o Android Studio, rode `flutter doctor` até o item Android
+ficar ✓, e então:
 
 ```bash
-flutter run -d <id-do-aparelho>   # com o celular no modo desenvolvedor, via USB
+flutter run -d <id-do-aparelho>   # celular em modo desenvolvedor, via USB
 ```
 
-Não é necessário para a entrega — a navegação funcional pode ser demonstrada no Chrome.
+Num aparelho físico o `localhost` é o próprio celular, então aponte para o IP
+da máquina:
 
-## Roteiro sugerido (2 minutos)
+```bash
+flutter run -d <id> --dart-define=MOTOTECA_API_URL=http://192.168.0.10:8080
+```
+
+No emulador Android, o host é `http://10.0.2.2:8080`.
+
+## Roteiro sugerido (3 minutos)
 
 Mostra os dois perfis e a consulta pública, que é o diferencial do produto:
 
-1. **Login** → "Sou da oficina" → **Entrar** → Painel da Oficina.
-2. **Criar Registro** → busca a placa `ABC1D23` → veículo aparece → seleciona operações → **Salvar Registro** (volta ao painel).
-3. No painel, toca em um **registro recente** → Detalhe do Serviço (peças, fotos, nota fiscal) → voltar.
-4. **Sair** → no login, escolhe "Sou proprietário" → **Entrar** → Minhas Motos.
-5. **Lembretes de manutenção** → mostra o aviso por km.
-6. **Sair** → **Consultar sem cadastro** → digita `ABC1D23` → **Consultar** → histórico entre oficinas diferentes.
+1. **Cadastrar oficina** → CNPJ `11.222.333/0001-81`, nome, senha (mín. 8
+   caracteres) → cai direto no Painel da Oficina, já autenticado.
+   (Se já rodou `make e2e`, esse CNPJ existe: entre com a senha
+   `senha-forte-123`.)
+2. No painel, **Cadastrar veículo** → placa `ABC1D23`, chassi de 17 caracteres,
+   marca, modelo, ano.
+3. **Criar Registro** → busca a placa → seleciona duas operações → preenche km,
+   valor e uma peça → **Salvar Registro**. Volta ao painel e o contador do mês
+   sobe.
+4. Toca no **registro recente** → Detalhe do Serviço (peças, observações,
+   fotos, nota fiscal) → voltar.
+5. **Sair** → **Consultar sem cadastro** → digita `ABC1D23` → **Consultar** →
+   o mesmo serviço aparece, sem login. É o argumento central do produto.
+6. **Sair** → "Sou proprietário" → **Entrar** → Minhas Motos → **Lembretes**.
 
-Placas que existem nos dados de exemplo: `ABC1D23`, `BRA2E19`.
+### Erros que valem mostrar
 
-## Se quiser provar que a navegação está testada
+São respostas reais do backend, não mensagens de enfeite:
+
+- Senha errada no login → *"CNPJ ou senha inválidos"* (a mesma mensagem para
+  CNPJ inexistente, de propósito: não dá para descobrir quais oficinas existem).
+- Salvar um registro sem escolher operação → *"select at least one operation"*.
+- Buscar uma placa não cadastrada no Novo Registro → oferece cadastrar o
+  veículo antes.
+
+## Se quiser provar que está testado
 
 ```bash
-cd mototeca/mobile
-flutter test
+cd mototeca/mobile && flutter test   # cliente da API, contrato e navegação
+cd mototeca && make test              # backend
+cd mototeca && make e2e               # todos os endpoints ponta a ponta
 ```
 
-13 testes de navegação — cada um toca num botão e verifica se a tela de destino abriu.
+`test/contract_test.dart` roda contra JSON capturado da API real
+(`test/fixtures/`), então prova que os modelos Dart entendem o que o servidor
+de fato responde — e não só o que a gente imaginou que ele responde.

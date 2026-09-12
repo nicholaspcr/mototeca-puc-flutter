@@ -26,13 +26,19 @@ Mototeca stores motorcycle service/repair history in Brazil. Mechanics (`oficina
 ```
 Vehicle        (plate, chassi, make, model, year, current_owner_id)
 Owner          (phone, cpf_hash, name)
-Workshop       (cnpj, name, address, verified)
+Workshop       (cnpj, name, address, verified, password_hash)
 Mechanic       (workshop_id, name, role)
-ServiceRecord  (vehicle_id, workshop_id, mechanic_id, type, mileage_km,
-                cost, notes, created_at, immutable_at)
-Part           (service_record_id, name, quantity, cost)
-Attachment     (service_record_id, url, kind: photo|invoice)
+ServiceRecord  (vehicle_id, workshop_id, mechanic_id, mileage_km,
+                cost_cents, notes, superseded_by, created_at)
+ServiceRecordOperation (service_record_id, type)
+Part           (service_record_id, name, quantity, cost_cents)
+Attachment     (service_record_id, url, kind: photo|invoice, phase: before|after)
 ```
+
+A record carries **several** operations, not one — the Novo Registro screen
+lets a mechanic tick more than one, so the type lives in a join table rather
+than a column. `phase` is what makes "antes/depois" expressible; `kind` only
+separates a photo from an invoice. Money is integer cents everywhere.
 
 ## 5. Mobile Client: Flutter
 
@@ -40,7 +46,7 @@ Course requirement, not an open choice: one Flutter app (Android-first) for both
 
 Talks to the Go API over plain HTTP+JSON: Connect-RPC already accepts `Content-Type: application/json` on the same endpoints it serves gRPC/gRPC-Web on, so `package:http` + `dart:convert` is enough — no codegen, no separate REST layer. Trade-off: RPC-shaped URLs (`POST /<Service>/<Method>`) and hand-written Dart models. See the README's "Calling the API" section for exact shapes.
 
-Flutter code lives under `mobile/`; `design/` is the mockup/brand reference and `design/NAVIGATION.md` is the screen/route map to implement.
+Flutter code lives under `mobile/`; `design/` is the mockup/brand reference and `design/NAVIGATION.md` is the screen/route map. The oficina flow and the public plate lookup call the API; the proprietário screens still render sample data until owner sign-in exists (below).
 
 ## 6. Backend & Infrastructure
 
@@ -48,7 +54,11 @@ Flutter code lives under `mobile/`; `design/` is the mockup/brand reference and 
 - **Postgres** — relational data, append-only trust ledger. Schema/migrations in `db/migrations`.
 - Object storage (S3-compatible) for photos/attachments.
 - Stateless API, horizontally scalable.
-- Auth: phone+OTP for owners, CNPJ-verified onboarding for oficinas.
+- Auth: CNPJ + password for oficinas — bcrypt digests, HMAC-signed bearer
+  tokens with a 12h expiry, no session table. Phone+OTP for owners is designed
+  but **not built**: it needs an SMS/WhatsApp sender, and until then the owner
+  screens run on sample data. The `verified` flag on a workshop is separate
+  from authentication — signing in does not mean the CNPJ was checked.
 
 ## 7. Backups
 
@@ -58,7 +68,11 @@ Daily full snapshot + WAL/point-in-time recovery, 30-day rolling window + monthl
 
 - CPF/phone/vehicle data is personal data: minimize collection, hash/encrypt CPF at rest, define retention.
 - Owner consent before linking a workshop entry to their identity; shared history links never leak owner PII.
-- Rate-limit plate lookups.
+- Rate-limit plate lookups. Implemented per caller address, in-process, on the
+  plate lookup, `Login` and `CreateWorkshop`; a multi-instance deployment needs
+  a shared store instead.
+- The public plate lookup returns a reduced vehicle (plate, make, model, year)
+  — never the chassi or the owner.
 
 ## 9. Low-Bandwidth Considerations
 
@@ -70,15 +84,20 @@ Lazy-load/compress images. Local draft persistence for forms (flaky oficina conn
 mototeca/
   go.mod, cmd/, internal/, db/migrations/   Go API, at repo root
   design/                                   screen mockups + brand tokens (not code)
-  mobile/                                   Flutter app — not started yet
+  mobile/                                   Flutter app
+  scripts/e2e.sh                            end-to-end smoke test of every endpoint
 ```
 
 ```bash
-cp .env.example .env   # set DATABASE_URL
-make migrate            # applies db/migrations/0001_init.sql
-make run                 # starts the API on :8080
-make test                # scoped to ./cmd/... ./internal/...
-make test-integration    # + DB-backed tests, needs `make db-up` first
+cp .env.example .env   # set DATABASE_URL and AUTH_SECRET
+make db-up              # local Postgres
+make migrate             # applies every db/migrations/*.sql in order
+make run                  # starts the API on :8080
+make test                 # scoped to ./cmd/... ./internal/...
+make test-integration     # + DB-backed tests, needs `make db-up` first
+make e2e                  # drives every endpoint against a running API
+
+cd mobile && flutter test  # API client, contract and navigation tests
 ```
 
-`internal/vehicle` (types → validation → repository → handler) is the template for the next domain (service records, workshops, owners).
+`internal/vehicle` (types → validation → store → repository → handler) is the template every domain follows; `internal/workshop` and `internal/servicerecord` were built from it.
