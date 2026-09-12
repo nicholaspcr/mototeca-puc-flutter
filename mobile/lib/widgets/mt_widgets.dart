@@ -88,42 +88,63 @@ class MtField extends StatelessWidget {
   }
 }
 
-/// Pill used for the operation taxonomy and for status badges.
+/// Pill used for the operation taxonomy and for read-only labels.
+///
+/// None of the three treatments uses the solid petrol fill — that belongs to
+/// the primary button, and a chip wearing it reads as one. An option is an
+/// outline that takes the petrol tint and a petrol rim once picked; a tag is a
+/// flat neutral badge with no tap target at all.
 class MtChip extends StatelessWidget {
   const MtChip({
     super.key,
     required this.label,
     this.selected = false,
     this.onTap,
-    this.background,
-    this.foreground,
-  });
+  }) : _isTag = false;
+
+  /// Read-only label — states what was done, never responds to a tap.
+  const MtChip.tag({super.key, required this.label})
+    : selected = false,
+      onTap = null,
+      _isTag = true;
 
   final String label;
   final bool selected;
   final VoidCallback? onTap;
-  final Color? background;
-  final Color? foreground;
+  final bool _isTag;
 
   @override
   Widget build(BuildContext context) {
-    final bg = background ?? (selected ? MtColors.petrol : MtColors.petrolTint);
-    final fg = foreground ?? (selected ? MtColors.slate50 : MtColors.rust);
+    final Color bg, fg, border;
+    if (_isTag) {
+      bg = MtColors.slate100;
+      fg = MtColors.petrol;
+      border = MtColors.slate100;
+    } else if (selected) {
+      bg = MtColors.petrolTint;
+      fg = MtColors.petrol;
+      border = MtColors.petrol;
+    } else {
+      bg = Colors.white;
+      fg = MtColors.graphite;
+      border = MtColors.slate200;
+    }
 
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(9999),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+        padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 8),
         decoration: BoxDecoration(
           color: bg,
+          border: Border.all(color: border),
           borderRadius: BorderRadius.circular(9999),
         ),
         child: Text(
           label,
           style: TextStyle(
             fontSize: 13,
-            fontWeight: FontWeight.w500,
+            fontWeight: selected || _isTag ? FontWeight.w600 : FontWeight.w500,
             color: fg,
           ),
         ),

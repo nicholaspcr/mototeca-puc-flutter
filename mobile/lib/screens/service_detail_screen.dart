@@ -55,11 +55,10 @@ class ServiceDetailScreen extends StatelessWidget {
                     spacing: 6,
                     runSpacing: 6,
                     children: [
-                      // Read-only labels of what was done: every operation in
-                      // the record carries the same weight, so they all use the
-                      // filled chip and none of them is tappable.
+                      // Every operation in the record carries the same weight,
+                      // so they all read as the same read-only tag.
                       for (final operation in record.operations)
-                        MtChip(label: operation, selected: true),
+                        MtChip.tag(label: operation),
                     ],
                   ),
                 ),
