@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  html, body { margin: 0; font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif; background: #F7FAFC; color: #0F172A; font-feature-settings: "rlig" 1, "calt" 1; -webkit-font-smoothing: antialiased; }
+  a { color: #B84F20; } a:hover { color: #92400E; }
+</style>
+</helmet>
+
+<div style="width:390px;height:844px;overflow-y:auto;background:#F7FAFC;box-sizing:border-box;">
+
+  <header style="position:sticky;top:0;z-index:5;background:#EAF3FA;border-bottom:1px solid #CFE4F2;">
+    <div style="padding:14px 20px;display:flex;align-items:center;gap:10px;">
+      <button style="width:32px;height:32px;border-radius:8px;border:1px solid #CFE4F2;background:white;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1B4965" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <span style="font-size:16px;font-weight:700;letter-spacing:-0.025em;">Detalhe do Serviço</span>
+    </div>
+  </header>
+
+  <main style="padding:18px 20px 32px;display:flex;flex-direction:column;gap:16px;">
+
+    <div style="display:flex;align-items:center;gap:8px;">
+      <span style="font-weight:600;font-family:'JetBrains Mono',monospace;font-size:13px;">ABC1D23</span>
+      <span style="font-size:13px;color:#64748B;">Honda CG 160 Start (2022)</span>
+    </div>
+
+    <div style="border:1px solid #E2E8F0;background:white;border-radius:10px;box-shadow:0 1px 2px 0 rgb(0 0 0 / .05);padding:16px;">
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;">
+        <span style="border-radius:9999px;padding:4px 12px;font-size:12px;font-weight:500;background:#1B4965;color:#F8FAFC;">Troca de óleo e filtro</span>
+        <span style="border-radius:9999px;padding:4px 12px;font-size:12px;font-weight:500;background:#EAF3FA;color:#B84F20;">Corrente e relação</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:13px;padding:6px 0;border-top:1px solid #F1F5F9;">
+        <span style="color:#64748B;">Data</span><span style="font-weight:500;">02/06/2026</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:13px;padding:6px 0;border-top:1px solid #F1F5F9;">
+        <span style="color:#64748B;">Oficina</span><span style="font-weight:500;">Oficina do Zé</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:13px;padding:6px 0;border-top:1px solid #F1F5F9;">
+        <span style="color:#64748B;">Mecânico</span><span style="font-weight:500;">José Carlos</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:13px;padding:6px 0;border-top:1px solid #F1F5F9;">
+        <span style="color:#64748B;">Quilometragem</span><span style="font-weight:500;font-family:'JetBrains Mono',monospace;">18.420 km</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:13px;padding:6px 0;border-top:1px solid #F1F5F9;">
+        <span style="color:#64748B;">Valor total</span><span style="font-weight:600;font-family:'JetBrains Mono',monospace;">R$ 245,00</span>
+      </div>
+    </div>
+
+    <div style="border:1px solid #E2E8F0;background:white;border-radius:10px;box-shadow:0 1px 2px 0 rgb(0 0 0 / .05);padding:16px;">
+      <div style="font-size:14px;font-weight:600;margin-bottom:10px;">Peças utilizadas</div>
+      <div style="display:flex;justify-content:space-between;font-size:13px;padding:7px 0;border-top:1px solid #F1F5F9;">
+        <span>Óleo 10w30 semissintético <span style="color:#64748B;">· 1L</span></span>
+        <span style="font-family:'JetBrains Mono',monospace;">R$ 62,00</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:13px;padding:7px 0;border-top:1px solid #F1F5F9;">
+        <span>Filtro de óleo <span style="color:#64748B;">· 1un</span></span>
+        <span style="font-family:'JetBrains Mono',monospace;">R$ 38,00</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:13px;padding:7px 0;border-top:1px solid #F1F5F9;">
+        <span>Kit relação <span style="color:#64748B;">· 1un</span></span>
+        <span style="font-family:'JetBrains Mono',monospace;">R$ 145,00</span>
+      </div>
+    </div>
+
+    <div style="border:1px solid #E2E8F0;background:white;border-radius:10px;box-shadow:0 1px 2px 0 rgb(0 0 0 / .05);padding:16px;">
+      <div style="font-size:14px;font-weight:600;margin-bottom:8px;">Observações</div>
+      <p style="margin:0;font-size:13px;line-height:1.5;color:#0F172A;">Óleo 10w30 semissintético trocado, corrente limpa e lubrificada. Recomendada revisão da suspensão na próxima visita.</p>
+    </div>
+
+    <div style="border:1px solid #E2E8F0;background:white;border-radius:10px;box-shadow:0 1px 2px 0 rgb(0 0 0 / .05);padding:16px;">
+      <div style="font-size:14px;font-weight:600;margin-bottom:10px;">Fotos do serviço</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div>
+          <div style="height:100px;border-radius:8px;background:#F1F5F9;border:1px solid #E2E8F0;display:flex;align-items:center;justify-content:center;">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
+          </div>
+          <div style="font-size:11px;color:#64748B;margin-top:5px;text-align:center;">Antes</div>
+        </div>
+        <div>
+          <div style="height:100px;border-radius:8px;background:#F1F5F9;border:1px solid #E2E8F0;display:flex;align-items:center;justify-content:center;">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
+          </div>
+          <div style="font-size:11px;color:#64748B;margin-top:5px;text-align:center;">Depois</div>
+        </div>
+      </div>
+      <div style="margin-top:12px;display:flex;align-items:center;justify-content:space-between;border:1px solid #E2E8F0;border-radius:8px;padding:10px 12px;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1B4965" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+          <span style="font-size:13px;font-weight:500;">Nota fiscal</span>
+        </div>
+        <a href="#" style="font-size:12px;font-weight:600;text-decoration:none;">Baixar</a>
+      </div>
+    </div>
+
+    <p style="margin:0;font-size:12px;color:#64748B;line-height:1.5;">Registro imutável: correções geram uma nova revisão, preservando o histórico original.</p>
+
+  </main>
+</div>
+
+</x-dc>
+</body>
+</html>

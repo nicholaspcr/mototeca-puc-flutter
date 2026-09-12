@@ -1,18 +1,24 @@
 {
   "artboards": [
     { "file": "Main.dc.html", "x": 0, "y": 0, "w": 390, "h": 844, "is_interactive": true },
-    { "file": "Dashboard.dc.html", "x": 490, "y": 0, "w": 390, "h": 844, "is_interactive": true },
-    { "file": "NewRecord.dc.html", "x": 980, "y": 0, "w": 390, "h": 844, "is_interactive": true },
-    { "file": "CustomerPortal.dc.html", "x": 1470, "y": 0, "w": 390, "h": 844, "is_interactive": true },
-    { "file": "VehicleRegister.dc.html", "x": 1960, "y": 0, "w": 390, "h": 844, "is_interactive": true },
-    { "file": "About.dc.html", "x": 2450, "y": 0, "w": 390, "h": 844, "is_interactive": false }
+    { "file": "WorkshopRegister.dc.html", "x": 490, "y": 0, "w": 390, "h": 844, "is_interactive": false },
+
+    { "file": "Dashboard.dc.html", "x": 0, "y": 1020, "w": 390, "h": 844, "is_interactive": true },
+    { "file": "NewRecord.dc.html", "x": 490, "y": 1020, "w": 390, "h": 844, "is_interactive": true },
+    { "file": "VehicleRegister.dc.html", "x": 980, "y": 1020, "w": 390, "h": 844, "is_interactive": true },
+
+    { "file": "MyVehicles.dc.html", "x": 0, "y": 2040, "w": 390, "h": 844, "is_interactive": false },
+    { "file": "CustomerPortal.dc.html", "x": 490, "y": 2040, "w": 390, "h": 844, "is_interactive": true },
+    { "file": "ServiceDetail.dc.html", "x": 980, "y": 2040, "w": 390, "h": 844, "is_interactive": false },
+    { "file": "Reminders.dc.html", "x": 1470, "y": 2040, "w": 390, "h": 844, "is_interactive": false },
+
+    { "file": "About.dc.html", "x": 0, "y": 3060, "w": 390, "h": 844, "is_interactive": false }
   ],
   "annotations": [
-    { "id": "note-entry", "x": 0, "y": -70, "w": 390, "text": "Entrada — ambos os perfis" },
-    { "id": "note-oficina", "x": 490, "y": -70, "w": 880, "text": "Fluxo da oficina (mecânico)" },
-    { "id": "note-proprietario", "x": 1470, "y": -70, "w": 390, "text": "Fluxo do proprietário" },
-    { "id": "note-cadastro", "x": 1960, "y": -70, "w": 390, "text": "Cadastro de veículo" },
-    { "id": "note-sobre", "x": 2450, "y": -70, "w": 390, "text": "Sobre o app" }
+    { "id": "note-entrada", "x": 0, "y": -70, "w": 880, "text": "Entrada — login e cadastro da oficina" },
+    { "id": "note-oficina", "x": 0, "y": 950, "w": 1370, "text": "Fluxo da oficina (mecânico) — painel, novo registro, cadastro de veículo" },
+    { "id": "note-proprietario", "x": 0, "y": 1970, "w": 1860, "text": "Fluxo do proprietário — minhas motos, histórico por placa, detalhe do serviço, lembretes" },
+    { "id": "note-comum", "x": 0, "y": 2990, "w": 390, "text": "Comum aos dois perfis" }
   ],
   "launch": { "view": "canvas" }
 }
