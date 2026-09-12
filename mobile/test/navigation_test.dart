@@ -13,8 +13,11 @@ import 'package:mototeca/screens/service_detail_screen.dart';
 import 'package:mototeca/screens/vehicle_register_screen.dart';
 import 'package:mototeca/screens/workshop_register_screen.dart';
 
-/// Mounts the app on a phone-sized surface (393x852 — iPhone 15 Pro).
-Future<void> pumpApp(WidgetTester tester) async {
+import 'fake_api.dart';
+
+/// Mounts the app on a phone-sized surface (393x852 — iPhone 15 Pro), backed
+/// by [FakeApi] so the screens run their real network code paths.
+Future<FakeApi> pumpApp(WidgetTester tester) async {
   tester.view.physicalSize = const Size(393 * 3, 852 * 3);
   tester.view.devicePixelRatio = 3.0;
   addTearDown(() {
@@ -22,7 +25,28 @@ Future<void> pumpApp(WidgetTester tester) async {
     tester.view.resetDevicePixelRatio();
   });
 
-  await tester.pumpWidget(const MototecaApp());
+  final api = FakeApi();
+  await tester.pumpWidget(MototecaApp(state: api.state));
+  await tester.pumpAndSettle();
+  return api;
+}
+
+/// Signs in on the oficina side, filling the form the way a user would.
+Future<void> signInAsWorkshop(WidgetTester tester) async {
+  await tester.enterText(
+    find.byType(TextField).first,
+    '11.222.333/0001-81',
+  );
+  await tester.enterText(find.byType(TextField).at(1), 'senha-forte-123');
+  await tapAndSettle(tester, find.byKey(const Key('login-entrar')));
+}
+
+/// Types into the TextField inside a keyed MtField.
+Future<void> enterInField(WidgetTester tester, Key key, String text) async {
+  await tester.enterText(
+    find.descendant(of: find.byKey(key), matching: find.byType(TextField)),
+    text,
+  );
   await tester.pumpAndSettle();
 }
 
@@ -54,7 +78,7 @@ void main() {
   testWidgets('login como oficina leva ao Painel da Oficina', (tester) async {
     await pumpApp(tester);
 
-    await tapAndSettle(tester, find.byKey(const Key('login-entrar')));
+    await signInAsWorkshop(tester);
 
     expect(find.byType(DashboardScreen), findsOneWidget);
     expect(find.byType(LoginScreen), findsNothing);
@@ -105,7 +129,7 @@ void main() {
 
   testWidgets('painel abre o Novo Registro e volta ao salvar', (tester) async {
     await pumpApp(tester);
-    await tapAndSettle(tester, find.byKey(const Key('login-entrar')));
+    await signInAsWorkshop(tester);
 
     await tapAndSettle(
       tester,
@@ -113,8 +137,12 @@ void main() {
     );
     expect(find.byType(NewRecordScreen), findsOneWidget);
 
-    // A busca precisa resolver antes de o formulário (e o botão salvar) aparecer.
+    // O formulário só aparece depois de a placa resolver num veículo.
+    await tester.enterText(find.byType(TextField).first, 'ABC1D23');
     await tapAndSettle(tester, find.byKey(const Key('novo-registro-buscar')));
+
+    await tapAndSettle(tester, find.text('Pneus'));
+    await enterInField(tester, const Key('novo-registro-km'), '18500');
     await tapAndSettle(tester, find.byKey(const Key('novo-registro-salvar')));
 
     expect(find.byType(DashboardScreen), findsOneWidget);
@@ -122,7 +150,7 @@ void main() {
 
   testWidgets('painel abre o cadastro de veículo', (tester) async {
     await pumpApp(tester);
-    await tapAndSettle(tester, find.byKey(const Key('login-entrar')));
+    await signInAsWorkshop(tester);
 
     await tapAndSettle(
       tester,
@@ -134,7 +162,7 @@ void main() {
 
   testWidgets('painel abre o detalhe de um serviço registrado', (tester) async {
     await pumpApp(tester);
-    await tapAndSettle(tester, find.byKey(const Key('login-entrar')));
+    await signInAsWorkshop(tester);
 
     await tapAndSettle(tester, find.byKey(const Key('record-r1')));
 
@@ -169,7 +197,7 @@ void main() {
 
   testWidgets('voltar do detalhe retorna à tela anterior', (tester) async {
     await pumpApp(tester);
-    await tapAndSettle(tester, find.byKey(const Key('login-entrar')));
+    await signInAsWorkshop(tester);
     await tapAndSettle(tester, find.byKey(const Key('record-r1')));
 
     await tapAndSettle(tester, find.byType(BackButton));
@@ -179,7 +207,7 @@ void main() {
 
   testWidgets('sair volta ao Login', (tester) async {
     await pumpApp(tester);
-    await tapAndSettle(tester, find.byKey(const Key('login-entrar')));
+    await signInAsWorkshop(tester);
 
     await tapAndSettle(tester, find.text('Sair'));
 

@@ -1,55 +1,149 @@
 import 'package:flutter/material.dart';
 
-import '../data/mock_data.dart';
 import '../main.dart';
+import '../models/service_record.dart';
+import '../repositories/service_record_repository.dart';
+import '../state/app_scope.dart';
 import '../theme.dart';
+import '../widgets/feedback.dart';
 import '../widgets/mt_widgets.dart';
 import 'service_detail_screen.dart';
 
 /// Painel da Oficina — the mechanic's home (design/Dashboard.dc.html).
-class DashboardScreen extends StatelessWidget {
+class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
 
   @override
+  State<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends State<DashboardScreen> {
+  final _plate = TextEditingController();
+
+  Future<WorkshopFeed>? _feed;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Kicked off here rather than initState because it needs AppScope.
+    _feed ??= AppScope.read(context).serviceRecords.workshopFeed();
+  }
+
+  @override
+  void dispose() {
+    _plate.dispose();
+    super.dispose();
+  }
+
+  Future<void> _reload() async {
+    final reloaded = AppScope.read(context).serviceRecords.workshopFeed();
+    // Block body, not an arrow: an arrow would hand setState a closure
+    // returning the Future, which Flutter rejects.
+    setState(() {
+      _feed = reloaded;
+    });
+    await reloaded;
+  }
+
+  void _signOut() {
+    AppScope.read(context).signOut();
+    Navigator.pushReplacementNamed(context, Routes.login);
+  }
+
+  /// Both the search box and the "Criar Registro" button land on Novo
+  /// Registro; searching just pre-fills the plate.
+  Future<void> _openNewRecord({String? plate}) async {
+    final created = await Navigator.pushNamed(
+      context,
+      Routes.newRecord,
+      arguments: plate,
+    );
+    if (created == true && mounted) await _reload();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final records = workshopRecords();
+    final workshop = AppScope.of(context).workshop;
 
     return Scaffold(
       appBar: MtHomeHeader(
-        subtitle: 'Bem-vindo, $currentWorkshop',
-        onSignOut: () => Navigator.pushReplacementNamed(context, Routes.login),
+        subtitle: 'Bem-vindo, ${workshop?.name ?? 'oficina'}',
+        onSignOut: _signOut,
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(MtSizes.screenPadding),
-        children: [
-          _monthBanner(records.length),
-          const SizedBox(height: 20),
-          _searchCard(context),
-          const SizedBox(height: 20),
-          _newRecordCard(context),
-          const SizedBox(height: 20),
-          const Text(
-            'Registros Recentes',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-          ),
-          const SizedBox(height: 12),
-          for (final entry in records) ...[
-            _recordTile(context, entry.vehicle, entry.record),
-            const SizedBox(height: 8),
-          ],
-          const SizedBox(height: 4),
-          OutlinedButton(
-            key: const Key('dashboard-cadastrar-veiculo'),
-            onPressed: () =>
-                Navigator.pushNamed(context, Routes.vehicleRegister),
-            child: const Text('Cadastrar veículo'),
-          ),
-        ],
+      body: RefreshIndicator(
+        onRefresh: _reload,
+        child: FutureBuilder<WorkshopFeed>(
+          future: _feed,
+          builder: (context, snapshot) {
+            final feed = snapshot.data;
+            return ListView(
+              padding: const EdgeInsets.all(MtSizes.screenPadding),
+              children: [
+                _monthBanner(snapshot, feed),
+                const SizedBox(height: 20),
+                _searchCard(),
+                const SizedBox(height: 20),
+                _newRecordCard(),
+                const SizedBox(height: 20),
+                const Text(
+                  'Registros Recentes',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 12),
+                ..._recentSection(snapshot, feed),
+                const SizedBox(height: 4),
+                OutlinedButton(
+                  key: const Key('dashboard-cadastrar-veiculo'),
+                  onPressed: () =>
+                      Navigator.pushNamed(context, Routes.vehicleRegister),
+                  child: const Text('Cadastrar veículo'),
+                ),
+              ],
+            );
+          },
+        ),
       ),
     );
   }
 
-  Widget _monthBanner(int count) {
+  List<Widget> _recentSection(
+    AsyncSnapshot<WorkshopFeed> snapshot,
+    WorkshopFeed? feed,
+  ) {
+    if (snapshot.connectionState == ConnectionState.waiting) {
+      return const [MtLoading()];
+    }
+    if (snapshot.hasError) {
+      return [
+        MtEmptyState(
+          message: snapshot.error is Object
+              ? 'Não foi possível carregar os registros.'
+              : '',
+          icon: Icons.cloud_off_outlined,
+          onRetry: _reload,
+        ),
+      ];
+    }
+    final records = feed?.records ?? const <ServiceRecord>[];
+    if (records.isEmpty) {
+      return const [
+        MtEmptyState(
+          message: 'Nenhum serviço registrado ainda.\n'
+              'Use "Criar Registro" para lançar o primeiro.',
+          icon: Icons.build_outlined,
+        ),
+      ];
+    }
+    return [
+      for (final record in records) ...[
+        _recordTile(record),
+        const SizedBox(height: 8),
+      ],
+    ];
+  }
+
+  Widget _monthBanner(AsyncSnapshot<WorkshopFeed> snapshot, WorkshopFeed? feed) {
+    final count = feed?.countThisMonth;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
@@ -74,7 +168,7 @@ class DashboardScreen extends StatelessWidget {
           ),
           const SizedBox(width: 12),
           Text(
-            '$count',
+            count?.toString() ?? '—',
             style: const TextStyle(
               fontSize: 22,
               fontWeight: FontWeight.w700,
@@ -86,7 +180,7 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 
-  Widget _searchCard(BuildContext context) {
+  Widget _searchCard() {
     return MtCard(
       padding: const EdgeInsets.all(18),
       child: Column(
@@ -104,11 +198,13 @@ class DashboardScreen extends StatelessWidget {
           const SizedBox(height: 12),
           Row(
             children: [
-              const Expanded(
+              Expanded(
                 child: TextField(
+                  controller: _plate,
                   textCapitalization: TextCapitalization.characters,
-                  style: TextStyle(fontFamily: 'monospace', fontSize: 15),
-                  decoration: InputDecoration(hintText: 'ABC1D23'),
+                  style: const TextStyle(fontFamily: 'monospace', fontSize: 15),
+                  decoration: const InputDecoration(hintText: 'ABC1D23'),
+                  onSubmitted: (value) => _openNewRecord(plate: value),
                 ),
               ),
               const SizedBox(width: 8),
@@ -116,8 +212,7 @@ class DashboardScreen extends StatelessWidget {
                 width: 96,
                 child: OutlinedButton(
                   key: const Key('dashboard-buscar'),
-                  onPressed: () =>
-                      Navigator.pushNamed(context, Routes.newRecord),
+                  onPressed: () => _openNewRecord(plate: _plate.text),
                   child: const Text('Buscar'),
                 ),
               ),
@@ -128,7 +223,7 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 
-  Widget _newRecordCard(BuildContext context) {
+  Widget _newRecordCard() {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(18),
@@ -155,7 +250,7 @@ class DashboardScreen extends StatelessWidget {
           const SizedBox(height: 12),
           ElevatedButton(
             key: const Key('dashboard-criar-registro'),
-            onPressed: () => Navigator.pushNamed(context, Routes.newRecord),
+            onPressed: _openNewRecord,
             style: ElevatedButton.styleFrom(
               backgroundColor: MtColors.slate50,
               foregroundColor: MtColors.petrol,
@@ -168,17 +263,13 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 
-  Widget _recordTile(
-    BuildContext context,
-    Vehicle vehicle,
-    ServiceRecord record,
-  ) {
+  Widget _recordTile(ServiceRecord record) {
     return InkWell(
       key: Key('record-${record.id}'),
       onTap: () => Navigator.pushNamed(
         context,
         Routes.serviceDetail,
-        arguments: ServiceDetailArgs(vehicle: vehicle, record: record),
+        arguments: ServiceDetailArgs(record: record),
       ),
       borderRadius: BorderRadius.circular(MtSizes.cardRadius),
       child: MtCard(
@@ -195,7 +286,7 @@ class DashboardScreen extends StatelessWidget {
                     crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
                       Text(
-                        vehicle.plate,
+                        record.vehicle.plate,
                         style: const TextStyle(
                           fontFamily: 'monospace',
                           fontSize: 12,
@@ -203,7 +294,7 @@ class DashboardScreen extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        vehicle.label,
+                        record.vehicle.label,
                         style: const TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w500,
@@ -220,7 +311,7 @@ class DashboardScreen extends StatelessWidget {
                     ),
                   ),
                   Text(
-                    '${record.date} · ${record.mileageKm} km',
+                    '${record.formattedDate} · ${record.mileageKm} km',
                     style: const TextStyle(
                       fontSize: 12,
                       color: MtColors.slate500,
@@ -229,22 +320,24 @@ class DashboardScreen extends StatelessWidget {
                 ],
               ),
             ),
-            const SizedBox(width: 10),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-              decoration: BoxDecoration(
-                color: MtColors.slate100,
-                borderRadius: BorderRadius.circular(9999),
-              ),
-              child: Text(
-                record.mechanic,
-                style: const TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: MtColors.rust,
+            if (record.mechanicName != null) ...[
+              const SizedBox(width: 10),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                decoration: BoxDecoration(
+                  color: MtColors.slate100,
+                  borderRadius: BorderRadius.circular(9999),
+                ),
+                child: Text(
+                  record.mechanicName!,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: MtColors.rust,
+                  ),
                 ),
               ),
-            ),
+            ],
           ],
         ),
       ),

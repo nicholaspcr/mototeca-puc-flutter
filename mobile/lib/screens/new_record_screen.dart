@@ -1,42 +1,156 @@
 import 'package:flutter/material.dart';
 
-import '../data/mock_data.dart';
+import '../main.dart';
+import '../models/service_operation.dart';
+import '../models/service_record.dart';
+import '../models/vehicle.dart';
+import '../state/app_scope.dart';
 import '../theme.dart';
+import '../widgets/feedback.dart';
 import '../widgets/mt_widgets.dart';
+
+/// One editable row in the parts list.
+class _PartDraft {
+  _PartDraft()
+    : name = TextEditingController(),
+      quantity = TextEditingController(text: '1'),
+      cost = TextEditingController();
+
+  final TextEditingController name;
+  final TextEditingController quantity;
+  final TextEditingController cost;
+
+  bool get isBlank => name.text.trim().isEmpty;
+
+  void dispose() {
+    name.dispose();
+    quantity.dispose();
+    cost.dispose();
+  }
+}
 
 /// Novo Registro — the app's main action (design/NewRecord.dc.html).
 class NewRecordScreen extends StatefulWidget {
-  const NewRecordScreen({super.key});
+  const NewRecordScreen({super.key, this.initialPlate});
+
+  /// Pre-filled when the mechanic arrives from the dashboard search box.
+  final String? initialPlate;
 
   @override
   State<NewRecordScreen> createState() => _NewRecordScreenState();
 }
 
 class _NewRecordScreenState extends State<NewRecordScreen> {
-  final _plate = TextEditingController(text: 'ABC1D23');
-  final _selectedOps = <String>{};
+  late final _plate = TextEditingController(text: widget.initialPlate ?? '');
+  final _mechanic = TextEditingController();
+  final _mileage = TextEditingController();
+  final _cost = TextEditingController();
+  final _notes = TextEditingController();
+  final _parts = <_PartDraft>[_PartDraft()];
+  final _selectedOps = <ServiceOperation>{};
+
   Vehicle? _vehicle;
   bool _searched = false;
+  bool _searching = false;
+  bool _saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if ((widget.initialPlate ?? '').trim().isNotEmpty) {
+      // Arriving with a plate already typed means the search was the intent.
+      WidgetsBinding.instance.addPostFrameCallback((_) => _search());
+    }
+  }
 
   @override
   void dispose() {
     _plate.dispose();
+    _mechanic.dispose();
+    _mileage.dispose();
+    _cost.dispose();
+    _notes.dispose();
+    for (final part in _parts) {
+      part.dispose();
+    }
     super.dispose();
   }
 
-  void _search() {
-    setState(() {
-      _vehicle = findVehicleByPlate(_plate.text);
-      _searched = true;
-    });
+  Future<void> _search() async {
+    if (_plate.text.trim().isEmpty) return;
+
+    setState(() => _searching = true);
+    try {
+      final vehicle = await AppScope.read(context).vehicles.findByPlate(_plate.text);
+      if (!mounted) return;
+      setState(() {
+        _vehicle = vehicle;
+        _searched = true;
+        // The last known odometer is the natural starting point.
+        if (vehicle != null && _mileage.text.isEmpty) _mileage.text = '';
+      });
+    } catch (error) {
+      if (!mounted) return;
+      showApiError(context, error);
+    } finally {
+      if (mounted) setState(() => _searching = false);
+    }
   }
 
-  void _save() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Registro salvo com sucesso.')),
-    );
-    Navigator.pop(context);
+  Future<void> _save() async {
+    final vehicle = _vehicle;
+    if (vehicle == null) return;
+
+    if (_selectedOps.isEmpty) {
+      showApiError(context, 'Selecione ao menos uma operação.');
+      return;
+    }
+
+    final int mileage;
+    final int? costCents;
+    final List<Part> parts;
+    try {
+      mileage = int.parse(_mileage.text.trim());
+      costCents = parseCents(_cost.text);
+      parts = _collectParts();
+    } on FormatException {
+      showApiError(context, 'Confira a quilometragem, o valor e as peças.');
+      return;
+    }
+
+    setState(() => _saving = true);
+    try {
+      await AppScope.read(context).serviceRecords.create(
+        plate: vehicle.plate,
+        operations: _selectedOps.toList(),
+        mileageKm: mileage,
+        mechanicName: _mechanic.text,
+        costCents: costCents,
+        notes: _notes.text,
+        parts: parts,
+      );
+      if (!mounted) return;
+      showSuccess(context, 'Registro salvo no histórico da moto.');
+      // true tells the dashboard its feed is stale.
+      Navigator.pop(context, true);
+    } catch (error) {
+      if (!mounted) return;
+      showApiError(context, error);
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
   }
+
+  /// Blank rows are the user leaving the last row untouched, not an error.
+  List<Part> _collectParts() => [
+    for (final draft in _parts)
+      if (!draft.isBlank)
+        Part(
+          name: draft.name.text.trim(),
+          quantity: int.parse(draft.quantity.text.trim()),
+          costCents: parseCents(draft.cost.text),
+        ),
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -46,7 +160,7 @@ class _NewRecordScreenState extends State<NewRecordScreen> {
         padding: const EdgeInsets.all(MtSizes.screenPadding),
         children: [
           _vehicleCard(),
-          if (_searched) ...[
+          if (_vehicle != null) ...[
             const SizedBox(height: 16),
             _operationsCard(),
             const SizedBox(height: 16),
@@ -54,12 +168,21 @@ class _NewRecordScreenState extends State<NewRecordScreen> {
             const SizedBox(height: 16),
             ElevatedButton(
               key: const Key('novo-registro-salvar'),
-              onPressed: _save,
-              child: const Text('Salvar Registro'),
+              onPressed: _saving ? null : _save,
+              child: _saving
+                  ? const SizedBox(
+                      height: 18,
+                      width: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Text('Salvar Registro'),
             ),
             const SizedBox(height: 10),
             OutlinedButton(
-              onPressed: () => Navigator.pop(context),
+              onPressed: _saving ? null : () => Navigator.pop(context),
               child: const Text('Cancelar'),
             ),
           ],
@@ -86,6 +209,7 @@ class _NewRecordScreenState extends State<NewRecordScreen> {
                   textCapitalization: TextCapitalization.characters,
                   style: const TextStyle(fontFamily: 'monospace', fontSize: 15),
                   decoration: const InputDecoration(hintText: 'ABC1D23'),
+                  onSubmitted: (_) => _search(),
                 ),
               ),
               const SizedBox(width: 8),
@@ -93,8 +217,14 @@ class _NewRecordScreenState extends State<NewRecordScreen> {
                 width: 96,
                 child: OutlinedButton(
                   key: const Key('novo-registro-buscar'),
-                  onPressed: _search,
-                  child: const Text('Buscar'),
+                  onPressed: _searching ? null : _search,
+                  child: _searching
+                      ? const SizedBox(
+                          height: 16,
+                          width: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text('Buscar'),
                 ),
               ),
             ],
@@ -105,15 +235,32 @@ class _NewRecordScreenState extends State<NewRecordScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
               decoration: BoxDecoration(
                 color: MtColors.warning.withValues(alpha: 0.12),
-                border: Border.all(
-                  color: MtColors.warning.withValues(alpha: 0.4),
-                ),
+                border: Border.all(color: MtColors.warning.withValues(alpha: 0.4)),
                 borderRadius: BorderRadius.circular(MtSizes.controlRadius),
               ),
-              child: Text(
-                'Veículo não encontrado. Um novo cadastro será criado ao salvar '
-                'este registro para a placa ${_plate.text.toUpperCase()}.',
-                style: const TextStyle(fontSize: 13, height: 1.4),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Nenhuma moto cadastrada com a placa '
+                    '${normalizePlate(_plate.text)}. Cadastre o veículo antes '
+                    'de lançar o serviço.',
+                    style: const TextStyle(fontSize: 13, height: 1.4),
+                  ),
+                  const SizedBox(height: 10),
+                  OutlinedButton(
+                    key: const Key('novo-registro-cadastrar-veiculo'),
+                    onPressed: () async {
+                      final created = await Navigator.pushNamed(
+                        context,
+                        Routes.vehicleRegister,
+                        arguments: normalizePlate(_plate.text),
+                      );
+                      if (created == true && mounted) await _search();
+                    },
+                    child: const Text('Cadastrar veículo'),
+                  ),
+                ],
               ),
             ),
           ],
@@ -126,32 +273,9 @@ class _NewRecordScreenState extends State<NewRecordScreen> {
                 color: MtColors.slate100,
                 borderRadius: BorderRadius.circular(MtSizes.controlRadius),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '${_vehicle!.labelWithYear} · ${_vehicle!.plate}',
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Proprietário: ${_vehicle!.owner}',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: MtColors.slate500,
-                    ),
-                  ),
-                  Text(
-                    'Última km registrada: ${_vehicle!.mileageKm} km',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: MtColors.slate500,
-                    ),
-                  ),
-                ],
+              child: Text(
+                '${_vehicle!.labelWithYear} · ${_vehicle!.plate}',
+                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
               ),
             ),
           ],
@@ -174,14 +298,12 @@ class _NewRecordScreenState extends State<NewRecordScreen> {
             spacing: 8,
             runSpacing: 8,
             children: [
-              for (final op in operationTaxonomy)
+              for (final op in ServiceOperation.values)
                 MtChip(
-                  label: op,
+                  label: op.label,
                   selected: _selectedOps.contains(op),
                   onTap: () => setState(() {
-                    _selectedOps.contains(op)
-                        ? _selectedOps.remove(op)
-                        : _selectedOps.add(op);
+                    if (!_selectedOps.remove(op)) _selectedOps.add(op);
                   }),
                 ),
             ],
@@ -206,27 +328,51 @@ class _NewRecordScreenState extends State<NewRecordScreen> {
             children: [
               Expanded(
                 child: MtField(
+                  key: const Key('novo-registro-km'),
                   label: 'Km atual',
                   hint: '18500',
+                  controller: _mileage,
                   keyboardType: TextInputType.number,
                 ),
               ),
               const SizedBox(width: 12),
-              const Expanded(
+              Expanded(
                 child: MtField(
                   label: 'Valor (R\$)',
                   hint: '245,00',
+                  controller: _cost,
                   keyboardType: TextInputType.number,
                 ),
               ),
             ],
           ),
           const SizedBox(height: 16),
-          const MtField(label: 'Peças utilizadas', hint: 'Nome da peça'),
+          MtField(
+            label: 'Mecânico',
+            hint: 'Quem executou o serviço',
+            controller: _mechanic,
+            textCapitalization: TextCapitalization.words,
+          ),
           const SizedBox(height: 16),
-          const MtField(
+          const Text(
+            'Peças utilizadas',
+            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+          ),
+          const SizedBox(height: 8),
+          for (final (index, part) in _parts.indexed) ...[
+            _partRow(index, part),
+            const SizedBox(height: 8),
+          ],
+          OutlinedButton(
+            key: const Key('novo-registro-adicionar-peca'),
+            onPressed: () => setState(() => _parts.add(_PartDraft())),
+            child: const Text('+ Adicionar peça'),
+          ),
+          const SizedBox(height: 16),
+          MtField(
             label: 'Observações',
             hint: 'Detalhes do serviço, recomendações para a próxima visita...',
+            controller: _notes,
           ),
           const SizedBox(height: 16),
           const Text(
@@ -234,15 +380,61 @@ class _NewRecordScreenState extends State<NewRecordScreen> {
             style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
           ),
           const SizedBox(height: 8),
-          Row(
-            children: const [
+          const Row(
+            children: [
               Expanded(child: _PhotoSlot(label: 'Foto antes')),
               SizedBox(width: 10),
               Expanded(child: _PhotoSlot(label: 'Foto depois')),
             ],
           ),
+          const SizedBox(height: 6),
+          const MtFootnote(
+            'O envio de fotos ainda não está disponível nesta versão.',
+          ),
         ],
       ),
+    );
+  }
+
+  Widget _partRow(int index, _PartDraft part) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Expanded(
+          flex: 3,
+          child: TextField(
+            controller: part.name,
+            style: const TextStyle(fontSize: 14),
+            decoration: const InputDecoration(hintText: 'Nome da peça'),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: TextField(
+            controller: part.quantity,
+            keyboardType: TextInputType.number,
+            style: const TextStyle(fontSize: 14),
+            decoration: const InputDecoration(hintText: 'Qtd'),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          flex: 2,
+          child: TextField(
+            controller: part.cost,
+            keyboardType: TextInputType.number,
+            style: const TextStyle(fontSize: 14),
+            decoration: const InputDecoration(hintText: 'R\$'),
+          ),
+        ),
+        // The first row is the form's baseline and has nothing to remove.
+        if (_parts.length > 1)
+          IconButton(
+            onPressed: () => setState(() => _parts.removeAt(index).dispose()),
+            icon: const Icon(Icons.close, size: 18, color: MtColors.danger),
+            tooltip: 'Remover peça',
+          ),
+      ],
     );
   }
 }

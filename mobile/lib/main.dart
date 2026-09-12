@@ -10,6 +10,7 @@ import 'screens/reminders_screen.dart';
 import 'screens/service_detail_screen.dart';
 import 'screens/vehicle_register_screen.dart';
 import 'screens/workshop_register_screen.dart';
+import 'state/app_scope.dart';
 import 'theme.dart';
 
 void main() => runApp(const MototecaApp());
@@ -28,11 +29,34 @@ class Routes {
   static const about = '/sobre';
 }
 
-class MototecaApp extends StatelessWidget {
-  const MototecaApp({super.key});
+class MototecaApp extends StatefulWidget {
+  const MototecaApp({super.key, this.state});
+
+  /// Injected by tests so they can supply a fake backend.
+  final AppState? state;
+
+  @override
+  State<MototecaApp> createState() => _MototecaAppState();
+}
+
+class _MototecaAppState extends State<MototecaApp> {
+  late final AppState _state = widget.state ?? AppState();
+  late final bool _ownsState = widget.state == null;
+
+  @override
+  void dispose() {
+    // Only close the client this widget created; an injected one belongs to
+    // whoever passed it in.
+    if (_ownsState) _state.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
+    return AppScope(state: _state, child: _buildApp(context));
+  }
+
+  Widget _buildApp(BuildContext context) {
     return MaterialApp(
       title: 'Mototeca',
       debugShowCheckedModeBanner: false,
@@ -53,23 +77,31 @@ class MototecaApp extends StatelessWidget {
         Routes.login: (_) => const LoginScreen(),
         Routes.workshopRegister: (_) => const WorkshopRegisterScreen(),
         Routes.dashboard: (_) => const DashboardScreen(),
-        Routes.newRecord: (_) => const NewRecordScreen(),
-        Routes.vehicleRegister: (_) => const VehicleRegisterScreen(),
         Routes.myVehicles: (_) => const MyVehiclesScreen(),
         Routes.reminders: (_) => const RemindersScreen(),
         Routes.customerPortal: (_) => const CustomerPortalScreen(),
         Routes.about: (_) => const AboutScreen(),
       },
-      onGenerateRoute: (settings) {
-        // /servico/:id carries the record it should display.
-        if (settings.name == Routes.serviceDetail) {
-          final args = settings.arguments as ServiceDetailArgs;
-          return MaterialPageRoute(
-            builder: (_) => ServiceDetailScreen(args: args),
-            settings: settings,
-          );
-        }
-        return null;
+      // Routes that carry an argument. Everything else is in `routes` above.
+      onGenerateRoute: (settings) => switch (settings.name) {
+        Routes.serviceDetail => MaterialPageRoute(
+          builder: (_) => ServiceDetailScreen(
+            args: settings.arguments as ServiceDetailArgs,
+          ),
+          settings: settings,
+        ),
+        // Both optionally arrive with a plate already typed elsewhere.
+        Routes.newRecord => MaterialPageRoute(
+          builder: (_) =>
+              NewRecordScreen(initialPlate: settings.arguments as String?),
+          settings: settings,
+        ),
+        Routes.vehicleRegister => MaterialPageRoute(
+          builder: (_) =>
+              VehicleRegisterScreen(initialPlate: settings.arguments as String?),
+          settings: settings,
+        ),
+        _ => null,
       },
     );
   }

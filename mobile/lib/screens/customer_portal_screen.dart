@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 
-import '../data/mock_data.dart';
 import '../main.dart';
+import '../repositories/service_record_repository.dart';
+import '../state/app_scope.dart';
 import '../theme.dart';
+import '../widgets/feedback.dart';
 import '../widgets/mt_widgets.dart';
 import 'service_detail_screen.dart';
 
@@ -16,8 +18,10 @@ class CustomerPortalScreen extends StatefulWidget {
 
 class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
   final _plate = TextEditingController();
-  Vehicle? _vehicle;
+
+  PlateHistory? _history;
   bool _searched = false;
+  bool _busy = false;
 
   @override
   void dispose() {
@@ -25,11 +29,27 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
     super.dispose();
   }
 
-  void _search() {
-    setState(() {
-      _vehicle = findVehicleByPlate(_plate.text);
-      _searched = true;
-    });
+  Future<void> _search() async {
+    if (_plate.text.trim().isEmpty) return;
+
+    setState(() => _busy = true);
+    try {
+      // No token is sent: this lookup is public by design, and it is the
+      // reason the product exists (ARCHITECTURE.md section 3).
+      final history = await AppScope.read(
+        context,
+      ).serviceRecords.historyByPlate(_plate.text);
+      if (!mounted) return;
+      setState(() {
+        _history = history;
+        _searched = true;
+      });
+    } catch (error) {
+      if (!mounted) return;
+      showApiError(context, error);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
   }
 
   @override
@@ -85,11 +105,20 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
                 width: 116,
                 child: ElevatedButton(
                   key: const Key('portal-consultar'),
-                  onPressed: _search,
+                  onPressed: _busy ? null : _search,
                   style: ElevatedButton.styleFrom(
                     minimumSize: const Size.fromHeight(MtSizes.controlHeight),
                   ),
-                  child: const Text('Consultar'),
+                  child: _busy
+                      ? const SizedBox(
+                          height: 18,
+                          width: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Text('Consultar'),
                 ),
               ),
             ],
@@ -101,7 +130,7 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
               'Um cadastro só é pedido para reivindicar a propriedade da moto.',
               align: TextAlign.center,
             ),
-          if (_searched && _vehicle == null)
+          if (_searched && _history == null)
             MtCard(
               padding: const EdgeInsets.all(28),
               child: const Text(
@@ -110,13 +139,14 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
                 style: TextStyle(fontSize: 13, color: MtColors.slate500),
               ),
             ),
-          if (_vehicle != null) ..._results(_vehicle!),
+          if (_history != null) ..._results(_history!),
         ],
       ),
     );
   }
 
-  List<Widget> _results(Vehicle vehicle) {
+  List<Widget> _results(PlateHistory history) {
+    final vehicle = history.vehicle;
     return [
       MtCard(
         child: Column(
@@ -128,7 +158,8 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
             ),
             const SizedBox(height: 4),
             Text(
-              'Placa ${vehicle.plate} · ${vehicle.color} · ${vehicle.mileageKm} km atuais',
+              'Placa ${vehicle.plate} · ${history.records.length} '
+              '${history.records.length == 1 ? 'serviço' : 'serviços'} registrados',
               style: const TextStyle(fontSize: 13, color: MtColors.slate500),
             ),
             const SizedBox(height: 10),
@@ -147,13 +178,18 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
         style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
       ),
       const SizedBox(height: 12),
-      for (final record in vehicle.history) ...[
+      if (history.records.isEmpty)
+        const MtEmptyState(
+          message: 'Esta moto ainda não tem serviços registrados.',
+          icon: Icons.history_outlined,
+        ),
+      for (final record in history.records) ...[
         InkWell(
           key: Key('history-${record.id}'),
           onTap: () => Navigator.pushNamed(
             context,
             Routes.serviceDetail,
-            arguments: ServiceDetailArgs(vehicle: vehicle, record: record),
+            arguments: ServiceDetailArgs(record: record),
           ),
           borderRadius: BorderRadius.circular(MtSizes.cardRadius),
           child: MtCard(
@@ -175,7 +211,7 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
                     ),
                     const SizedBox(width: 10),
                     Text(
-                      record.date,
+                      record.formattedDate,
                       style: const TextStyle(
                         fontSize: 12,
                         color: MtColors.slate500,
@@ -185,17 +221,23 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  '${record.workshop} · ${record.mechanic} · ${record.mileageKm} km',
+                  [
+                    record.workshopName,
+                    ?record.mechanicName,
+                    '${record.mileageKm} km',
+                  ].join(' · '),
                   style: const TextStyle(
                     fontSize: 12,
                     color: MtColors.slate500,
                   ),
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  record.notes,
-                  style: const TextStyle(fontSize: 13, height: 1.4),
-                ),
+                if (record.notes != null && record.notes!.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    record.notes!,
+                    style: const TextStyle(fontSize: 13, height: 1.4),
+                  ),
+                ],
               ],
             ),
           ),

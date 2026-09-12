@@ -9,6 +9,27 @@ String formatCents(int cents) {
   return 'R\$ $reais,$centavos';
 }
 
+/// Parses what a mechanic types into a money field ("245", "245,50",
+/// "R$ 1.245,50") into integer cents.
+///
+/// Returns null for blank input and throws [FormatException] for something
+/// that isn't a number, so the caller can tell "left empty" from "typed
+/// nonsense". Deliberately integer-only: parsing money as a double loses
+/// centavos.
+int? parseCents(String raw) {
+  final cleaned = raw.trim().replaceAll(RegExp(r'[R$\s.]'), '').replaceAll(',', '.');
+  if (cleaned.isEmpty) return null;
+
+  final parts = cleaned.split('.');
+  if (parts.length > 2) throw const FormatException('valor inválido');
+
+  final reais = int.parse(parts[0].isEmpty ? '0' : parts[0]);
+  if (parts.length == 1) return reais * 100;
+
+  final centavos = int.parse(parts[1].padRight(2, '0').substring(0, 2));
+  return reais * 100 + centavos;
+}
+
 class Part {
   const Part({required this.name, required this.quantity, this.costCents});
 
