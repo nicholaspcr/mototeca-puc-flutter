@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  html, body { margin: 0; font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif; background: #F7FAFC; color: #0F172A; font-feature-settings: "rlig" 1, "calt" 1; -webkit-font-smoothing: antialiased; }
+  a { color: #B84F20; } a:hover { color: #92400E; }
+</style>
+</helmet>
+
+<div style="width:390px;height:844px;overflow-y:auto;background:#F7FAFC;box-sizing:border-box;">
+
+  <header style="position:sticky;top:0;z-index:5;background:#EAF3FA;border-bottom:1px solid #CFE4F2;">
+    <div style="padding:14px 20px;display:flex;align-items:center;gap:10px;">
+      <button style="width:32px;height:32px;border-radius:8px;border:1px solid #CFE4F2;background:white;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1B4965" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <span style="font-size:16px;font-weight:700;letter-spacing:-0.025em;">Lembretes</span>
+    </div>
+  </header>
+
+  <main style="padding:18px 20px 32px;display:flex;flex-direction:column;gap:14px;">
+
+    <div style="border:1px solid rgba(234,179,8,.4);background:rgba(234,179,8,.12);border-radius:10px;padding:14px 16px;">
+      <div style="font-size:13px;font-weight:600;color:#854D0E;">1 manutenção próxima</div>
+      <div style="font-size:12px;color:#854D0E;margin-top:2px;">Avisos enviados por WhatsApp, por km rodado ou tempo decorrido.</div>
+    </div>
+
+    <div style="border:1px solid #E2E8F0;background:white;border-radius:10px;box-shadow:0 1px 2px 0 rgb(0 0 0 / .05);padding:16px;">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;">
+        <div>
+          <div style="font-size:14px;font-weight:600;">Troca de óleo e filtro</div>
+          <div style="font-size:12px;color:#64748B;margin-top:3px;">
+            <span style="font-family:'JetBrains Mono',monospace;">ABC1D23</span> · Honda CG 160 Start
+          </div>
+        </div>
+        <span style="border-radius:9999px;padding:3px 10px;font-size:11px;font-weight:600;background:rgba(234,179,8,.16);color:#854D0E;white-space:nowrap;">Em breve</span>
+      </div>
+      <div style="margin-top:12px;">
+        <div style="height:6px;border-radius:9999px;background:#F1F5F9;overflow:hidden;">
+          <div style="width:81%;height:100%;background:#EAB308;"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:11px;color:#64748B;">
+          <span>18.420 km rodados</span>
+          <span style="font-weight:600;color:#854D0E;">faltam 580 km</span>
+        </div>
+      </div>
+      <div style="font-size:11px;color:#64748B;margin-top:8px;">Última troca: 02/06/2026 · a cada 3.000 km</div>
+    </div>
+
+    <div style="border:1px solid #E2E8F0;background:white;border-radius:10px;box-shadow:0 1px 2px 0 rgb(0 0 0 / .05);padding:16px;">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;">
+        <div>
+          <div style="font-size:14px;font-weight:600;">Revisão programada</div>
+          <div style="font-size:12px;color:#64748B;margin-top:3px;">
+            <span style="font-family:'JetBrains Mono',monospace;">BRA2E19</span> · Yamaha Fazer 250
+          </div>
+        </div>
+        <span style="border-radius:9999px;padding:3px 10px;font-size:11px;font-weight:600;background:rgba(34,197,94,.16);color:#166534;white-space:nowrap;">Em dia</span>
+      </div>
+      <div style="margin-top:12px;">
+        <div style="height:6px;border-radius:9999px;background:#F1F5F9;overflow:hidden;">
+          <div style="width:34%;height:100%;background:#22C55E;"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:11px;color:#64748B;">
+          <span>4 meses desde a última</span>
+          <span>vence em 8 meses</span>
+        </div>
+      </div>
+      <div style="font-size:11px;color:#64748B;margin-top:8px;">Última revisão: 28/05/2026 · a cada 12 meses</div>
+    </div>
+
+    <div style="border:1px solid #E2E8F0;background:white;border-radius:10px;box-shadow:0 1px 2px 0 rgb(0 0 0 / .05);padding:16px;display:flex;align-items:center;justify-content:space-between;gap:12px;">
+      <div>
+        <div style="font-size:13px;font-weight:600;">Avisos por WhatsApp</div>
+        <div style="font-size:12px;color:#64748B;margin-top:2px;">Receber lembretes no (31) 9****-0000</div>
+      </div>
+      <div style="width:44px;height:26px;border-radius:9999px;background:#1B4965;position:relative;flex:none;">
+        <div style="position:absolute;top:3px;right:3px;width:20px;height:20px;border-radius:50%;background:#F8FAFC;"></div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+</x-dc>
+</body>
+</html>
