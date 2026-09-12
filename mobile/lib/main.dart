@@ -37,6 +37,17 @@ class MototecaApp extends StatelessWidget {
       title: 'Mototeca',
       debugShowCheckedModeBanner: false,
       theme: buildMototecaTheme(),
+      // Keeps the app phone-shaped (iPhone 15 Pro width) when demoed in a
+      // desktop browser; a no-op on a real phone, which is already narrower.
+      builder: (context, child) => ColoredBox(
+        color: const Color(0xFFE9EEF3),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 393),
+            child: child,
+          ),
+        ),
+      ),
       initialRoute: Routes.login,
       routes: {
         Routes.login: (_) => const LoginScreen(),
