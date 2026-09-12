@@ -13,3 +13,7 @@
 
 # generated design canvas bundle (seeded from design/*.dc.html, ~2MB, rebuild with seed-canvas.mjs)
 design/mototeca-mobile-screens.html
+
+# generated design exports (rebuild with design/render.mjs)
+design/exports/
+design/exports-viewport/
