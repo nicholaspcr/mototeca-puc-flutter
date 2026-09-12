@@ -12,6 +12,7 @@ import (
 	"connectrpc.com/otelconnect"
 
 	"mototeca-backend/internal/auth"
+	"mototeca-backend/internal/gen/mototeca/owner/v1/ownerv1connect"
 	"mototeca-backend/internal/gen/mototeca/service/v1/servicev1connect"
 	"mototeca-backend/internal/gen/mototeca/vehicle/v1/vehiclev1connect"
 	"mototeca-backend/internal/gen/mototeca/workshop/v1/workshopv1connect"
@@ -22,6 +23,7 @@ type Handlers struct {
 	Vehicle       vehiclev1connect.VehicleServiceHandler
 	Workshop      workshopv1connect.WorkshopServiceHandler
 	ServiceRecord servicev1connect.ServiceRecordServiceHandler
+	Owner         ownerv1connect.OwnerServiceHandler
 }
 
 // rateLimits throttles the endpoints an anonymous caller can reach: signing in
@@ -32,6 +34,8 @@ func rateLimits() map[string]*RateLimiter {
 		workshopv1connect.WorkshopServiceLoginProcedure:                         NewRateLimiter(0.2, 5),
 		workshopv1connect.WorkshopServiceCreateWorkshopProcedure:                NewRateLimiter(0.05, 3),
 		servicev1connect.ServiceRecordServiceListServiceRecordsByPlateProcedure: NewRateLimiter(1, 20),
+		ownerv1connect.OwnerServiceLoginProcedure:                               NewRateLimiter(0.2, 5),
+		ownerv1connect.OwnerServiceCreateOwnerProcedure:                         NewRateLimiter(0.05, 3),
 	}
 }
 
@@ -64,6 +68,9 @@ func NewMux(handlers Handlers, signer *auth.Signer, logger *slog.Logger) (*http.
 		},
 		func() (string, http.Handler) {
 			return servicev1connect.NewServiceRecordServiceHandler(handlers.ServiceRecord, interceptors)
+		},
+		func() (string, http.Handler) {
+			return ownerv1connect.NewOwnerServiceHandler(handlers.Owner, interceptors)
 		},
 	} {
 		path, handler := register()

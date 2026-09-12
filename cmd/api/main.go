@@ -14,6 +14,7 @@ import (
 	"mototeca-backend/internal/config"
 	"mototeca-backend/internal/db"
 	"mototeca-backend/internal/logging"
+	"mototeca-backend/internal/owner"
 	"mototeca-backend/internal/server"
 	"mototeca-backend/internal/servicerecord"
 	"mototeca-backend/internal/telemetry"
@@ -57,10 +58,15 @@ func main() {
 		os.Exit(1)
 	}
 
+	// One service-record repository, shared: the owner domain reads through it
+	// to show the last service on each bike.
+	serviceRecords := servicerecord.NewRepository(pool)
+
 	handlers := server.Handlers{
 		Vehicle:       vehicle.NewHandler(vehicle.NewRepository(pool), logger),
 		Workshop:      workshop.NewHandler(workshop.NewRepository(pool), signer, logger),
-		ServiceRecord: servicerecord.NewHandler(servicerecord.NewRepository(pool), logger),
+		ServiceRecord: servicerecord.NewHandler(serviceRecords, logger),
+		Owner:         owner.NewHandler(owner.NewRepository(pool), serviceRecords, signer, logger),
 	}
 
 	mux, err := server.NewMux(handlers, signer, logger)

@@ -18,10 +18,29 @@ var ErrInvalidToken = errors.New("invalid token")
 // MinSecretLength keeps a trivially guessable signing key out of production.
 const MinSecretLength = 32
 
-// Signer issues and verifies workshop session tokens.
+// Kind is the sort of account a token belongs to. It is part of the signed
+// payload, so an owner's token can never be replayed as a workshop's: the two
+// flows have different powers (a workshop writes history, an owner only reads
+// their own bikes).
+type Kind string
+
+const (
+	KindWorkshop Kind = "w"
+	KindOwner    Kind = "o"
+)
+
+func (k Kind) valid() bool { return k == KindWorkshop || k == KindOwner }
+
+// Subject is who a verified token identifies.
+type Subject struct {
+	Kind Kind
+	ID   string
+}
+
+// Signer issues and verifies session tokens.
 //
 // A token is `<payload>.<signature>`, both base64url, where payload is
-// "<workshopID>:<expiryUnix>" and signature is HMAC-SHA256 of the payload.
+// "<kind>:<id>:<expiryUnix>" and signature is HMAC-SHA256 of the payload.
 // It is self-contained on purpose: no session table, so verifying a request
 // costs no database round-trip. The trade-off is that a token cannot be
 // revoked before it expires, which is why the TTL is short.
@@ -48,54 +67,65 @@ func (s *Signer) sign(payload []byte) []byte {
 	return mac.Sum(nil)
 }
 
-// Issue returns a token identifying workshopID, valid for the signer's TTL.
-func (s *Signer) Issue(workshopID string, now time.Time) (string, error) {
-	if workshopID == "" {
-		return "", errors.New("workshop id is required")
+// Issue returns a token identifying subject, valid for the signer's TTL.
+func (s *Signer) Issue(subject Subject, now time.Time) (string, error) {
+	if !subject.Kind.valid() {
+		return "", errors.New("unknown subject kind")
 	}
-	if strings.Contains(workshopID, ":") {
-		return "", errors.New("workshop id must not contain ':'")
+	if subject.ID == "" {
+		return "", errors.New("subject id is required")
+	}
+	// ':' separates the fields, so an id containing one would let a crafted id
+	// shift the expiry field.
+	if strings.Contains(subject.ID, ":") {
+		return "", errors.New("subject id must not contain ':'")
 	}
 
-	payload := fmt.Appendf(nil, "%s:%d", workshopID, now.Add(s.ttl).Unix())
+	payload := fmt.Appendf(nil, "%s:%s:%d", subject.Kind, subject.ID, now.Add(s.ttl).Unix())
 	enc := base64.RawURLEncoding
 	return enc.EncodeToString(payload) + "." + enc.EncodeToString(s.sign(payload)), nil
 }
 
-// Verify returns the workshop id carried by a valid, unexpired token.
-func (s *Signer) Verify(token string, now time.Time) (string, error) {
+// Verify returns the subject carried by a valid, unexpired token.
+func (s *Signer) Verify(token string, now time.Time) (Subject, error) {
 	rawPayload, rawSignature, found := strings.Cut(token, ".")
 	if !found {
-		return "", ErrInvalidToken
+		return Subject{}, ErrInvalidToken
 	}
 
 	enc := base64.RawURLEncoding
 	payload, err := enc.DecodeString(rawPayload)
 	if err != nil {
-		return "", ErrInvalidToken
+		return Subject{}, ErrInvalidToken
 	}
 	signature, err := enc.DecodeString(rawSignature)
 	if err != nil {
-		return "", ErrInvalidToken
+		return Subject{}, ErrInvalidToken
 	}
 
 	// Constant-time: a byte-by-byte compare leaks how much of a forged
 	// signature was correct.
 	if !hmac.Equal(signature, s.sign(payload)) {
-		return "", ErrInvalidToken
+		return Subject{}, ErrInvalidToken
 	}
 
-	workshopID, rawExpiry, found := strings.Cut(string(payload), ":")
-	if !found || workshopID == "" {
-		return "", ErrInvalidToken
+	fields := strings.Split(string(payload), ":")
+	if len(fields) != 3 {
+		return Subject{}, ErrInvalidToken
 	}
-	expiry, err := strconv.ParseInt(rawExpiry, 10, 64)
+
+	subject := Subject{Kind: Kind(fields[0]), ID: fields[1]}
+	if !subject.Kind.valid() || subject.ID == "" {
+		return Subject{}, ErrInvalidToken
+	}
+
+	expiry, err := strconv.ParseInt(fields[2], 10, 64)
 	if err != nil {
-		return "", ErrInvalidToken
+		return Subject{}, ErrInvalidToken
 	}
 	if now.After(time.Unix(expiry, 0)) {
-		return "", ErrInvalidToken
+		return Subject{}, ErrInvalidToken
 	}
 
-	return workshopID, nil
+	return subject, nil
 }

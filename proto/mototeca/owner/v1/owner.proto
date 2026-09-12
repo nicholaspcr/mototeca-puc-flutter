@@ -1,0 +1,77 @@
+syntax = "proto3";
+
+package mototeca.owner.v1;
+
+import "google/protobuf/timestamp.proto";
+import "mototeca/service/v1/service.proto";
+
+message Owner {
+  string id = 1;
+  string name = 2;
+  string phone = 3;
+  google.protobuf.Timestamp created_at = 4;
+}
+
+message CreateOwnerRequest {
+  string name = 1;
+  // Brazilian mobile number; punctuation is stripped server-side.
+  string phone = 2;
+  // Plaintext only in transit; stored as a bcrypt digest.
+  string password = 3;
+}
+
+message CreateOwnerResponse {
+  Owner owner = 1;
+  string token = 2;
+}
+
+message LoginRequest {
+  string phone = 1;
+  string password = 2;
+}
+
+message LoginResponse {
+  Owner owner = 1;
+  string token = 2;
+}
+
+// A bike on the "Minhas Motos" screen: the vehicle plus the derived status the
+// owner actually cares about.
+message OwnedVehicle {
+  mototeca.service.v1.VehicleSummary vehicle = 1;
+  // Highest mileage seen in the service history; 0 when never serviced.
+  int32 current_mileage_km = 2;
+  int32 service_count = 3;
+  // Absent when the bike has no history yet.
+  optional mototeca.service.v1.ServiceRecord last_service = 4;
+  // Short status line, e.g. "Troca de óleo em 580 km" or "Em dia".
+  string reminder = 5;
+  // True when the next service is due now or overdue.
+  bool reminder_is_due = 6;
+}
+
+message ListMyVehiclesRequest {}
+
+message ListMyVehiclesResponse {
+  repeated OwnedVehicle vehicles = 1;
+}
+
+message ClaimVehicleRequest {
+  string plate = 1;
+}
+
+message ClaimVehicleResponse {
+  OwnedVehicle vehicle = 1;
+}
+
+service OwnerService {
+  // Returns ALREADY_EXISTS when the phone is already registered.
+  rpc CreateOwner(CreateOwnerRequest) returns (CreateOwnerResponse);
+  // Returns UNAUTHENTICATED for both an unknown phone and a wrong password.
+  rpc Login(LoginRequest) returns (LoginResponse);
+  // Requires an owner token; lists only that owner's bikes.
+  rpc ListMyVehicles(ListMyVehiclesRequest) returns (ListMyVehiclesResponse);
+  // Links an existing vehicle to the signed-in owner. Returns
+  // FAILED_PRECONDITION when someone else already owns it.
+  rpc ClaimVehicle(ClaimVehicleRequest) returns (ClaimVehicleResponse);
+}

@@ -104,7 +104,7 @@ func (h *Handler) Login(ctx context.Context, req *connect.Request[workshopv1.Log
 }
 
 func (h *Handler) issueToken(ctx context.Context, workshopID string) (string, error) {
-	token, err := h.signer.Issue(workshopID, time.Now())
+	token, err := h.signer.Issue(auth.Subject{Kind: auth.KindWorkshop, ID: workshopID}, time.Now())
 	if err != nil {
 		h.logger.ErrorContext(ctx, "issuing workshop token failed", "err", err)
 		return "", connect.NewError(connect.CodeInternal, errors.New("failed to start session"))
