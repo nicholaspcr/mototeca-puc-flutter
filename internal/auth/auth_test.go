@@ -34,17 +34,62 @@ func TestIssueAndVerifyRoundTrip(t *testing.T) {
 	signer := newTestSigner(t, time.Hour)
 	now := time.Now()
 
-	token, err := signer.Issue("workshop-1", now)
+	for _, want := range []Subject{
+		{Kind: KindWorkshop, ID: "workshop-1"},
+		{Kind: KindOwner, ID: "owner-1"},
+	} {
+		token, err := signer.Issue(want, now)
+		if err != nil {
+			t.Fatalf("Issue: %v", err)
+		}
+
+		got, err := signer.Verify(token, now)
+		if err != nil {
+			t.Fatalf("Verify: %v", err)
+		}
+		if got != want {
+			t.Errorf("subject = %+v, want %+v", got, want)
+		}
+	}
+}
+
+// The kind is inside the signed payload, so an owner cannot present their own
+// valid token to a workshop-only endpoint.
+func TestOwnerTokenIsNotAWorkshopToken(t *testing.T) {
+	signer := newTestSigner(t, time.Hour)
+	now := time.Now()
+
+	token, err := signer.Issue(Subject{Kind: KindOwner, ID: "owner-1"}, now)
 	if err != nil {
 		t.Fatalf("Issue: %v", err)
 	}
-
-	got, err := signer.Verify(token, now)
+	subject, err := signer.Verify(token, now)
 	if err != nil {
 		t.Fatalf("Verify: %v", err)
 	}
-	if got != "workshop-1" {
-		t.Errorf("workshop id = %q, want %q", got, "workshop-1")
+
+	ctx := WithSubject(context.Background(), subject)
+	if _, err := RequireWorkshopID(ctx); err == nil {
+		t.Error("an owner token was accepted as a workshop token")
+	}
+	if _, err := RequireOwnerID(ctx); err != nil {
+		t.Errorf("owner token rejected on an owner endpoint: %v", err)
+	}
+}
+
+func TestIssueRejectsBadSubjects(t *testing.T) {
+	signer := newTestSigner(t, time.Hour)
+	now := time.Now()
+
+	for name, subject := range map[string]Subject{
+		"unknown kind":  {Kind: "x", ID: "1"},
+		"empty kind":    {ID: "1"},
+		"empty id":      {Kind: KindOwner},
+		"id with colon": {Kind: KindOwner, ID: "a:b"},
+	} {
+		if _, err := signer.Issue(subject, now); err == nil {
+			t.Errorf("%s: expected Issue to fail", name)
+		}
 	}
 }
 
@@ -52,7 +97,7 @@ func TestVerifyRejectsExpiredToken(t *testing.T) {
 	signer := newTestSigner(t, time.Minute)
 	issuedAt := time.Now()
 
-	token, err := signer.Issue("workshop-1", issuedAt)
+	token, err := signer.Issue(Subject{Kind: KindWorkshop, ID: "workshop-1"}, issuedAt)
 	if err != nil {
 		t.Fatalf("Issue: %v", err)
 	}
@@ -66,14 +111,14 @@ func TestVerifyRejectsTamperedToken(t *testing.T) {
 	signer := newTestSigner(t, time.Hour)
 	now := time.Now()
 
-	token, err := signer.Issue("workshop-1", now)
+	token, err := signer.Issue(Subject{Kind: KindWorkshop, ID: "workshop-1"}, now)
 	if err != nil {
 		t.Fatalf("Issue: %v", err)
 	}
 	payload, signature, _ := strings.Cut(token, ".")
 
 	// A payload swapped for another workshop keeps the original signature.
-	forged, err := newTestSigner(t, time.Hour).Issue("workshop-2", now)
+	forged, err := newTestSigner(t, time.Hour).Issue(Subject{Kind: KindWorkshop, ID: "workshop-2"}, now)
 	if err != nil {
 		t.Fatalf("Issue: %v", err)
 	}
@@ -98,7 +143,7 @@ func TestVerifyRejectsTokenFromAnotherSecret(t *testing.T) {
 	}
 	now := time.Now()
 
-	token, err := issuer.Issue("workshop-1", now)
+	token, err := issuer.Issue(Subject{Kind: KindWorkshop, ID: "workshop-1"}, now)
 	if err != nil {
 		t.Fatalf("Issue: %v", err)
 	}
@@ -153,6 +198,24 @@ func TestRequireWorkshopID(t *testing.T) {
 	}
 	if id != "workshop-1" {
 		t.Errorf("id = %q, want %q", id, "workshop-1")
+	}
+}
+
+func TestRequireOwnerID(t *testing.T) {
+	if _, err := RequireOwnerID(context.Background()); err == nil {
+		t.Fatal("expected an error for an unauthenticated context")
+	}
+	// A workshop token must not satisfy an owner endpoint either.
+	if _, err := RequireOwnerID(WithWorkshopID(context.Background(), "workshop-1")); err == nil {
+		t.Error("a workshop token was accepted as an owner token")
+	}
+
+	id, err := RequireOwnerID(WithOwnerID(context.Background(), "owner-1"))
+	if err != nil {
+		t.Fatalf("RequireOwnerID: %v", err)
+	}
+	if id != "owner-1" {
+		t.Errorf("id = %q, want %q", id, "owner-1")
 	}
 }
 

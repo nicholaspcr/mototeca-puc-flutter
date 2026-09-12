@@ -74,7 +74,7 @@ func (h *Handler) CreateServiceRecord(ctx context.Context, req *connect.Request[
 	}
 
 	return connect.NewResponse(&servicev1.CreateServiceRecordResponse{
-		Record: toProto(record),
+		Record: ToProto(record),
 	}), nil
 }
 
@@ -93,7 +93,7 @@ func (h *Handler) GetServiceRecord(ctx context.Context, req *connect.Request[ser
 	}
 
 	return connect.NewResponse(&servicev1.GetServiceRecordResponse{
-		Record: toProto(record),
+		Record: ToProto(record),
 	}), nil
 }
 
@@ -169,12 +169,14 @@ func int32Ptr(v *int) *int32 {
 func recordsToProto(records []ServiceRecord) []*servicev1.ServiceRecord {
 	out := make([]*servicev1.ServiceRecord, 0, len(records))
 	for i := range records {
-		out = append(out, toProto(&records[i]))
+		out = append(out, ToProto(&records[i]))
 	}
 	return out
 }
 
-func toProto(r *ServiceRecord) *servicev1.ServiceRecord {
+// ToProto converts a record to its wire form. Exported because the owner
+// domain embeds the last service in "Minhas Motos".
+func ToProto(r *ServiceRecord) *servicev1.ServiceRecord {
 	operations := make([]servicev1.ServiceType, 0, len(r.Operations))
 	for _, op := range r.Operations {
 		operations = append(operations, operationToProto(op))

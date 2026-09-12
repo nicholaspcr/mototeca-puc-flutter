@@ -21,12 +21,20 @@ call() { # call <procedure> <json> [auth header]
 say "health"
 curl -sS -o /dev/null -w 'healthz -> %{http_code}\n' "$API/healthz"
 
-say "create workshop"
+# Signing up and signing in are interchangeable here so the script can be run
+# repeatedly against the same database.
+token_of() { echo "$1" | sed -n 's/.*"token":"\([^"]*\)".*/\1/p'; }
+
+say "create workshop (or sign in if it already exists)"
 SIGNUP=$(call mototeca.workshop.v1.WorkshopService/CreateWorkshop \
   "{\"cnpj\":\"$CNPJ\",\"name\":\"Oficina do Zé\",\"password\":\"senha-forte-123\"}")
 echo "$SIGNUP"
-TOKEN=$(echo "$SIGNUP" | sed -n 's/.*"token":"\([^"]*\)".*/\1/p')
-[ -n "$TOKEN" ] || { echo "FAIL: no token returned"; exit 1; }
+TOKEN=$(token_of "$SIGNUP")
+if [ -z "$TOKEN" ]; then
+  TOKEN=$(token_of "$(call mototeca.workshop.v1.WorkshopService/Login \
+    "{\"cnpj\":\"$CNPJ\",\"password\":\"senha-forte-123\"}")")
+fi
+[ -n "$TOKEN" ] || { echo "FAIL: no workshop token"; exit 1; }
 
 say "login with the same credentials"
 call mototeca.workshop.v1.WorkshopService/Login \
@@ -38,7 +46,7 @@ call mototeca.workshop.v1.WorkshopService/Login \
   "{\"cnpj\":\"$CNPJ\",\"password\":\"errada-errada\"}"
 echo
 
-say "register the vehicle"
+say "register the vehicle (already-exists is fine on a re-run)"
 call mototeca.vehicle.v1.VehicleService/CreateVehicle \
   "{\"plate\":\"$PLATE\",\"chassi\":\"9C2KC1670GR000001\",\"make\":\"Honda\",\"model\":\"CG 160 Start\",\"year\":2022}"
 echo
@@ -82,3 +90,39 @@ call mototeca.service.v1.ServiceRecordService/ListWorkshopServiceRecords "{}" "n
 echo
 
 printf '\nE2E COMPLETE\n'
+
+# --- Proprietário -------------------------------------------------------------
+
+say "create owner (or sign in if already registered)"
+OWNER=$(call mototeca.owner.v1.OwnerService/CreateOwner \
+  '{"name":"Marcos Souza","phone":"(31) 99000-1234","password":"senha-forte-123"}')
+echo "$OWNER"
+OWNER_TOKEN=$(token_of "$OWNER")
+if [ -z "$OWNER_TOKEN" ]; then
+  OWNER_TOKEN=$(token_of "$(call mototeca.owner.v1.OwnerService/Login \
+    '{"phone":"31990001234","password":"senha-forte-123"}')")
+fi
+[ -n "$OWNER_TOKEN" ] || { echo "FAIL: no owner token"; exit 1; }
+
+say "owner login with wrong password (expect unauthenticated)"
+call mototeca.owner.v1.OwnerService/Login \
+  "{\"phone\":\"31990001234\",\"password\":\"errada\"}"
+echo
+
+say "owner token must NOT work on a workshop endpoint"
+call mototeca.service.v1.ServiceRecordService/ListWorkshopServiceRecords "{}" "$OWNER_TOKEN"
+echo
+
+say "workshop token must NOT work on an owner endpoint"
+call mototeca.owner.v1.OwnerService/ListMyVehicles "{}" "$TOKEN"
+echo
+
+say "owner claims the bike"
+call mototeca.owner.v1.OwnerService/ClaimVehicle "{\"plate\":\"$PLATE\"}" "$OWNER_TOKEN"
+echo
+
+say "minhas motos (reminder derived from the history)"
+call mototeca.owner.v1.OwnerService/ListMyVehicles "{}" "$OWNER_TOKEN"
+echo
+
+printf '\nOWNER FLOW COMPLETE\n'
