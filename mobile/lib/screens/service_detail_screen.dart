@@ -155,9 +155,13 @@ class ServiceDetailScreen extends StatelessWidget {
           const SizedBox(height: 10),
           Row(
             children: [
-              Expanded(child: _Photo(label: 'Antes', attachments: before)),
+              Expanded(
+                child: _Photo(label: 'Antes', attachments: before),
+              ),
               const SizedBox(width: 10),
-              Expanded(child: _Photo(label: 'Depois', attachments: after)),
+              Expanded(
+                child: _Photo(label: 'Depois', attachments: after),
+              ),
             ],
           ),
           const SizedBox(height: 12),

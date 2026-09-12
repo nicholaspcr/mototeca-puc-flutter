@@ -16,10 +16,8 @@ import (
 	"mototeca-backend/internal/vehicle"
 )
 
-// dummyHash is a valid bcrypt digest of a random string. Login compares
-// against it when no owner matches the phone, so an unregistered number costs
-// the same time as a wrong password and the endpoint cannot be used to
-// enumerate who has an account.
+// dummyHash makes an unregistered phone cost the same time as a wrong
+// password, so Login can't be used to enumerate who has an account.
 const dummyHash = "$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy"
 
 type Handler struct {
@@ -29,8 +27,8 @@ type Handler struct {
 	logger  *slog.Logger
 }
 
-// NewHandler takes the service-record store as well, so "Minhas Motos" can
-// show the last service in full without re-implementing its hydration.
+// NewHandler takes the record store too, so "Minhas Motos" can show the last
+// service without re-implementing its hydration.
 func NewHandler(repo Store, records servicerecord.Store, signer *auth.Signer, logger *slog.Logger) *Handler {
 	return &Handler{repo: repo, records: records, signer: signer, logger: logger}
 }
@@ -72,8 +70,7 @@ func (h *Handler) CreateOwner(ctx context.Context, req *connect.Request[ownerv1.
 }
 
 func (h *Handler) Login(ctx context.Context, req *connect.Request[ownerv1.LoginRequest]) (*connect.Response[ownerv1.LoginResponse], error) {
-	// One message for every failure below: never reveal whether the phone is
-	// registered, only that the pair did not authenticate.
+	// One message for every failure: never reveal whether the phone exists.
 	unauthenticated := connect.NewError(connect.CodeUnauthenticated, errors.New("celular ou senha inválidos"))
 
 	phone := NormalizePhone(req.Msg.Phone)
@@ -182,6 +179,11 @@ func (h *Handler) ownedToProto(ctx context.Context, v OwnedVehicle) (*ownerv1.Ow
 		ServiceCount:     int32(v.ServiceCount),
 		Reminder:         reminder.Text,
 		ReminderIsDue:    reminder.IsDue,
+		NextOilChangeKm:  int32(reminder.DueAtKm),
+	}
+
+	if reminder.DueAtKm > 0 {
+		out.OilChangeIntervalKm = OilChangeIntervalKm
 	}
 
 	if v.LastServiceID == nil {

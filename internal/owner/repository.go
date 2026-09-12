@@ -61,10 +61,9 @@ func (r *Repository) Create(ctx context.Context, input CreateInput, passwordHash
 	return o, nil
 }
 
-// ownedVehicleQuery derives everything the owner's screen needs in one pass:
-// the bike, its current odometer (the highest mileage any workshop recorded),
-// how many services it has, the newest record, and the mileage at the last oil
-// change, which is what the reminder counts from.
+// ownedVehicleQuery derives the whole owner screen in one pass: odometer
+// (highest mileage any workshop recorded), service count, newest record, and
+// the mileage at the last oil change.
 const ownedVehicleQuery = `
 	SELECT v.plate, v.make, v.model, v.year,
 	       COALESCE(MAX(sr.mileage_km), 0) AS current_km,
@@ -125,9 +124,8 @@ func (r *Repository) Claim(ctx context.Context, ownerID, plate string) (*OwnedVe
 		return nil, err
 	}
 
-	// Re-claiming your own bike is a no-op, not an error; taking someone
-	// else's is refused — transferring ownership is a separate, deliberate
-	// flow (ARCHITECTURE.md section 3).
+	// Re-claiming your own bike is a no-op; taking someone else's is refused.
+	// Transfer on sale is a separate flow (ARCHITECTURE.md §3).
 	if currentOwner != nil && *currentOwner != ownerID {
 		return nil, ErrVehicleClaimed
 	}

@@ -46,7 +46,9 @@ class ServiceRecordRepository {
       if (notes != null && notes.trim().isNotEmpty) 'notes': notes.trim(),
       if (parts.isNotEmpty) 'parts': parts.map((p) => p.toJson()).toList(),
     });
-    return ServiceRecord.fromJson(body['record'] as Map<String, dynamic>? ?? const {});
+    return ServiceRecord.fromJson(
+      body['record'] as Map<String, dynamic>? ?? const {},
+    );
   }
 
   /// Returns null when no vehicle is registered under the plate — the empty
@@ -70,7 +72,9 @@ class ServiceRecordRepository {
 
   Future<ServiceRecord> byId(String id) async {
     final body = await _client.call('$_service/GetServiceRecord', {'id': id});
-    return ServiceRecord.fromJson(body['record'] as Map<String, dynamic>? ?? const {});
+    return ServiceRecord.fromJson(
+      body['record'] as Map<String, dynamic>? ?? const {},
+    );
   }
 
   Future<WorkshopFeed> workshopFeed({int limit = 20}) async {

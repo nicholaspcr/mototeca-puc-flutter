@@ -28,10 +28,9 @@ Para popular dados de exemplo (uma oficina, uma moto e um serviço), rode
 `make e2e`: ele exercita todos os endpoints e deixa o banco com conteúdo para
 a demonstração.
 
-> As telas de **proprietário** (Minhas Motos e Lembretes) ainda usam dados de
-> exemplo — o login do proprietário é por celular + código no WhatsApp, que
-> depende de um provedor de SMS que o backend ainda não tem. Elas funcionam na
-> demonstração normalmente, só não vêm do banco.
+> Todas as telas usam a API — não sobrou nenhum dado de exemplo no app. O
+> login do proprietário é celular + senha; o código por WhatsApp continua sendo
+> o desenho final, mas depende de um provedor de SMS que o backend não tem.
 
 ## Opção 1 — Chrome, ao vivo (recomendada)
 
@@ -101,7 +100,12 @@ Mostra os dois perfis e a consulta pública, que é o diferencial do produto:
    fotos, nota fiscal) → voltar.
 5. **Sair** → **Consultar sem cadastro** → digita `ABC1D23` → **Consultar** →
    o mesmo serviço aparece, sem login. É o argumento central do produto.
-6. **Sair** → "Sou proprietário" → **Entrar** → Minhas Motos → **Lembretes**.
+6. **Sair** → "Sou proprietário" → **Cadastre-se** → nome, celular
+   `(31) 99000-1234`, senha → cai em Minhas Motos (vazio no começo).
+7. **+ Cadastrar nova moto** → a mesma placa `ABC1D23` → a moto aparece com a
+   quilometragem e o último serviço que a oficina lançou no passo 3.
+8. **Lembretes de manutenção** → a barra e o aviso saem da própria
+   quilometragem: 3.000 km desde a última troca de óleo.
 
 ### Erros que valem mostrar
 
@@ -112,6 +116,8 @@ São respostas reais do backend, não mensagens de enfeite:
 - Salvar um registro sem escolher operação → *"select at least one operation"*.
 - Buscar uma placa não cadastrada no Novo Registro → oferece cadastrar o
   veículo antes.
+- Vincular uma moto que já tem dono → *"esta moto já está vinculada a outro
+  proprietário"*.
 
 ## Se quiser provar que está testado
 

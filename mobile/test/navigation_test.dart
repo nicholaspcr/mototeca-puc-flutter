@@ -31,12 +31,17 @@ Future<FakeApi> pumpApp(WidgetTester tester) async {
   return api;
 }
 
+/// Signs in on the proprietário side.
+Future<void> signInAsOwner(WidgetTester tester) async {
+  await tapAndSettle(tester, find.byKey(const Key('role-proprietario')));
+  await tester.enterText(find.byType(TextField).first, '(31) 99000-1234');
+  await tester.enterText(find.byType(TextField).at(1), 'senha-forte-123');
+  await tapAndSettle(tester, find.byKey(const Key('login-entrar')));
+}
+
 /// Signs in on the oficina side, filling the form the way a user would.
 Future<void> signInAsWorkshop(WidgetTester tester) async {
-  await tester.enterText(
-    find.byType(TextField).first,
-    '11.222.333/0001-81',
-  );
+  await tester.enterText(find.byType(TextField).first, '11.222.333/0001-81');
   await tester.enterText(find.byType(TextField).at(1), 'senha-forte-123');
   await tapAndSettle(tester, find.byKey(const Key('login-entrar')));
 }
@@ -87,8 +92,7 @@ void main() {
   testWidgets('login como proprietário leva a Minhas Motos', (tester) async {
     await pumpApp(tester);
 
-    await tapAndSettle(tester, find.byKey(const Key('role-proprietario')));
-    await tapAndSettle(tester, find.byKey(const Key('login-entrar')));
+    await signInAsOwner(tester);
 
     expect(find.byType(MyVehiclesScreen), findsOneWidget);
   });
@@ -172,8 +176,7 @@ void main() {
 
   testWidgets('minhas motos abre os lembretes', (tester) async {
     await pumpApp(tester);
-    await tapAndSettle(tester, find.byKey(const Key('role-proprietario')));
-    await tapAndSettle(tester, find.byKey(const Key('login-entrar')));
+    await signInAsOwner(tester);
 
     await tapAndSettle(tester, find.byKey(const Key('minhas-motos-lembretes')));
 

@@ -43,8 +43,14 @@ void main() {
       await client.call('pkg.v1.Service/Method', {'a': 1});
 
       expect(recorder.request.method, 'POST');
-      expect(recorder.request.url.toString(), 'http://test/pkg.v1.Service/Method');
-      expect(recorder.request.headers['Content-Type'], contains('application/json'));
+      expect(
+        recorder.request.url.toString(),
+        'http://test/pkg.v1.Service/Method',
+      );
+      expect(
+        recorder.request.headers['Content-Type'],
+        contains('application/json'),
+      );
       expect(recorder.body, {'a': 1});
     });
 
@@ -59,7 +65,8 @@ void main() {
 
     test('sends the bearer token once signed in', () async {
       final recorder = Recorder();
-      final client = clientReturning({}, recorder: recorder)..authToken = 'tok-123';
+      final client = clientReturning({}, recorder: recorder)
+        ..authToken = 'tok-123';
 
       await client.call('pkg.v1.Service/Method', {});
 
@@ -67,37 +74,54 @@ void main() {
     });
 
     test('turns a Connect error body into a typed ApiException', () async {
-      final client = clientReturning(
-        {'code': 'invalid_argument', 'message': 'select at least one operation'},
-        status: 400,
-      );
+      final client = clientReturning({
+        'code': 'invalid_argument',
+        'message': 'select at least one operation',
+      }, status: 400);
 
       expect(
         () => client.call('pkg.v1.Service/Method', {}),
         throwsA(
           isA<ApiException>()
               .having((e) => e.code, 'code', ApiErrorCode.invalidArgument)
-              .having((e) => e.message, 'message', 'select at least one operation'),
+              .having(
+                (e) => e.message,
+                'message',
+                'select at least one operation',
+              ),
         ),
       );
     });
 
-    test('reports a transport failure as offline rather than a server error', () async {
-      final client = ApiClient(
-        baseUrl: 'http://test',
-        httpClient: MockClient((_) async => throw const SocketExceptionStub()),
-      );
+    test(
+      'reports a transport failure as offline rather than a server error',
+      () async {
+        final client = ApiClient(
+          baseUrl: 'http://test',
+          httpClient: MockClient(
+            (_) async => throw const SocketExceptionStub(),
+          ),
+        );
 
-      expect(
-        () => client.call('pkg.v1.Service/Method', {}),
-        throwsA(isA<ApiException>().having((e) => e.code, 'code', ApiErrorCode.unavailable)),
-      );
-    });
+        expect(
+          () => client.call('pkg.v1.Service/Method', {}),
+          throwsA(
+            isA<ApiException>().having(
+              (e) => e.code,
+              'code',
+              ApiErrorCode.unavailable,
+            ),
+          ),
+        );
+      },
+    );
 
     test('does not crash on a non-JSON error page', () async {
       final client = ApiClient(
         baseUrl: 'http://test',
-        httpClient: MockClient((_) async => http.Response('<html>502</html>', 502)),
+        httpClient: MockClient(
+          (_) async => http.Response('<html>502</html>', 502),
+        ),
       );
 
       expect(
@@ -112,7 +136,13 @@ void main() {
       final recorder = Recorder();
       final repo = VehicleRepository(
         clientReturning({
-          'vehicle': {'id': '1', 'plate': 'ABC1D23', 'make': 'Honda', 'model': 'CG', 'year': 2022},
+          'vehicle': {
+            'id': '1',
+            'plate': 'ABC1D23',
+            'make': 'Honda',
+            'model': 'CG',
+            'year': 2022,
+          },
         }, recorder: recorder),
       );
 
@@ -121,17 +151,26 @@ void main() {
       expect(recorder.body['plate'], 'ABC1D23');
     });
 
-    test('returns null for an unregistered plate instead of throwing', () async {
-      final repo = VehicleRepository(
-        clientReturning({'code': 'not_found', 'message': 'vehicle not found'}, status: 404),
-      );
+    test(
+      'returns null for an unregistered plate instead of throwing',
+      () async {
+        final repo = VehicleRepository(
+          clientReturning({
+            'code': 'not_found',
+            'message': 'vehicle not found',
+          }, status: 404),
+        );
 
-      expect(await repo.findByPlate('ZZZ9Z99'), isNull);
-    });
+        expect(await repo.findByPlate('ZZZ9Z99'), isNull);
+      },
+    );
 
     test('rethrows errors that are not "not found"', () async {
       final repo = VehicleRepository(
-        clientReturning({'code': 'invalid_argument', 'message': 'bad plate'}, status: 400),
+        clientReturning({
+          'code': 'invalid_argument',
+          'message': 'bad plate',
+        }, status: 400),
       );
 
       expect(() => repo.findByPlate('!!'), throwsA(isA<ApiException>()));
@@ -153,46 +192,61 @@ void main() {
         parts: const [Part(name: 'Óleo', quantity: 1, costCents: 6200)],
       );
 
-      expect(recorder.body['operations'], ['SERVICE_TYPE_OIL_CHANGE', 'SERVICE_TYPE_TIRES']);
+      expect(recorder.body['operations'], [
+        'SERVICE_TYPE_OIL_CHANGE',
+        'SERVICE_TYPE_TIRES',
+      ]);
       expect(recorder.body['costCents'], 24500);
       expect(recorder.body['parts'], [
         {'name': 'Óleo', 'quantity': 1, 'costCents': 6200},
       ]);
     });
 
-    test('omits optional fields that are blank rather than sending empty strings', () async {
-      final recorder = Recorder();
-      final repo = ServiceRecordRepository(
-        clientReturning({'record': _recordJson()}, recorder: recorder),
-      );
+    test(
+      'omits optional fields that are blank rather than sending empty strings',
+      () async {
+        final recorder = Recorder();
+        final repo = ServiceRecordRepository(
+          clientReturning({'record': _recordJson()}, recorder: recorder),
+        );
 
-      await repo.create(
-        plate: 'abc1d23',
-        operations: [ServiceOperation.tires],
-        mileageKm: 100,
-        mechanicName: '   ',
-        notes: '',
-      );
+        await repo.create(
+          plate: 'abc1d23',
+          operations: [ServiceOperation.tires],
+          mileageKm: 100,
+          mechanicName: '   ',
+          notes: '',
+        );
 
-      expect(recorder.body.containsKey('mechanicName'), isFalse);
-      expect(recorder.body.containsKey('notes'), isFalse);
-      expect(recorder.body.containsKey('costCents'), isFalse);
-    });
+        expect(recorder.body.containsKey('mechanicName'), isFalse);
+        expect(recorder.body.containsKey('notes'), isFalse);
+        expect(recorder.body.containsKey('costCents'), isFalse);
+      },
+    );
 
     test('parses a record, including money and the operation labels', () async {
-      final repo = ServiceRecordRepository(clientReturning({'record': _recordJson()}));
+      final repo = ServiceRecordRepository(
+        clientReturning({'record': _recordJson()}),
+      );
 
       final record = await repo.byId('record-1');
 
-      expect(record.operations, [ServiceOperation.oilChange, ServiceOperation.chainAndSprocket]);
-      expect(record.operationsLabel, 'Troca de óleo e filtro, Corrente, relação e coroa');
+      expect(record.operations, [
+        ServiceOperation.oilChange,
+        ServiceOperation.chainAndSprocket,
+      ]);
+      expect(
+        record.operationsLabel,
+        'Troca de óleo e filtro, Corrente, relação e coroa',
+      );
       expect(record.formattedCost, r'R$ 245,00');
       expect(record.formattedDate, '02/06/2026');
       expect(record.vehicle.labelWithYear, 'Honda CG 160 Start (2022)');
     });
 
     test('ignores an operation the app does not know', () async {
-      final json = _recordJson()..['operations'] = ['SERVICE_TYPE_OIL_CHANGE', 'SERVICE_TYPE_TELEPORT'];
+      final json = _recordJson()
+        ..['operations'] = ['SERVICE_TYPE_OIL_CHANGE', 'SERVICE_TYPE_TELEPORT'];
       final repo = ServiceRecordRepository(clientReturning({'record': json}));
 
       final record = await repo.byId('record-1');
@@ -202,7 +256,10 @@ void main() {
 
     test('returns null history for an unregistered plate', () async {
       final repo = ServiceRecordRepository(
-        clientReturning({'code': 'not_found', 'message': 'no vehicle'}, status: 404),
+        clientReturning({
+          'code': 'not_found',
+          'message': 'no vehicle',
+        }, status: 404),
       );
 
       expect(await repo.historyByPlate('ZZZ9Z99'), isNull);
@@ -210,7 +267,10 @@ void main() {
 
     test('reads the dashboard feed and its monthly count', () async {
       final repo = ServiceRecordRepository(
-        clientReturning({'records': [_recordJson()], 'countThisMonth': 7}),
+        clientReturning({
+          'records': [_recordJson()],
+          'countThisMonth': 7,
+        }),
       );
 
       final feed = await repo.workshopFeed();
@@ -230,7 +290,10 @@ void main() {
         }, recorder: recorder),
       );
 
-      final session = await repo.login(cnpj: '11.222.333/0001-81', password: 'senha-forte-123');
+      final session = await repo.login(
+        cnpj: '11.222.333/0001-81',
+        password: 'senha-forte-123',
+      );
 
       expect(recorder.body['cnpj'], '11222333000181');
       expect(session.token, 'tok');
@@ -239,16 +302,20 @@ void main() {
 
     test('surfaces a rejected sign-in as unauthenticated', () async {
       final repo = WorkshopRepository(
-        clientReturning(
-          {'code': 'unauthenticated', 'message': 'CNPJ ou senha inválidos'},
-          status: 401,
-        ),
+        clientReturning({
+          'code': 'unauthenticated',
+          'message': 'CNPJ ou senha inválidos',
+        }, status: 401),
       );
 
       expect(
         () => repo.login(cnpj: '11222333000181', password: 'errada'),
         throwsA(
-          isA<ApiException>().having((e) => e.isSessionExpired, 'isSessionExpired', isTrue),
+          isA<ApiException>().having(
+            (e) => e.isSessionExpired,
+            'isSessionExpired',
+            isTrue,
+          ),
         ),
       );
     });
@@ -266,7 +333,12 @@ void main() {
 
 Map<String, dynamic> _recordJson() => {
   'id': 'record-1',
-  'vehicle': {'plate': 'ABC1D23', 'make': 'Honda', 'model': 'CG 160 Start', 'year': 2022},
+  'vehicle': {
+    'plate': 'ABC1D23',
+    'make': 'Honda',
+    'model': 'CG 160 Start',
+    'year': 2022,
+  },
   'workshopName': 'Oficina do Zé',
   'mechanicName': 'José Carlos',
   'operations': ['SERVICE_TYPE_OIL_CHANGE', 'SERVICE_TYPE_CHAIN_AND_SPROCKET'],

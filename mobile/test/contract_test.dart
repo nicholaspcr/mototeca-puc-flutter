@@ -7,6 +7,7 @@ import 'package:http/testing.dart';
 import 'package:mototeca/api/api_client.dart';
 import 'package:mototeca/api/api_exception.dart';
 import 'package:mototeca/models/service_operation.dart';
+import 'package:mototeca/repositories/owner_repository.dart';
 import 'package:mototeca/repositories/service_record_repository.dart';
 import 'package:mototeca/repositories/vehicle_repository.dart';
 import 'package:mototeca/repositories/workshop_repository.dart';
@@ -35,9 +36,8 @@ ApiClient clientServing(String fixture, {int status = 200}) {
 
 void main() {
   test('parses a real Login response', () async {
-    final session = await WorkshopRepository(
-      clientServing('login.json'),
-    ).login(cnpj: '11222333000181', password: 'senha-forte-123');
+    final session = await WorkshopRepository(clientServing('login.json'))
+        .login(cnpj: '11222333000181', password: 'senha-forte-123');
 
     expect(session.token, isNotEmpty);
     expect(session.workshop.name, 'Oficina do Zé');
@@ -48,7 +48,9 @@ void main() {
   });
 
   test('parses a real rejected-login error', () async {
-    final repo = WorkshopRepository(clientServing('login_error.json', status: 401));
+    final repo = WorkshopRepository(
+      clientServing('login_error.json', status: 401),
+    );
 
     await expectLater(
       repo.login(cnpj: '11222333000181', password: 'errada'),
@@ -61,9 +63,8 @@ void main() {
   });
 
   test('parses a real GetVehicleByPlate response', () async {
-    final vehicle = await VehicleRepository(
-      clientServing('vehicle.json'),
-    ).findByPlate('ABC1D23');
+    final vehicle = await VehicleRepository(clientServing('vehicle.json'))
+        .findByPlate('ABC1D23');
 
     expect(vehicle, isNotNull);
     expect(vehicle!.plate, 'ABC1D23');
@@ -72,9 +73,8 @@ void main() {
   });
 
   test('parses a real plate-history response', () async {
-    final history = await ServiceRecordRepository(
-      clientServing('history.json'),
-    ).historyByPlate('ABC1D23');
+    final history = await ServiceRecordRepository(clientServing('history.json'))
+        .historyByPlate('ABC1D23');
 
     expect(history, isNotNull);
     expect(history!.vehicle.plate, 'ABC1D23');
@@ -95,10 +95,48 @@ void main() {
     expect(record.createdAt.year, 2026);
   });
 
+  test('parses a real owner Login response', () async {
+    final session = await OwnerRepository(clientServing('owner_login.json'))
+        .login(phone: '31990001234', password: 'senha-forte-123');
+
+    expect(session.token, isNotEmpty);
+    expect(session.owner.name, 'Marcos Souza');
+    expect(session.owner.phone, '31990001234');
+  });
+
+  test('parses a real rejected owner login', () async {
+    await expectLater(
+      OwnerRepository(clientServing('owner_login_error.json', status: 401))
+          .login(phone: '31990001234', password: 'errada'),
+      throwsA(
+        isA<ApiException>()
+            .having((e) => e.code, 'code', ApiErrorCode.unauthenticated)
+            .having((e) => e.message, 'message', 'celular ou senha inválidos'),
+      ),
+    );
+  });
+
+  test('parses a real ListMyVehicles response', () async {
+    final vehicles = await OwnerRepository(clientServing('owner_vehicles.json'))
+        .myVehicles();
+
+    expect(vehicles, hasLength(1));
+    final bike = vehicles.single;
+    expect(bike.plate, 'ABC1D23');
+    expect(bike.currentMileageKm, 18420);
+    expect(bike.serviceCount, 3);
+    expect(bike.reminder, isNotEmpty);
+    expect(bike.lastService?.workshopName, 'Oficina do Zé');
+    // The schedule numbers must survive, or the progress bar has nothing
+    // honest to draw.
+    expect(bike.hasSchedule, isTrue);
+    expect(bike.nextOilChangeKm, bike.currentMileageKm + bike.kmUntilDue);
+    expect(bike.scheduleProgress, inInclusiveRange(0.0, 1.0));
+  });
+
   test('parses a real workshop feed response', () async {
-    final feed = await ServiceRecordRepository(
-      clientServing('feed.json'),
-    ).workshopFeed();
+    final feed = await ServiceRecordRepository(clientServing('feed.json'))
+        .workshopFeed();
 
     expect(feed.records, hasLength(1));
     expect(feed.countThisMonth, 1);

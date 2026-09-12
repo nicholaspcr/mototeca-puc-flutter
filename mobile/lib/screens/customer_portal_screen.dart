@@ -36,9 +36,8 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
     try {
       // No token is sent: this lookup is public by design, and it is the
       // reason the product exists (ARCHITECTURE.md section 3).
-      final history = await AppScope.read(
-        context,
-      ).serviceRecords.historyByPlate(_plate.text);
+      final history = await AppScope.read(context).serviceRecords
+          .historyByPlate(_plate.text);
       if (!mounted) return;
       setState(() {
         _history = history;

@@ -23,18 +23,14 @@ type CreateInput struct {
 	Password string `json:"-"`
 }
 
-// OwnedVehicle is one row of "Minhas Motos": the bike plus the figures derived
-// from its service history, which is where the owner's screen gets its status
-// from. No separate reminders table — the history already says everything
-// needed to work out what is due.
+// OwnedVehicle is one row of "Minhas Motos". There is no reminders table: the
+// service history already says everything needed to work out what is due.
 type OwnedVehicle struct {
 	Vehicle          servicerecord.VehicleSummary
 	CurrentMileageKm int
 	ServiceCount     int
-	// Newest record, so the screen can show what was last done. Nil when the
-	// bike has no history yet.
+	// Nil when the bike has no history yet.
 	LastServiceID *string
-	// Mileage at the most recent oil change, which is what the reminder
-	// counts from. Nil when none was ever recorded.
+	// What the reminder counts from. Nil when no oil change was recorded.
 	LastOilChangeKm *int
 }

@@ -19,7 +19,8 @@ class WorkshopRepository {
       'cnpj': normalizeCnpj(cnpj),
       'name': name.trim(),
       'password': password,
-      if (address != null && address.trim().isNotEmpty) 'address': address.trim(),
+      if (address != null && address.trim().isNotEmpty)
+        'address': address.trim(),
     });
     return WorkshopSession.fromJson(body);
   }

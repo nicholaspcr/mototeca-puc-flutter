@@ -29,10 +29,13 @@ class WorkshopSession {
   final Workshop workshop;
   final String token;
 
-  factory WorkshopSession.fromJson(Map<String, dynamic> json) => WorkshopSession(
-    workshop: Workshop.fromJson(json['workshop'] as Map<String, dynamic>? ?? const {}),
-    token: json['token'] as String? ?? '',
-  );
+  factory WorkshopSession.fromJson(Map<String, dynamic> json) =>
+      WorkshopSession(
+        workshop: Workshop.fromJson(
+          json['workshop'] as Map<String, dynamic>? ?? const {},
+        ),
+        token: json['token'] as String? ?? '',
+      );
 }
 
 /// Strips the punctuation people type into a CNPJ field.

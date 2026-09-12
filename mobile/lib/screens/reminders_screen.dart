@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 
+import '../models/owner.dart';
+import '../state/app_scope.dart';
 import '../theme.dart';
+import '../widgets/feedback.dart';
 import '../widgets/mt_widgets.dart';
 
-/// Lembretes — km/time based maintenance reminders (ARCHITECTURE.md §3).
+/// Lembretes — km-based maintenance reminders (ARCHITECTURE.md §3).
 class RemindersScreen extends StatefulWidget {
   const RemindersScreen({super.key});
 
@@ -13,107 +16,146 @@ class RemindersScreen extends StatefulWidget {
 
 class _RemindersScreenState extends State<RemindersScreen> {
   bool _whatsapp = true;
+  Future<List<OwnedVehicle>>? _vehicles;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _vehicles ??= AppScope.read(context).owners.myVehicles();
+  }
+
+  Future<void> _reload() async {
+    final reloaded = AppScope.read(context).owners.myVehicles();
+    setState(() {
+      _vehicles = reloaded;
+    });
+    await reloaded;
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Lembretes')),
-      body: ListView(
-        padding: const EdgeInsets.all(MtSizes.screenPadding),
-        children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            decoration: BoxDecoration(
-              color: MtColors.warning.withValues(alpha: 0.12),
-              border: Border.all(
-                color: MtColors.warning.withValues(alpha: 0.4),
-              ),
-              borderRadius: BorderRadius.circular(MtSizes.cardRadius),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: const [
-                Text(
-                  '1 manutenção próxima',
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: MtColors.warningText,
-                  ),
-                ),
-                SizedBox(height: 2),
-                Text(
-                  'Avisos enviados por WhatsApp, por km rodado ou tempo decorrido.',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: MtColors.warningText,
-                    height: 1.4,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 14),
-          const _ReminderCard(
-            title: 'Troca de óleo e filtro',
-            vehicle: 'ABC1D23 · Honda CG 160 Start',
-            status: 'Em breve',
-            due: true,
-            progress: 0.81,
-            left: 'faltam 580 km',
-            elapsed: '18.420 km rodados',
-            footer: 'Última troca: 02/06/2026 · a cada 3.000 km',
-          ),
-          const SizedBox(height: 14),
-          const _ReminderCard(
-            title: 'Revisão programada',
-            vehicle: 'BRA2E19 · Yamaha Fazer 250',
-            status: 'Em dia',
-            due: false,
-            progress: 0.34,
-            left: 'vence em 8 meses',
-            elapsed: '4 meses desde a última',
-            footer: 'Última revisão: 28/05/2026 · a cada 12 meses',
-          ),
-          const SizedBox(height: 14),
-          MtCard(
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Avisos por WhatsApp',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      SizedBox(height: 2),
-                      Text(
-                        'Receber lembretes no (31) 9****-0000',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: MtColors.slate500,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Switch(
-                  key: const Key('lembretes-whatsapp'),
-                  value: _whatsapp,
-                  activeThumbColor: Colors.white,
-                  activeTrackColor: MtColors.petrol,
-                  onChanged: (value) => setState(() => _whatsapp = value),
-                ),
-              ],
-            ),
-          ),
-        ],
+      body: FutureBuilder<List<OwnedVehicle>>(
+        future: _vehicles,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const MtLoading();
+          }
+          if (snapshot.hasError) {
+            return MtEmptyState(
+              message: 'Não foi possível carregar os lembretes.',
+              icon: Icons.cloud_off_outlined,
+              onRetry: _reload,
+            );
+          }
+          return _body(snapshot.data ?? const []);
+        },
       ),
+    );
+  }
+
+  Widget _body(List<OwnedVehicle> vehicles) {
+    final due = vehicles.where((v) => v.reminderIsDue).length;
+
+    return ListView(
+      padding: const EdgeInsets.all(MtSizes.screenPadding),
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          decoration: BoxDecoration(
+            color: MtColors.warning.withValues(alpha: 0.12),
+            border: Border.all(color: MtColors.warning.withValues(alpha: 0.4)),
+            borderRadius: BorderRadius.circular(MtSizes.cardRadius),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                due == 1 ? '1 manutenção próxima' : '$due manutenções próximas',
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: MtColors.warningText,
+                ),
+              ),
+              const SizedBox(height: 2),
+              const Text(
+                'Avisos enviados por WhatsApp, por km rodado ou tempo decorrido.',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: MtColors.warningText,
+                  height: 1.4,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 14),
+        if (vehicles.isEmpty)
+          const MtEmptyState(
+            message: 'Cadastre uma moto para receber lembretes.',
+            icon: Icons.notifications_none,
+          ),
+        for (final vehicle in vehicles) ...[
+          _reminderCard(vehicle),
+          const SizedBox(height: 14),
+        ],
+        MtCard(
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Avisos por WhatsApp',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    SizedBox(height: 2),
+                    Text(
+                      'Receber lembretes no celular cadastrado',
+                      style: TextStyle(fontSize: 12, color: MtColors.slate500),
+                    ),
+                  ],
+                ),
+              ),
+              Switch(
+                key: const Key('lembretes-whatsapp'),
+                value: _whatsapp,
+                activeThumbColor: Colors.white,
+                activeTrackColor: MtColors.petrol,
+                onChanged: (value) => setState(() => _whatsapp = value),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _reminderCard(OwnedVehicle vehicle) {
+    final km = vehicle.kmUntilDue;
+    return _ReminderCard(
+      title: 'Troca de óleo e filtro',
+      vehicle: '${vehicle.plate} · ${vehicle.label}',
+      status: vehicle.reminderIsDue ? 'Em breve' : 'Em dia',
+      due: vehicle.reminderIsDue,
+      progress: vehicle.scheduleProgress,
+      left: switch (vehicle) {
+        _ when !vehicle.hasSchedule => 'sem previsão',
+        _ when km < 0 => 'atrasada em ${-km} km',
+        _ => 'faltam $km km',
+      },
+      elapsed: '${vehicle.currentMileageKm} km rodados',
+      footer: vehicle.hasSchedule
+          ? 'Próxima troca aos ${vehicle.nextOilChangeKm} km · '
+                'a cada ${vehicle.oilChangeIntervalKm} km'
+          : 'Nenhuma troca de óleo registrada ainda',
     );
   }
 }

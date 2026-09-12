@@ -18,14 +18,16 @@ Mototeca stores motorcycle service/repair history in Brazil. Mechanics (`oficina
 - **Service history log** — date, oficina, mechanic, operation type (fixed taxonomy: troca de óleo, revisão programada, freios, corrente/relação/coroa, pneus, elétrica/bateria, velas, suspensão, embreagem, carburação/injeção, funilaria/pintura, outro), parts, labor, km, cost, before/after photos, notes. Append-only — edits create a new revision, never a mutation.
 - **Oficina dashboard** — lookup by plate, create/edit only that shop's own records, customer list, orçamento draft → service record.
 - **Customer portal** — plate or QR lookup, no account needed to view; phone/CPF+OTP only to claim ownership. Shareable PDF summary.
-- **Notifications** — WhatsApp-first, reminders by km or elapsed time.
+- **Notifications** — WhatsApp-first, reminders by km or elapsed time. Today
+  the reminder is derived from the service history (mileage since the last oil
+  change); nothing is actually sent yet.
 - **Trust (later)** — oficina ratings, owner confirmation step on entries.
 
 ## 4. Data Model
 
 ```
 Vehicle        (plate, chassi, make, model, year, current_owner_id)
-Owner          (phone, cpf_hash, name)
+Owner          (phone, cpf_hash?, name, password_hash)
 Workshop       (cnpj, name, address, verified, password_hash)
 Mechanic       (workshop_id, name, role)
 ServiceRecord  (vehicle_id, workshop_id, mechanic_id, mileage_km,
@@ -46,7 +48,7 @@ Course requirement, not an open choice: one Flutter app (Android-first) for both
 
 Talks to the Go API over plain HTTP+JSON: Connect-RPC already accepts `Content-Type: application/json` on the same endpoints it serves gRPC/gRPC-Web on, so `package:http` + `dart:convert` is enough — no codegen, no separate REST layer. Trade-off: RPC-shaped URLs (`POST /<Service>/<Method>`) and hand-written Dart models. See the README's "Calling the API" section for exact shapes.
 
-Flutter code lives under `mobile/`; `design/` is the mockup/brand reference and `design/NAVIGATION.md` is the screen/route map. The oficina flow and the public plate lookup call the API; the proprietário screens still render sample data until owner sign-in exists (below).
+Flutter code lives under `mobile/`; `design/` is the mockup/brand reference and `design/NAVIGATION.md` is the screen/route map. Every screen calls the API — the app carries no sample data.
 
 ## 6. Backend & Infrastructure
 
@@ -54,11 +56,13 @@ Flutter code lives under `mobile/`; `design/` is the mockup/brand reference and 
 - **Postgres** — relational data, append-only trust ledger. Schema/migrations in `db/migrations`.
 - Object storage (S3-compatible) for photos/attachments.
 - Stateless API, horizontally scalable.
-- Auth: CNPJ + password for oficinas — bcrypt digests, HMAC-signed bearer
-  tokens with a 12h expiry, no session table. Phone+OTP for owners is designed
-  but **not built**: it needs an SMS/WhatsApp sender, and until then the owner
-  screens run on sample data. The `verified` flag on a workshop is separate
-  from authentication — signing in does not mean the CNPJ was checked.
+- Auth: CNPJ + password for oficinas, phone + password for owners. bcrypt
+  digests, HMAC-signed bearer tokens with a 12h expiry and no session table.
+  The token carries the account kind, so the two flows cannot borrow each
+  other's sessions. Phone+OTP is the eventual design for owners; it needs an
+  SMS/WhatsApp sender, so a password stands in for now. The `verified` flag on
+  a workshop is separate from authentication — signing in does not mean the
+  CNPJ was checked.
 
 ## 7. Backups
 
