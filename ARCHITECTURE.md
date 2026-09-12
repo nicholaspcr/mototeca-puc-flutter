@@ -40,7 +40,7 @@ Course requirement, not an open choice: one Flutter app (Android-first) for both
 
 Talks to the Go API over plain HTTP+JSON: Connect-RPC already accepts `Content-Type: application/json` on the same endpoints it serves gRPC/gRPC-Web on, so `package:http` + `dart:convert` is enough — no codegen, no separate REST layer. Trade-off: RPC-shaped URLs (`POST /<Service>/<Method>`) and hand-written Dart models. See the README's "Calling the API" section for exact shapes.
 
-Flutter code lives under `mobile/` (not started yet); `design/` is the mockup/brand reference, not code to port directly.
+Flutter code lives under `mobile/`; `design/` is the mockup/brand reference and `design/NAVIGATION.md` is the screen/route map to implement.
 
 ## 6. Backend & Infrastructure
 
