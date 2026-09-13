@@ -65,7 +65,7 @@ func (f *fakeStore) Release(_ context.Context, ownerID, plate string) error {
 	return nil
 }
 
-func (f *fakeStore) Claim(_ context.Context, ownerID, plate string) (*OwnedVehicle, error) {
+func (f *fakeStore) Claim(_ context.Context, ownerID, plate, _ string) (*OwnedVehicle, error) {
 	if f.claimErr != nil {
 		return nil, f.claimErr
 	}
@@ -285,7 +285,7 @@ func TestClaimVehicle(t *testing.T) {
 	h := newTestHandler(t, store, &fakeRecords{})
 
 	res, err := h.ClaimVehicle(auth.WithOwnerID(context.Background(), testOwnerID),
-		connect.NewRequest(&ownerv1.ClaimVehicleRequest{Plate: "abc-1d23"}))
+		connect.NewRequest(&ownerv1.ClaimVehicleRequest{Plate: "abc-1d23", ChassiSuffix: " gr0001 "}))
 	if err != nil {
 		t.Fatalf("ClaimVehicle: %v", err)
 	}
@@ -298,6 +298,7 @@ func TestClaimVehicleErrors(t *testing.T) {
 	cases := map[error]connect.Code{
 		ErrVehicleNotFound: connect.CodeNotFound,
 		ErrVehicleClaimed:  connect.CodeFailedPrecondition,
+		ErrChassiMismatch:  connect.CodePermissionDenied,
 	}
 
 	for storeErr, want := range cases {
@@ -306,8 +307,18 @@ func TestClaimVehicleErrors(t *testing.T) {
 		h := newTestHandler(t, store, &fakeRecords{})
 
 		_, err := h.ClaimVehicle(auth.WithOwnerID(context.Background(), testOwnerID),
-			connect.NewRequest(&ownerv1.ClaimVehicleRequest{Plate: testPlate}))
+			connect.NewRequest(&ownerv1.ClaimVehicleRequest{Plate: testPlate, ChassiSuffix: "000001"}))
 		assertConnectCode(t, err, want)
+	}
+}
+
+func TestClaimVehicleRequiresTheChassiSuffix(t *testing.T) {
+	h := newTestHandler(t, newFakeStore(), &fakeRecords{})
+
+	for _, suffix := range []string{"", "12345", "12345-7"} {
+		_, err := h.ClaimVehicle(auth.WithOwnerID(context.Background(), testOwnerID),
+			connect.NewRequest(&ownerv1.ClaimVehicleRequest{Plate: testPlate, ChassiSuffix: suffix}))
+		assertConnectCode(t, err, connect.CodeInvalidArgument)
 	}
 }
 

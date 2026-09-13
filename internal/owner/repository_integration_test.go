@@ -18,6 +18,7 @@ const (
 	testChassiIntegration = "ZZZ0000000000ZZZ7"
 	testCNPJIntegration   = "99888777000188"
 	testPhoneIntegration  = "31999990000"
+	testChassiSuffix      = "00ZZZ7" // end of testChassiIntegration
 )
 
 type fixture struct {
@@ -99,7 +100,7 @@ func TestClaimLinksTheVehicle(t *testing.T) {
 	f := setup(t)
 	repo := NewRepository(f.pool)
 
-	owned, err := repo.Claim(context.Background(), f.ownerID, testPlateIntegration)
+	owned, err := repo.Claim(context.Background(), f.ownerID, testPlateIntegration, testChassiSuffix)
 	if err != nil {
 		t.Fatalf("Claim: %v", err)
 	}
@@ -122,10 +123,10 @@ func TestClaimIsIdempotent(t *testing.T) {
 	repo := NewRepository(f.pool)
 	ctx := context.Background()
 
-	if _, err := repo.Claim(ctx, f.ownerID, testPlateIntegration); err != nil {
+	if _, err := repo.Claim(ctx, f.ownerID, testPlateIntegration, testChassiSuffix); err != nil {
 		t.Fatalf("first Claim: %v", err)
 	}
-	if _, err := repo.Claim(ctx, f.ownerID, testPlateIntegration); err != nil {
+	if _, err := repo.Claim(ctx, f.ownerID, testPlateIntegration, testChassiSuffix); err != nil {
 		t.Errorf("second Claim: %v, want it to succeed", err)
 	}
 }
@@ -135,7 +136,7 @@ func TestClaimRefusesSomeoneElsesVehicle(t *testing.T) {
 	repo := NewRepository(f.pool)
 	ctx := context.Background()
 
-	if _, err := repo.Claim(ctx, f.ownerID, testPlateIntegration); err != nil {
+	if _, err := repo.Claim(ctx, f.ownerID, testPlateIntegration, testChassiSuffix); err != nil {
 		t.Fatalf("Claim: %v", err)
 	}
 
@@ -147,7 +148,7 @@ func TestClaimRefusesSomeoneElsesVehicle(t *testing.T) {
 		_, _ = f.pool.Exec(ctx, `DELETE FROM owners WHERE id = $1`, other.ID)
 	})
 
-	if _, err := repo.Claim(ctx, other.ID, testPlateIntegration); err != ErrVehicleClaimed {
+	if _, err := repo.Claim(ctx, other.ID, testPlateIntegration, testChassiSuffix); err != ErrVehicleClaimed {
 		t.Errorf("err = %v, want ErrVehicleClaimed", err)
 	}
 }
@@ -155,7 +156,7 @@ func TestClaimRefusesSomeoneElsesVehicle(t *testing.T) {
 func TestClaimRejectsAnUnknownPlate(t *testing.T) {
 	f := setup(t)
 
-	_, err := NewRepository(f.pool).Claim(context.Background(), f.ownerID, "QQQ6Q66")
+	_, err := NewRepository(f.pool).Claim(context.Background(), f.ownerID, "QQQ6Q66", testChassiSuffix)
 	if err != ErrVehicleNotFound {
 		t.Errorf("err = %v, want ErrVehicleNotFound", err)
 	}
@@ -168,7 +169,7 @@ func TestListVehiclesDerivesTheOdometerAndOilChange(t *testing.T) {
 	repo := NewRepository(f.pool)
 	ctx := context.Background()
 
-	if _, err := repo.Claim(ctx, f.ownerID, testPlateIntegration); err != nil {
+	if _, err := repo.Claim(ctx, f.ownerID, testPlateIntegration, testChassiSuffix); err != nil {
 		t.Fatalf("Claim: %v", err)
 	}
 	f.addService(t, 15000, servicerecord.OperationOilChange)
@@ -205,7 +206,7 @@ func TestListVehiclesHandlesABikeWithNoHistory(t *testing.T) {
 	repo := NewRepository(f.pool)
 	ctx := context.Background()
 
-	if _, err := repo.Claim(ctx, f.ownerID, testPlateIntegration); err != nil {
+	if _, err := repo.Claim(ctx, f.ownerID, testPlateIntegration, testChassiSuffix); err != nil {
 		t.Fatalf("Claim: %v", err)
 	}
 
@@ -255,7 +256,7 @@ func TestReleaseAllowsANewOwnerToClaim(t *testing.T) {
 	repo := NewRepository(f.pool)
 	ctx := context.Background()
 
-	if _, err := repo.Claim(ctx, f.ownerID, testPlateIntegration); err != nil {
+	if _, err := repo.Claim(ctx, f.ownerID, testPlateIntegration, testChassiSuffix); err != nil {
 		t.Fatalf("Claim: %v", err)
 	}
 	f.addService(t, 15000, servicerecord.OperationOilChange)
@@ -267,7 +268,7 @@ func TestReleaseAllowsANewOwnerToClaim(t *testing.T) {
 	t.Cleanup(func() { _, _ = f.pool.Exec(ctx, `DELETE FROM owners WHERE id = $1`, buyer.ID) })
 
 	// The buyer cannot take it while the seller still holds it.
-	if _, err := repo.Claim(ctx, buyer.ID, testPlateIntegration); err != ErrVehicleClaimed {
+	if _, err := repo.Claim(ctx, buyer.ID, testPlateIntegration, testChassiSuffix); err != ErrVehicleClaimed {
 		t.Fatalf("err = %v, want ErrVehicleClaimed before release", err)
 	}
 
@@ -275,7 +276,7 @@ func TestReleaseAllowsANewOwnerToClaim(t *testing.T) {
 		t.Fatalf("Release: %v", err)
 	}
 
-	owned, err := repo.Claim(ctx, buyer.ID, testPlateIntegration)
+	owned, err := repo.Claim(ctx, buyer.ID, testPlateIntegration, testChassiSuffix)
 	if err != nil {
 		t.Fatalf("Claim after release: %v", err)
 	}
@@ -302,7 +303,7 @@ func TestReleaseRefusesABikeYouDoNotHold(t *testing.T) {
 		t.Errorf("err = %v, want ErrVehicleNotFound", err)
 	}
 
-	if _, err := repo.Claim(ctx, f.ownerID, testPlateIntegration); err != nil {
+	if _, err := repo.Claim(ctx, f.ownerID, testPlateIntegration, testChassiSuffix); err != nil {
 		t.Fatalf("Claim: %v", err)
 	}
 	stranger, err := repo.Create(ctx, CreateInput{Name: "Estranho", Phone: "31999990003"}, "digest")
@@ -322,7 +323,7 @@ func TestListVehiclesIgnoresSupersededRecords(t *testing.T) {
 	repo := NewRepository(f.pool)
 	ctx := context.Background()
 
-	if _, err := repo.Claim(ctx, f.ownerID, testPlateIntegration); err != nil {
+	if _, err := repo.Claim(ctx, f.ownerID, testPlateIntegration, testChassiSuffix); err != nil {
 		t.Fatalf("Claim: %v", err)
 	}
 	f.addService(t, 15000, servicerecord.OperationBrakes)
@@ -355,5 +356,24 @@ func TestListVehiclesIgnoresSupersededRecords(t *testing.T) {
 	}
 	if got.LastServiceID == nil || *got.LastServiceID != correction.ID {
 		t.Errorf("lastServiceId = %v, want the correction %q", got.LastServiceID, correction.ID)
+	}
+}
+
+// The plate is public; only someone with the papers knows the chassi.
+func TestClaimRefusesTheWrongChassiSuffix(t *testing.T) {
+	f := setup(t)
+	repo := NewRepository(f.pool)
+
+	_, err := repo.Claim(context.Background(), f.ownerID, testPlateIntegration, "999999")
+	if err != ErrChassiMismatch {
+		t.Fatalf("err = %v, want ErrChassiMismatch", err)
+	}
+
+	vehicles, err := repo.ListVehicles(context.Background(), f.ownerID)
+	if err != nil {
+		t.Fatalf("ListVehicles: %v", err)
+	}
+	if len(vehicles) != 0 {
+		t.Errorf("vehicles = %d, want the bike left unclaimed", len(vehicles))
 	}
 }

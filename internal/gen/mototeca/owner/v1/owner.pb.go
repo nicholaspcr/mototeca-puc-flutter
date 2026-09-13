@@ -500,8 +500,11 @@ func (x *ListMyVehiclesResponse) GetVehicles() []*OwnedVehicle {
 }
 
 type ClaimVehicleRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Plate         string                 `protobuf:"bytes,1,opt,name=plate,proto3" json:"plate,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	Plate string                 `protobuf:"bytes,1,opt,name=plate,proto3" json:"plate,omitempty"`
+	// Last 6 characters of the chassi, printed on the registration document
+	// (CRLV). The plate alone is public, so it cannot prove ownership.
+	ChassiSuffix  string `protobuf:"bytes,2,opt,name=chassi_suffix,json=chassiSuffix,proto3" json:"chassi_suffix,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -539,6 +542,13 @@ func (*ClaimVehicleRequest) Descriptor() ([]byte, []int) {
 func (x *ClaimVehicleRequest) GetPlate() string {
 	if x != nil {
 		return x.Plate
+	}
+	return ""
+}
+
+func (x *ClaimVehicleRequest) GetChassiSuffix() string {
+	if x != nil {
+		return x.ChassiSuffix
 	}
 	return ""
 }
@@ -706,9 +716,10 @@ const file_mototeca_owner_v1_owner_proto_rawDesc = "" +
 	"\r_last_service\"\x17\n" +
 	"\x15ListMyVehiclesRequest\"U\n" +
 	"\x16ListMyVehiclesResponse\x12;\n" +
-	"\bvehicles\x18\x01 \x03(\v2\x1f.mototeca.owner.v1.OwnedVehicleR\bvehicles\"+\n" +
+	"\bvehicles\x18\x01 \x03(\v2\x1f.mototeca.owner.v1.OwnedVehicleR\bvehicles\"P\n" +
 	"\x13ClaimVehicleRequest\x12\x14\n" +
-	"\x05plate\x18\x01 \x01(\tR\x05plate\"-\n" +
+	"\x05plate\x18\x01 \x01(\tR\x05plate\x12#\n" +
+	"\rchassi_suffix\x18\x02 \x01(\tR\fchassiSuffix\"-\n" +
 	"\x15ReleaseVehicleRequest\x12\x14\n" +
 	"\x05plate\x18\x01 \x01(\tR\x05plate\"\x18\n" +
 	"\x16ReleaseVehicleResponse\"Q\n" +

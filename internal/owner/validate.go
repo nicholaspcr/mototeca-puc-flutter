@@ -2,13 +2,31 @@ package owner
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 	"unicode/utf8"
 
 	"mototeca-backend/internal/auth"
 )
 
-const maxNameLength = 120
+const (
+	maxNameLength      = 120
+	ChassiSuffixLength = 6
+)
+
+var chassiSuffixRegex = regexp.MustCompile(fmt.Sprintf(`^[A-Z0-9]{%d}$`, ChassiSuffixLength))
+
+// NormalizeChassiSuffix upper-cases and trims what the owner typed.
+func NormalizeChassiSuffix(raw string) string {
+	return strings.ToUpper(strings.TrimSpace(raw))
+}
+
+func ValidateChassiSuffix(suffix string) error {
+	if !chassiSuffixRegex.MatchString(suffix) {
+		return fmt.Errorf("informe os %d últimos caracteres do chassi", ChassiSuffixLength)
+	}
+	return nil
+}
 
 // NormalizePhone strips the punctuation people type into a phone field
 // ((31) 90000-0000) so the stored value is always bare digits.
