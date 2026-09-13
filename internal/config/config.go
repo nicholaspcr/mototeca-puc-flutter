@@ -5,6 +5,7 @@ package config
 import (
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"mototeca-backend/internal/auth"
@@ -43,6 +44,9 @@ type Config struct {
 	StorageBucket    string
 	StoragePublicURL string
 	StorageUseSSL    bool
+	// CORSAllowedOrigins are the browser origins allowed to call the API.
+	// Empty allows loopback origins only, for the Flutter web dev server.
+	CORSAllowedOrigins []string
 }
 
 // StorageEnabled reports whether photo uploads are configured.
@@ -65,6 +69,8 @@ func Load() (Config, error) {
 		StorageBucket:    os.Getenv("STORAGE_BUCKET"),
 		StoragePublicURL: os.Getenv("STORAGE_PUBLIC_URL"),
 		StorageUseSSL:    os.Getenv("STORAGE_USE_SSL") == "true",
+
+		CORSAllowedOrigins: splitList(os.Getenv("CORS_ALLOWED_ORIGINS")),
 	}
 
 	if cfg.DatabaseURL == "" {
@@ -99,4 +105,14 @@ func Load() (Config, error) {
 	}
 
 	return cfg, nil
+}
+
+func splitList(raw string) []string {
+	var items []string
+	for item := range strings.SplitSeq(raw, ",") {
+		if trimmed := strings.TrimSpace(item); trimmed != "" {
+			items = append(items, trimmed)
+		}
+	}
+	return items
 }

@@ -66,6 +66,20 @@ func TestLoad(t *testing.T) {
 		}
 	})
 
+	t.Run("cors origins are split and trimmed", func(t *testing.T) {
+		setRequired(t)
+		t.Setenv("CORS_ALLOWED_ORIGINS", " https://a.example , ,https://b.example")
+
+		cfg, err := Load()
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		want := []string{"https://a.example", "https://b.example"}
+		if strings.Join(cfg.CORSAllowedOrigins, "|") != strings.Join(want, "|") {
+			t.Errorf("CORSAllowedOrigins = %q, want %q", cfg.CORSAllowedOrigins, want)
+		}
+	})
+
 	t.Run("invalid log format", func(t *testing.T) {
 		setRequired(t)
 		t.Setenv("LOG_FORMAT", "xml")
