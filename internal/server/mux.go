@@ -25,6 +25,8 @@ type Pinger interface {
 	Ping(ctx context.Context) error
 }
 
+const maxRPCBytes = 1 << 20
+
 // Handlers are the per-domain Connect implementations the mux serves.
 type Handlers struct {
 	Vehicle       vehiclev1connect.VehicleServiceHandler
@@ -59,11 +61,15 @@ func NewMux(handlers Handlers, uploads *UploadHandler, signer *auth.Signer, db P
 		return nil, fmt.Errorf("creating otel interceptor: %w", err)
 	}
 
-	interceptors := connect.WithInterceptors(
-		otelInterceptor,
-		RateLimitInterceptor(rateLimits(), NewRateLimiter(10, 40)),
-		LoggingInterceptor(logger),
-		auth.Interceptor(signer),
+	interceptors := connect.WithHandlerOptions(
+		connect.WithInterceptors(
+			otelInterceptor,
+			RateLimitInterceptor(rateLimits(), NewRateLimiter(10, 40)),
+			LoggingInterceptor(logger),
+			auth.Interceptor(signer),
+		),
+		// No RPC carries files, so a body this large is abuse, not data.
+		connect.WithReadMaxBytes(maxRPCBytes),
 	)
 
 	mux := http.NewServeMux()

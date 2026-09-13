@@ -120,6 +120,15 @@ func (s *Store) Put(ctx context.Context, prefix, contentType string, size int64,
 	return s.publicURL + "/" + s.bucket + "/" + object, nil
 }
 
+// Delete removes a file this Store produced, identified by its URL.
+func (s *Store) Delete(ctx context.Context, rawURL string) error {
+	object, ok := s.ObjectName(rawURL)
+	if !ok {
+		return fmt.Errorf("%q is not a URL from this store", rawURL)
+	}
+	return s.client.RemoveObject(ctx, s.bucket, object, minio.RemoveObjectOptions{})
+}
+
 // SupportedTypes lists the accepted content types, for error messages.
 func SupportedTypes() []string {
 	types := make([]string, 0, len(allowedTypes))
