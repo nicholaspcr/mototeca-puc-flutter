@@ -156,6 +156,29 @@ func (h *Handler) ClaimVehicle(ctx context.Context, req *connect.Request[ownerv1
 	return connect.NewResponse(&ownerv1.ClaimVehicleResponse{Vehicle: converted}), nil
 }
 
+func (h *Handler) ReleaseVehicle(ctx context.Context, req *connect.Request[ownerv1.ReleaseVehicleRequest]) (*connect.Response[ownerv1.ReleaseVehicleResponse], error) {
+	ownerID, err := auth.RequireOwnerID(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	plate := vehicle.NormalizePlate(req.Msg.Plate)
+	if plate == "" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("plate is required"))
+	}
+
+	err = h.repo.Release(ctx, ownerID, plate)
+	if errors.Is(err, ErrVehicleNotFound) {
+		return nil, connect.NewError(connect.CodeNotFound, errors.New("esta moto não está vinculada a você"))
+	}
+	if err != nil {
+		h.logger.ErrorContext(ctx, "releasing vehicle failed", "err", err, "plate", plate)
+		return nil, connect.NewError(connect.CodeInternal, errors.New("failed to release the motorcycle"))
+	}
+
+	return connect.NewResponse(&ownerv1.ReleaseVehicleResponse{}), nil
+}
+
 func (h *Handler) issueToken(ctx context.Context, ownerID string) (string, error) {
 	token, err := h.signer.Issue(auth.Subject{Kind: auth.KindOwner, ID: ownerID}, time.Now())
 	if err != nil {

@@ -125,4 +125,32 @@ say "minhas motos (reminder derived from the history)"
 call mototeca.owner.v1.OwnerService/ListMyVehicles "{}" "$OWNER_TOKEN"
 echo
 
+say "owner releases the bike (sale) and can no longer see it"
+call mototeca.owner.v1.OwnerService/ReleaseVehicle "{\"plate\":\"$PLATE\"}" "$OWNER_TOKEN"
+call mototeca.owner.v1.OwnerService/ListMyVehicles "{}" "$OWNER_TOKEN"
+echo
+
+say "releasing a bike you do not hold is refused"
+call mototeca.owner.v1.OwnerService/ReleaseVehicle "{\"plate\":\"$PLATE\"}" "$OWNER_TOKEN"
+echo
+
+# --- Correções (append-only) ---------------------------------------------------
+
+say "revise a record — the correction replaces it in the history"
+RECORD_ID=$(call mototeca.service.v1.ServiceRecordService/ListWorkshopServiceRecords '{"limit":1}' "$TOKEN" \
+  | sed -n 's/.*"records":\[{"id":"\([^"]*\)".*/\1/p')
+call mototeca.service.v1.ServiceRecordService/ReviseServiceRecord \
+  "{\"recordId\":\"$RECORD_ID\",\"operations\":[\"SERVICE_TYPE_TIRES\"],\"mileageKm\":18999,\"notes\":\"Correção: era pneu, não óleo.\"}" "$TOKEN"
+echo
+
+say "revising the same record twice is refused"
+call mototeca.service.v1.ServiceRecordService/ReviseServiceRecord \
+  "{\"recordId\":\"$RECORD_ID\",\"operations\":[\"SERVICE_TYPE_TIRES\"],\"mileageKm\":19000}" "$TOKEN"
+echo
+
+say "revising without a token is refused"
+call mototeca.service.v1.ServiceRecordService/ReviseServiceRecord \
+  "{\"recordId\":\"$RECORD_ID\",\"operations\":[\"SERVICE_TYPE_TIRES\"],\"mileageKm\":19000}"
+echo
+
 printf '\nOWNER FLOW COMPLETE\n'

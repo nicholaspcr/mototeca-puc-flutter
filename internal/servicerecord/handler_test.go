@@ -27,6 +27,7 @@ type fakeStore struct {
 	created    *CreateInput
 	countMonth int
 	lastLimit  int
+	reviseErr  error
 }
 
 func newFakeStore() *fakeStore {
@@ -61,6 +62,16 @@ func (f *fakeStore) Create(_ context.Context, input CreateInput) (*ServiceRecord
 	}
 	f.records[record.ID] = record
 	return record, nil
+}
+
+func (f *fakeStore) Revise(_ context.Context, workshopID, recordID string, input CreateInput) (*ServiceRecord, error) {
+	if f.reviseErr != nil {
+		return nil, f.reviseErr
+	}
+	f.created = &input
+	revised := &ServiceRecord{ID: "record-2", RevisesRecordID: &recordID, Operations: input.Operations}
+	f.records[revised.ID] = revised
+	return revised, nil
 }
 
 func (f *fakeStore) FindByID(_ context.Context, id string) (*ServiceRecord, error) {
@@ -289,6 +300,85 @@ func TestListByPlatePassesTheClampedLimit(t *testing.T) {
 	if store.lastLimit != maxListLimit {
 		t.Errorf("limit reaching the store = %d, want it capped at %d", store.lastLimit, maxListLimit)
 	}
+}
+
+func validReviseRequest() *servicev1.ReviseServiceRecordRequest {
+	return &servicev1.ReviseServiceRecordRequest{
+		RecordId:   "record-1",
+		Operations: []servicev1.ServiceType{servicev1.ServiceType_SERVICE_TYPE_TIRES},
+		MileageKm:  18500,
+	}
+}
+
+func seedRecord(t *testing.T, h *Handler) *fakeStore {
+	t.Helper()
+	store, ok := h.repo.(*fakeStore)
+	if !ok {
+		t.Fatal("expected a fakeStore")
+	}
+	if _, err := h.CreateServiceRecord(authedContext(), connect.NewRequest(validCreateRequest())); err != nil {
+		t.Fatalf("CreateServiceRecord: %v", err)
+	}
+	return store
+}
+
+func TestReviseServiceRecord(t *testing.T) {
+	h := newTestHandler(newFakeStore())
+	store := seedRecord(t, h)
+
+	res, err := h.ReviseServiceRecord(authedContext(), connect.NewRequest(validReviseRequest()))
+	if err != nil {
+		t.Fatalf("ReviseServiceRecord: %v", err)
+	}
+	if res.Msg.Record.RevisesRecordId == nil || *res.Msg.Record.RevisesRecordId != "record-1" {
+		t.Errorf("revisesRecordId = %v, want record-1", res.Msg.Record.RevisesRecordId)
+	}
+	// A correction stays on the same bike as the record it replaces.
+	if store.created.Plate != testPlate {
+		t.Errorf("plate = %q, want it taken from the original (%q)", store.created.Plate, testPlate)
+	}
+}
+
+func TestReviseServiceRecordRequiresAuthentication(t *testing.T) {
+	h := newTestHandler(newFakeStore())
+	_, err := h.ReviseServiceRecord(context.Background(), connect.NewRequest(validReviseRequest()))
+	assertConnectCode(t, err, connect.CodeUnauthenticated)
+}
+
+func TestReviseServiceRecordErrors(t *testing.T) {
+	t.Run("unknown record", func(t *testing.T) {
+		h := newTestHandler(newFakeStore())
+		_, err := h.ReviseServiceRecord(authedContext(), connect.NewRequest(validReviseRequest()))
+		assertConnectCode(t, err, connect.CodeNotFound)
+	})
+
+	t.Run("already superseded", func(t *testing.T) {
+		h := newTestHandler(newFakeStore())
+		store := seedRecord(t, h)
+		store.reviseErr = ErrAlreadySuperseded
+
+		_, err := h.ReviseServiceRecord(authedContext(), connect.NewRequest(validReviseRequest()))
+		assertConnectCode(t, err, connect.CodeFailedPrecondition)
+	})
+
+	t.Run("another workshop's record", func(t *testing.T) {
+		h := newTestHandler(newFakeStore())
+		store := seedRecord(t, h)
+		store.reviseErr = ErrRecordNotFound
+
+		_, err := h.ReviseServiceRecord(authedContext(), connect.NewRequest(validReviseRequest()))
+		assertConnectCode(t, err, connect.CodeNotFound)
+	})
+
+	t.Run("invalid correction", func(t *testing.T) {
+		h := newTestHandler(newFakeStore())
+		seedRecord(t, h)
+		req := validReviseRequest()
+		req.Operations = nil
+
+		_, err := h.ReviseServiceRecord(authedContext(), connect.NewRequest(req))
+		assertConnectCode(t, err, connect.CodeInvalidArgument)
+	})
 }
 
 func TestGetServiceRecordNotFound(t *testing.T) {

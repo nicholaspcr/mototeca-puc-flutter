@@ -23,7 +23,8 @@ func NewRepository(pool *pgxpool.Pool) *Repository {
 // of its vehicle and workshop to render a history row without a second query.
 const selectRecords = `
 	SELECT sr.id, v.plate, v.make, v.model, v.year, w.name, m.name,
-	       sr.mileage_km, sr.cost_cents, sr.notes, sr.created_at
+	       sr.mileage_km, sr.cost_cents, sr.notes, sr.created_at,
+	       (SELECT p.id FROM service_records p WHERE p.superseded_by = sr.id)
 	FROM service_records sr
 	JOIN vehicles v ON v.id = sr.vehicle_id
 	JOIN workshops w ON w.id = sr.workshop_id
@@ -38,7 +39,7 @@ func scanRecords(rows pgx.Rows) ([]ServiceRecord, error) {
 		if err := rows.Scan(
 			&r.ID, &r.Vehicle.Plate, &r.Vehicle.Make, &r.Vehicle.Model, &r.Vehicle.Year,
 			&r.WorkshopName, &r.MechanicName,
-			&r.MileageKm, &r.CostCents, &r.Notes, &r.CreatedAt,
+			&r.MileageKm, &r.CostCents, &r.Notes, &r.CreatedAt, &r.RevisesRecordID,
 		); err != nil {
 			return nil, err
 		}
@@ -160,8 +161,8 @@ func (r *Repository) ListByPlate(ctx context.Context, plate string, limit int) (
 	}
 
 	rows, err := r.pool.Query(ctx,
-		selectRecords+` WHERE sr.vehicle_id = $1 ORDER BY sr.created_at DESC LIMIT $2`,
-		vehicleID, limit)
+		selectRecords+` WHERE sr.vehicle_id = $1 AND sr.superseded_by IS NULL
+		 ORDER BY sr.created_at DESC LIMIT $2`, vehicleID, limit)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -177,8 +178,8 @@ func (r *Repository) ListByPlate(ctx context.Context, plate string, limit int) (
 
 func (r *Repository) ListByWorkshop(ctx context.Context, workshopID string, limit int) ([]ServiceRecord, error) {
 	rows, err := r.pool.Query(ctx,
-		selectRecords+` WHERE sr.workshop_id = $1 ORDER BY sr.created_at DESC LIMIT $2`,
-		workshopID, limit)
+		selectRecords+` WHERE sr.workshop_id = $1 AND sr.superseded_by IS NULL
+		 ORDER BY sr.created_at DESC LIMIT $2`, workshopID, limit)
 	if err != nil {
 		return nil, err
 	}
@@ -195,7 +196,8 @@ func (r *Repository) ListByWorkshop(ctx context.Context, workshopID string, limi
 func (r *Repository) CountByWorkshopSince(ctx context.Context, workshopID string, since time.Time) (int, error) {
 	var count int
 	err := r.pool.QueryRow(ctx,
-		`SELECT count(*) FROM service_records WHERE workshop_id = $1 AND created_at >= $2`,
+		`SELECT count(*) FROM service_records
+		 WHERE workshop_id = $1 AND created_at >= $2 AND superseded_by IS NULL`,
 		workshopID, since).Scan(&count)
 	return count, err
 }
@@ -204,11 +206,32 @@ func (r *Repository) CountByWorkshopSince(ctx context.Context, workshopID string
 // a record that lost its operations halfway through would be history nobody
 // could interpret.
 func (r *Repository) Create(ctx context.Context, input CreateInput) (*ServiceRecord, error) {
+	return r.write(ctx, input, nil)
+}
+
+// Revise adds the correction and points the original at it, in one
+// transaction: a superseded record with no replacement would erase history.
+func (r *Repository) Revise(ctx context.Context, workshopID, recordID string, input CreateInput) (*ServiceRecord, error) {
+	return r.write(ctx, input, &revision{workshopID: workshopID, recordID: recordID})
+}
+
+type revision struct {
+	workshopID string
+	recordID   string
+}
+
+func (r *Repository) write(ctx context.Context, input CreateInput, rev *revision) (*ServiceRecord, error) {
 	tx, err := r.pool.Begin(ctx)
 	if err != nil {
 		return nil, err
 	}
 	defer func() { _ = tx.Rollback(ctx) }()
+
+	if rev != nil {
+		if err := checkRevisable(ctx, tx, rev); err != nil {
+			return nil, err
+		}
+	}
 
 	var vehicleID string
 	err = tx.QueryRow(ctx, `SELECT id FROM vehicles WHERE plate = $1`, input.Plate).Scan(&vehicleID)
@@ -249,11 +272,42 @@ func (r *Repository) Create(ctx context.Context, input CreateInput) (*ServiceRec
 		}
 	}
 
+	if rev != nil {
+		if _, err := tx.Exec(ctx,
+			`UPDATE service_records SET superseded_by = $1 WHERE id = $2`,
+			recordID, rev.recordID); err != nil {
+			return nil, fmt.Errorf("superseding %s: %w", rev.recordID, err)
+		}
+	}
+
 	if err := tx.Commit(ctx); err != nil {
 		return nil, err
 	}
 
 	return r.FindByID(ctx, recordID)
+}
+
+// checkRevisable locks the original so two concurrent corrections cannot both
+// claim it, and refuses one that isn't the caller's or is already superseded.
+func checkRevisable(ctx context.Context, tx pgx.Tx, rev *revision) error {
+	var ownerWorkshop string
+	var supersededBy *string
+	err := tx.QueryRow(ctx,
+		`SELECT workshop_id, superseded_by FROM service_records WHERE id = $1 FOR UPDATE`,
+		rev.recordID).Scan(&ownerWorkshop, &supersededBy)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return ErrRecordNotFound
+	}
+	if err != nil {
+		return err
+	}
+	if ownerWorkshop != rev.workshopID {
+		return ErrRecordNotFound
+	}
+	if supersededBy != nil {
+		return ErrAlreadySuperseded
+	}
+	return nil
 }
 
 // upsertMechanic maps the free-text mechanic name the app collects onto the

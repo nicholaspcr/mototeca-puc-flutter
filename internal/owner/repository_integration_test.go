@@ -245,3 +245,71 @@ func TestCreateRejectsADuplicatePhone(t *testing.T) {
 		t.Errorf("err = %v, want ErrDuplicatePhone", err)
 	}
 }
+
+// The point of keying history to the plate: a sale moves the bike between
+// owners without touching its service record.
+func TestReleaseAllowsANewOwnerToClaim(t *testing.T) {
+	f := setup(t)
+	repo := NewRepository(f.pool)
+	ctx := context.Background()
+
+	if _, err := repo.Claim(ctx, f.ownerID, testPlateIntegration); err != nil {
+		t.Fatalf("Claim: %v", err)
+	}
+	f.addService(t, 15000, servicerecord.OperationOilChange)
+
+	buyer, err := repo.Create(ctx, CreateInput{Name: "Comprador", Phone: "31999990002"}, "digest")
+	if err != nil {
+		t.Fatalf("seeding buyer: %v", err)
+	}
+	t.Cleanup(func() { _, _ = f.pool.Exec(ctx, `DELETE FROM owners WHERE id = $1`, buyer.ID) })
+
+	// The buyer cannot take it while the seller still holds it.
+	if _, err := repo.Claim(ctx, buyer.ID, testPlateIntegration); err != ErrVehicleClaimed {
+		t.Fatalf("err = %v, want ErrVehicleClaimed before release", err)
+	}
+
+	if err := repo.Release(ctx, f.ownerID, testPlateIntegration); err != nil {
+		t.Fatalf("Release: %v", err)
+	}
+
+	owned, err := repo.Claim(ctx, buyer.ID, testPlateIntegration)
+	if err != nil {
+		t.Fatalf("Claim after release: %v", err)
+	}
+	if owned.ServiceCount != 1 {
+		t.Errorf("serviceCount = %d, want the history to survive the sale", owned.ServiceCount)
+	}
+
+	sellerVehicles, err := repo.ListVehicles(ctx, f.ownerID)
+	if err != nil {
+		t.Fatalf("ListVehicles: %v", err)
+	}
+	if len(sellerVehicles) != 0 {
+		t.Errorf("seller still has %d vehicle(s)", len(sellerVehicles))
+	}
+}
+
+func TestReleaseRefusesABikeYouDoNotHold(t *testing.T) {
+	f := setup(t)
+	repo := NewRepository(f.pool)
+	ctx := context.Background()
+
+	// Nobody owns it yet.
+	if err := repo.Release(ctx, f.ownerID, testPlateIntegration); err != ErrVehicleNotFound {
+		t.Errorf("err = %v, want ErrVehicleNotFound", err)
+	}
+
+	if _, err := repo.Claim(ctx, f.ownerID, testPlateIntegration); err != nil {
+		t.Fatalf("Claim: %v", err)
+	}
+	stranger, err := repo.Create(ctx, CreateInput{Name: "Estranho", Phone: "31999990003"}, "digest")
+	if err != nil {
+		t.Fatalf("seeding stranger: %v", err)
+	}
+	t.Cleanup(func() { _, _ = f.pool.Exec(ctx, `DELETE FROM owners WHERE id = $1`, stranger.ID) })
+
+	if err := repo.Release(ctx, stranger.ID, testPlateIntegration); err != ErrVehicleNotFound {
+		t.Errorf("err = %v, want a stranger's release to be refused", err)
+	}
+}

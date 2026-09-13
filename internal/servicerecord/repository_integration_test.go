@@ -6,6 +6,7 @@ import (
 	"context"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
@@ -226,5 +227,118 @@ func TestListByPlateReturnsNothingForAnUnknownPlate(t *testing.T) {
 	}
 	if summary != nil || records != nil {
 		t.Errorf("got %v / %v, want nil, nil for an unknown plate", summary, records)
+	}
+}
+
+func TestReviseSupersedesTheOriginal(t *testing.T) {
+	pool := newTestPool(t)
+	workshopID := seed(t, pool)
+	repo := NewRepository(pool)
+	ctx := context.Background()
+
+	original, err := repo.Create(ctx, CreateInput{
+		WorkshopID: workshopID,
+		Plate:      testPlateIntegration,
+		Operations: []Operation{OperationTires},
+		MileageKm:  18000,
+	})
+	if err != nil {
+		t.Fatalf("Create: %v", err)
+	}
+
+	revised, err := repo.Revise(ctx, workshopID, original.ID, CreateInput{
+		WorkshopID: workshopID,
+		Plate:      testPlateIntegration,
+		Operations: []Operation{OperationTires, OperationSuspension},
+		MileageKm:  18500,
+	})
+	if err != nil {
+		t.Fatalf("Revise: %v", err)
+	}
+	if revised.RevisesRecordID == nil || *revised.RevisesRecordID != original.ID {
+		t.Errorf("revisesRecordId = %v, want %q", revised.RevisesRecordID, original.ID)
+	}
+
+	// History shows the correction, not the record it replaced.
+	_, records, err := repo.ListByPlate(ctx, testPlateIntegration, 10)
+	if err != nil {
+		t.Fatalf("ListByPlate: %v", err)
+	}
+	if len(records) != 1 || records[0].ID != revised.ID {
+		t.Fatalf("history = %d record(s) %v, want only the correction", len(records), records)
+	}
+
+	// The original is still there, which is what makes it auditable.
+	if found, err := repo.FindByID(ctx, original.ID); err != nil || found == nil {
+		t.Errorf("original no longer retrievable: %v, %v", found, err)
+	}
+
+	count, err := repo.CountByWorkshopSince(ctx, workshopID, original.CreatedAt.Add(-time.Hour))
+	if err != nil {
+		t.Fatalf("CountByWorkshopSince: %v", err)
+	}
+	if count != 1 {
+		t.Errorf("month count = %d, want a correction not to double-count", count)
+	}
+}
+
+func TestReviseRefusesAnotherWorkshopsRecord(t *testing.T) {
+	pool := newTestPool(t)
+	workshopID := seed(t, pool)
+	repo := NewRepository(pool)
+	ctx := context.Background()
+
+	original, err := repo.Create(ctx, CreateInput{
+		WorkshopID: workshopID,
+		Plate:      testPlateIntegration,
+		Operations: []Operation{OperationTires},
+		MileageKm:  18000,
+	})
+	if err != nil {
+		t.Fatalf("Create: %v", err)
+	}
+
+	var otherWorkshop string
+	if err := pool.QueryRow(ctx,
+		`INSERT INTO workshops (cnpj, name) VALUES ('99888777000166', 'Outra') RETURNING id`,
+	).Scan(&otherWorkshop); err != nil {
+		t.Fatalf("seeding second workshop: %v", err)
+	}
+	t.Cleanup(func() {
+		_, _ = pool.Exec(ctx, `DELETE FROM workshops WHERE id = $1`, otherWorkshop)
+	})
+
+	if _, err := repo.Revise(ctx, otherWorkshop, original.ID, CreateInput{
+		WorkshopID: otherWorkshop,
+		Plate:      testPlateIntegration,
+		Operations: []Operation{OperationTires},
+		MileageKm:  18500,
+	}); err != ErrRecordNotFound {
+		t.Errorf("err = %v, want ErrRecordNotFound", err)
+	}
+}
+
+func TestReviseRefusesAnAlreadyCorrectedRecord(t *testing.T) {
+	pool := newTestPool(t)
+	workshopID := seed(t, pool)
+	repo := NewRepository(pool)
+	ctx := context.Background()
+
+	input := CreateInput{
+		WorkshopID: workshopID,
+		Plate:      testPlateIntegration,
+		Operations: []Operation{OperationTires},
+		MileageKm:  18000,
+	}
+	original, err := repo.Create(ctx, input)
+	if err != nil {
+		t.Fatalf("Create: %v", err)
+	}
+	if _, err := repo.Revise(ctx, workshopID, original.ID, input); err != nil {
+		t.Fatalf("first Revise: %v", err)
+	}
+
+	if _, err := repo.Revise(ctx, workshopID, original.ID, input); err != ErrAlreadySuperseded {
+		t.Errorf("err = %v, want ErrAlreadySuperseded", err)
 	}
 }

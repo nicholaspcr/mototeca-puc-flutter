@@ -14,7 +14,7 @@ Mototeca stores motorcycle service/repair history in Brazil. Mechanics (`oficina
 
 ## 3. Core Features
 
-- **Vehicle record** — identified by `placa` + `chassi`/RENAVAM (not internal IDs, so history follows the bike across shops). Make, model, year, color, owner, km history. Ownership transfer on sale.
+- **Vehicle record** — identified by `placa` + `chassi`/RENAVAM (not internal IDs, so history follows the bike across shops). Make, model, year, color, owner, km history. Ownership transfer on sale: the seller releases the bike, the buyer claims it, and the service history is untouched.
 - **Service history log** — date, oficina, mechanic, operation type (fixed taxonomy: troca de óleo, revisão programada, freios, corrente/relação/coroa, pneus, elétrica/bateria, velas, suspensão, embreagem, carburação/injeção, funilaria/pintura, outro), parts, labor, km, cost, before/after photos, notes. Append-only — edits create a new revision, never a mutation.
 - **Oficina dashboard** — lookup by plate, create/edit only that shop's own records, customer list, orçamento draft → service record.
 - **Customer portal** — plate or QR lookup, no account needed to view; phone/CPF+OTP only to claim ownership. Shareable PDF summary.

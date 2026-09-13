@@ -61,6 +61,21 @@ func (r *Repository) Create(ctx context.Context, input CreateInput, passwordHash
 	return o, nil
 }
 
+// Release clears current_owner_id only when the caller actually holds the
+// bike, so one owner cannot unlink another's.
+func (r *Repository) Release(ctx context.Context, ownerID, plate string) error {
+	tag, err := r.pool.Exec(ctx,
+		`UPDATE vehicles SET current_owner_id = NULL
+		 WHERE plate = $1 AND current_owner_id = $2`, plate, ownerID)
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() == 0 {
+		return ErrVehicleNotFound
+	}
+	return nil
+}
+
 // ownedVehicleQuery derives the whole owner screen in one pass: odometer
 // (highest mileage any workshop recorded), service count, newest record, and
 // the mileage at the last oil change.

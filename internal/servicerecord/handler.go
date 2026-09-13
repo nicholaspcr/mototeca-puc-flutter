@@ -36,29 +36,15 @@ func (h *Handler) CreateServiceRecord(ctx context.Context, req *connect.Request[
 		return nil, err
 	}
 
-	operations := make([]Operation, 0, len(req.Msg.Operations))
-	for _, op := range req.Msg.Operations {
-		operations = append(operations, operationFromProto(op))
-	}
-
-	parts := make([]Part, 0, len(req.Msg.Parts))
-	for _, p := range req.Msg.Parts {
-		parts = append(parts, Part{
-			Name:      p.Name,
-			Quantity:  int(p.Quantity),
-			CostCents: intPtr(p.CostCents),
-		})
-	}
-
 	input := CreateInput{
 		WorkshopID:   workshopID,
 		Plate:        vehicle.NormalizePlate(req.Msg.Plate),
 		MechanicName: req.Msg.MechanicName,
-		Operations:   operations,
+		Operations:   operationsFromProto(req.Msg.Operations),
 		MileageKm:    int(req.Msg.MileageKm),
 		CostCents:    intPtr(req.Msg.CostCents),
 		Notes:        req.Msg.Notes,
-		Parts:        parts,
+		Parts:        partsFromProto(req.Msg.Parts),
 	}
 	if err := input.Validate(); err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
@@ -76,6 +62,78 @@ func (h *Handler) CreateServiceRecord(ctx context.Context, req *connect.Request[
 	return connect.NewResponse(&servicev1.CreateServiceRecordResponse{
 		Record: ToProto(record),
 	}), nil
+}
+
+func (h *Handler) ReviseServiceRecord(ctx context.Context, req *connect.Request[servicev1.ReviseServiceRecordRequest]) (*connect.Response[servicev1.ReviseServiceRecordResponse], error) {
+	workshopID, err := auth.RequireWorkshopID(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if req.Msg.RecordId == "" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("record id is required"))
+	}
+
+	// The plate is not taken from the request: a correction stays on the same
+	// bike as the record it replaces.
+	original, err := h.repo.FindByID(ctx, req.Msg.RecordId)
+	if err != nil {
+		h.logger.ErrorContext(ctx, "loading record to revise failed", "err", err)
+		return nil, connect.NewError(connect.CodeInternal, errors.New("failed to revise service record"))
+	}
+	if original == nil {
+		return nil, connect.NewError(connect.CodeNotFound, errors.New("service record not found"))
+	}
+
+	input := CreateInput{
+		WorkshopID:      workshopID,
+		Plate:           original.Vehicle.Plate,
+		MechanicName:    req.Msg.MechanicName,
+		Operations:      operationsFromProto(req.Msg.Operations),
+		MileageKm:       int(req.Msg.MileageKm),
+		CostCents:       intPtr(req.Msg.CostCents),
+		Notes:           req.Msg.Notes,
+		Parts:           partsFromProto(req.Msg.Parts),
+		RevisesRecordID: &req.Msg.RecordId,
+	}
+	if err := input.Validate(); err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
+
+	record, err := h.repo.Revise(ctx, workshopID, req.Msg.RecordId, input)
+	switch {
+	case errors.Is(err, ErrRecordNotFound):
+		return nil, connect.NewError(connect.CodeNotFound, errors.New("service record not found"))
+	case errors.Is(err, ErrAlreadySuperseded):
+		return nil, connect.NewError(connect.CodeFailedPrecondition,
+			errors.New("este registro já foi corrigido — revise a correção"))
+	case err != nil:
+		h.logger.ErrorContext(ctx, "revise service record failed", "err", err)
+		return nil, connect.NewError(connect.CodeInternal, errors.New("failed to revise service record"))
+	}
+
+	return connect.NewResponse(&servicev1.ReviseServiceRecordResponse{
+		Record: ToProto(record),
+	}), nil
+}
+
+func operationsFromProto(raw []servicev1.ServiceType) []Operation {
+	operations := make([]Operation, 0, len(raw))
+	for _, op := range raw {
+		operations = append(operations, operationFromProto(op))
+	}
+	return operations
+}
+
+func partsFromProto(raw []*servicev1.Part) []Part {
+	parts := make([]Part, 0, len(raw))
+	for _, p := range raw {
+		parts = append(parts, Part{
+			Name:      p.Name,
+			Quantity:  int(p.Quantity),
+			CostCents: intPtr(p.CostCents),
+		})
+	}
+	return parts
 }
 
 func (h *Handler) GetServiceRecord(ctx context.Context, req *connect.Request[servicev1.GetServiceRecordRequest]) (*connect.Response[servicev1.GetServiceRecordResponse], error) {
@@ -204,17 +262,18 @@ func ToProto(r *ServiceRecord) *servicev1.ServiceRecord {
 	}
 
 	return &servicev1.ServiceRecord{
-		Id:           r.ID,
-		Vehicle:      vehicleToProto(r.Vehicle),
-		WorkshopName: r.WorkshopName,
-		MechanicName: r.MechanicName,
-		Operations:   operations,
-		MileageKm:    int32(r.MileageKm),
-		CostCents:    int32Ptr(r.CostCents),
-		Notes:        r.Notes,
-		Parts:        parts,
-		Attachments:  attachments,
-		CreatedAt:    timestamppb.New(r.CreatedAt),
+		Id:              r.ID,
+		Vehicle:         vehicleToProto(r.Vehicle),
+		WorkshopName:    r.WorkshopName,
+		MechanicName:    r.MechanicName,
+		Operations:      operations,
+		MileageKm:       int32(r.MileageKm),
+		CostCents:       int32Ptr(r.CostCents),
+		Notes:           r.Notes,
+		Parts:           parts,
+		Attachments:     attachments,
+		CreatedAt:       timestamppb.New(r.CreatedAt),
+		RevisesRecordId: r.RevisesRecordID,
 	}
 }
 
