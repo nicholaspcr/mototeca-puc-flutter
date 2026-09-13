@@ -4,6 +4,7 @@ package servicerecord
 
 import (
 	"context"
+	"errors"
 	"os"
 	"testing"
 	"time"
@@ -349,5 +350,33 @@ func TestReviseRefusesAnAlreadyCorrectedRecord(t *testing.T) {
 
 	if _, err := repo.Revise(ctx, workshopID, original.ID, input); err != ErrAlreadySuperseded {
 		t.Errorf("err = %v, want ErrAlreadySuperseded", err)
+	}
+}
+
+func TestCreateRefusesAMileageBelowTheHighestRecorded(t *testing.T) {
+	pool := newTestPool(t)
+	workshopID := seed(t, pool)
+	repo := NewRepository(pool)
+	ctx := context.Background()
+
+	input := CreateInput{
+		WorkshopID: workshopID,
+		Plate:      testPlateIntegration,
+		Operations: []Operation{OperationTires},
+		MileageKm:  20000,
+	}
+	if _, err := repo.Create(ctx, input); err != nil {
+		t.Fatalf("Create: %v", err)
+	}
+
+	input.MileageKm = 15000
+	_, err := repo.Create(ctx, input)
+	if lower, ok := errors.AsType[*LowerMileageError](err); !ok || lower.HighestKm != 20000 {
+		t.Fatalf("err = %v, want LowerMileageError at 20000 km", err)
+	}
+
+	input.ConfirmLowerMileage = true
+	if _, err := repo.Create(ctx, input); err != nil {
+		t.Fatalf("confirmed Create: %v", err)
 	}
 }

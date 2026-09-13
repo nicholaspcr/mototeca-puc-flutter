@@ -489,15 +489,20 @@ func (x *ServiceRecord) GetRevisesRecordId() string {
 type CreateServiceRecordRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The vehicle must already exist; register it first via VehicleService.
-	Plate         string        `protobuf:"bytes,1,opt,name=plate,proto3" json:"plate,omitempty"`
-	MechanicName  *string       `protobuf:"bytes,2,opt,name=mechanic_name,json=mechanicName,proto3,oneof" json:"mechanic_name,omitempty"`
-	Operations    []ServiceType `protobuf:"varint,3,rep,packed,name=operations,proto3,enum=mototeca.service.v1.ServiceType" json:"operations,omitempty"`
-	MileageKm     int32         `protobuf:"varint,4,opt,name=mileage_km,json=mileageKm,proto3" json:"mileage_km,omitempty"`
-	CostCents     *int32        `protobuf:"varint,5,opt,name=cost_cents,json=costCents,proto3,oneof" json:"cost_cents,omitempty"`
-	Notes         *string       `protobuf:"bytes,6,opt,name=notes,proto3,oneof" json:"notes,omitempty"`
-	Parts         []*Part       `protobuf:"bytes,7,rep,name=parts,proto3" json:"parts,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	Plate        string        `protobuf:"bytes,1,opt,name=plate,proto3" json:"plate,omitempty"`
+	MechanicName *string       `protobuf:"bytes,2,opt,name=mechanic_name,json=mechanicName,proto3,oneof" json:"mechanic_name,omitempty"`
+	Operations   []ServiceType `protobuf:"varint,3,rep,packed,name=operations,proto3,enum=mototeca.service.v1.ServiceType" json:"operations,omitempty"`
+	MileageKm    int32         `protobuf:"varint,4,opt,name=mileage_km,json=mileageKm,proto3" json:"mileage_km,omitempty"`
+	CostCents    *int32        `protobuf:"varint,5,opt,name=cost_cents,json=costCents,proto3,oneof" json:"cost_cents,omitempty"`
+	Notes        *string       `protobuf:"bytes,6,opt,name=notes,proto3,oneof" json:"notes,omitempty"`
+	Parts        []*Part       `protobuf:"bytes,7,rep,name=parts,proto3" json:"parts,omitempty"`
+	// A mileage below the bike's highest recorded one is refused with
+	// FAILED_PRECONDITION — a rolled-back odometer is the fraud this history
+	// exists to expose. Set after the user confirms a real reason, such as a
+	// replaced instrument cluster.
+	ConfirmLowerMileage bool `protobuf:"varint,8,opt,name=confirm_lower_mileage,json=confirmLowerMileage,proto3" json:"confirm_lower_mileage,omitempty"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
 }
 
 func (x *CreateServiceRecordRequest) Reset() {
@@ -577,6 +582,13 @@ func (x *CreateServiceRecordRequest) GetParts() []*Part {
 		return x.Parts
 	}
 	return nil
+}
+
+func (x *CreateServiceRecordRequest) GetConfirmLowerMileage() bool {
+	if x != nil {
+		return x.ConfirmLowerMileage
+	}
+	return false
 }
 
 type CreateServiceRecordResponse struct {
@@ -1099,7 +1111,7 @@ const file_mototeca_service_v1_service_proto_rawDesc = "" +
 	"\x0e_mechanic_nameB\r\n" +
 	"\v_cost_centsB\b\n" +
 	"\x06_notesB\x14\n" +
-	"\x12_revises_record_id\"\xd8\x02\n" +
+	"\x12_revises_record_id\"\x8c\x03\n" +
 	"\x1aCreateServiceRecordRequest\x12\x14\n" +
 	"\x05plate\x18\x01 \x01(\tR\x05plate\x12(\n" +
 	"\rmechanic_name\x18\x02 \x01(\tH\x00R\fmechanicName\x88\x01\x01\x12@\n" +
@@ -1111,7 +1123,8 @@ const file_mototeca_service_v1_service_proto_rawDesc = "" +
 	"\n" +
 	"cost_cents\x18\x05 \x01(\x05H\x01R\tcostCents\x88\x01\x01\x12\x19\n" +
 	"\x05notes\x18\x06 \x01(\tH\x02R\x05notes\x88\x01\x01\x12/\n" +
-	"\x05parts\x18\a \x03(\v2\x19.mototeca.service.v1.PartR\x05partsB\x10\n" +
+	"\x05parts\x18\a \x03(\v2\x19.mototeca.service.v1.PartR\x05parts\x122\n" +
+	"\x15confirm_lower_mileage\x18\b \x01(\bR\x13confirmLowerMileageB\x10\n" +
 	"\x0e_mechanic_nameB\r\n" +
 	"\v_cost_centsB\b\n" +
 	"\x06_notes\"Y\n" +

@@ -94,4 +94,6 @@ type CreateInput struct {
 	// Set to correct an existing record instead of adding a new one. The
 	// original is superseded, never edited.
 	RevisesRecordID *string
+	// ConfirmLowerMileage accepts a mileage below the highest on record.
+	ConfirmLowerMileage bool
 }

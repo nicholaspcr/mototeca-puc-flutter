@@ -47,6 +47,11 @@ func (f *fakeStore) Create(_ context.Context, input CreateInput) (*ServiceRecord
 	if !ok {
 		return nil, ErrVehicleNotFound
 	}
+	for _, r := range f.records {
+		if r.Vehicle.Plate == input.Plate && input.MileageKm < r.MileageKm && !input.ConfirmLowerMileage {
+			return nil, &LowerMileageError{HighestKm: r.MileageKm}
+		}
+	}
 	f.created = &input
 	record := &ServiceRecord{
 		ID:           "record-1",
@@ -221,6 +226,21 @@ func TestCreateServiceRecordRejectsInvalidInput(t *testing.T) {
 			_, err := h.CreateServiceRecord(authedContext(), connect.NewRequest(req))
 			assertConnectCode(t, err, connect.CodeInvalidArgument)
 		})
+	}
+}
+
+func TestCreateServiceRecordRefusesALowerMileageUnlessConfirmed(t *testing.T) {
+	h := newTestHandler(newFakeStore())
+	seedRecord(t, h)
+
+	lower := validCreateRequest()
+	lower.MileageKm -= 1000
+	_, err := h.CreateServiceRecord(authedContext(), connect.NewRequest(lower))
+	assertConnectCode(t, err, connect.CodeFailedPrecondition)
+
+	lower.ConfirmLowerMileage = true
+	if _, err := h.CreateServiceRecord(authedContext(), connect.NewRequest(lower)); err != nil {
+		t.Fatalf("confirmed lower mileage: %v", err)
 	}
 }
 

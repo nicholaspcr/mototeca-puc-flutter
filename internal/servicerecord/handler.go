@@ -3,6 +3,7 @@ package servicerecord
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 	"time"
 	_ "time/tzdata" // the runtime image ships no zoneinfo
@@ -46,12 +47,18 @@ func (h *Handler) CreateServiceRecord(ctx context.Context, req *connect.Request[
 		CostCents:    intPtr(req.Msg.CostCents),
 		Notes:        req.Msg.Notes,
 		Parts:        partsFromProto(req.Msg.Parts),
+
+		ConfirmLowerMileage: req.Msg.ConfirmLowerMileage,
 	}
 	if err := input.Validate(); err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
 	record, err := h.repo.Create(ctx, input)
+	if lower, ok := errors.AsType[*LowerMileageError](err); ok {
+		return nil, connect.NewError(connect.CodeFailedPrecondition, fmt.Errorf(
+			"quilometragem menor que a última registrada para esta moto (%d km)", lower.HighestKm))
+	}
 	if errors.Is(err, ErrVehicleNotFound) {
 		return nil, connect.NewError(connect.CodeNotFound, errors.New("moto não cadastrada — cadastre a placa antes"))
 	}

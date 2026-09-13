@@ -3,6 +3,7 @@ package servicerecord
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 )
 
@@ -16,6 +17,16 @@ var (
 	// ErrVehicleNotFound is returned by Create when the plate has no vehicle.
 	ErrVehicleNotFound = errors.New("vehicle not found")
 )
+
+// LowerMileageError is returned by Create for a mileage below the bike's
+// highest recorded one, unless the input confirms it.
+type LowerMileageError struct {
+	HighestKm int
+}
+
+func (e *LowerMileageError) Error() string {
+	return fmt.Sprintf("mileage below the highest recorded (%d km)", e.HighestKm)
+}
 
 // Store is the storage contract Handler depends on. Repository is the
 // Postgres-backed implementation; tests substitute an in-memory fake.
