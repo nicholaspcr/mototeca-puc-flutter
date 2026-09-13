@@ -46,7 +46,7 @@ func rateLimits() map[string]*RateLimiter {
 		ownerv1connect.OwnerServiceLoginProcedure:                               NewRateLimiter(0.2, 5),
 		ownerv1connect.OwnerServiceCreateOwnerProcedure:                         NewRateLimiter(0.05, 3),
 		// Each attempt is a guess at a chassi suffix.
-		ownerv1connect.OwnerServiceClaimVehicleProcedure: NewRateLimiter(0.1, 5),
+		ownerv1connect.OwnerServiceClaimVehicleProcedure: NewRateLimiter(0.1, 10),
 	}
 }
 
