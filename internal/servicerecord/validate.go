@@ -18,51 +18,51 @@ const (
 
 func (input CreateInput) Validate() error {
 	if input.WorkshopID == "" {
-		return fmt.Errorf("workshop is required")
+		return fmt.Errorf("oficina é obrigatória")
 	}
 	if len(input.Operations) == 0 {
-		return fmt.Errorf("select at least one operation")
+		return fmt.Errorf("selecione ao menos uma operação")
 	}
 
 	seen := make(map[Operation]bool, len(input.Operations))
 	for _, op := range input.Operations {
 		if !op.Valid() {
-			return fmt.Errorf("unknown operation %q", op)
+			return fmt.Errorf("operação desconhecida %q", op)
 		}
 		if seen[op] {
-			return fmt.Errorf("operation %q is listed twice", op)
+			return fmt.Errorf("operação %q repetida", op)
 		}
 		seen[op] = true
 	}
 
 	if input.MileageKm < 0 || input.MileageKm > maxMileageKm {
-		return fmt.Errorf("mileage must be between 0 and %d km", maxMileageKm)
+		return fmt.Errorf("quilometragem deve estar entre 0 e %d km", maxMileageKm)
 	}
 	if input.CostCents != nil && (*input.CostCents < 0 || *input.CostCents > maxCostCents) {
-		return fmt.Errorf("cost is out of range")
+		return fmt.Errorf("valor fora do limite")
 	}
 	if input.Notes != nil && len(*input.Notes) > maxNotesLength {
-		return fmt.Errorf("notes must be at most %d characters", maxNotesLength)
+		return fmt.Errorf("observações devem ter até %d caracteres", maxNotesLength)
 	}
 	if input.MechanicName != nil && strings.TrimSpace(*input.MechanicName) == "" {
-		return fmt.Errorf("mechanic name must not be blank")
+		return fmt.Errorf("nome do mecânico não pode ficar em branco")
 	}
 
 	if len(input.Parts) > maxParts {
-		return fmt.Errorf("a record may list at most %d parts", maxParts)
+		return fmt.Errorf("um registro aceita até %d peças", maxParts)
 	}
 	for i, part := range input.Parts {
 		if strings.TrimSpace(part.Name) == "" {
-			return fmt.Errorf("part %d: name is required", i+1)
+			return fmt.Errorf("peça %d: nome é obrigatório", i+1)
 		}
 		if len(part.Name) > maxPartName {
-			return fmt.Errorf("part %d: name is too long", i+1)
+			return fmt.Errorf("peça %d: nome muito longo", i+1)
 		}
 		if part.Quantity < 1 || part.Quantity > maxPartQty {
-			return fmt.Errorf("part %d: quantity must be between 1 and %d", i+1, maxPartQty)
+			return fmt.Errorf("peça %d: quantidade deve estar entre 1 e %d", i+1, maxPartQty)
 		}
 		if part.CostCents != nil && (*part.CostCents < 0 || *part.CostCents > maxCostCents) {
-			return fmt.Errorf("part %d: cost is out of range", i+1)
+			return fmt.Errorf("peça %d: valor fora do limite", i+1)
 		}
 	}
 

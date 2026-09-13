@@ -3,9 +3,12 @@ package owner
 import (
 	"fmt"
 	"strings"
+	"unicode/utf8"
 
 	"mototeca-backend/internal/auth"
 )
+
+const maxNameLength = 120
 
 // NormalizePhone strips the punctuation people type into a phone field
 // ((31) 90000-0000) so the stored value is always bare digits.
@@ -36,8 +39,8 @@ func ValidatePhone(phone string) error {
 }
 
 func (input CreateInput) Validate() error {
-	if strings.TrimSpace(input.Name) == "" {
-		return fmt.Errorf("name is required")
+	if name := strings.TrimSpace(input.Name); name == "" || utf8.RuneCountInString(name) > maxNameLength {
+		return fmt.Errorf("nome é obrigatório (até %d caracteres)", maxNameLength)
 	}
 	if err := ValidatePhone(NormalizePhone(input.Phone)); err != nil {
 		return err

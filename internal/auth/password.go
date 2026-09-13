@@ -19,10 +19,10 @@ const (
 // ValidatePassword reports whether a plaintext password is acceptable to store.
 func ValidatePassword(plain string) error {
 	if utf8.RuneCountInString(plain) < MinPasswordLength {
-		return fmt.Errorf("password must be at least %d characters", MinPasswordLength)
+		return fmt.Errorf("senha deve ter ao menos %d caracteres", MinPasswordLength)
 	}
 	if len(plain) > maxPasswordBytes {
-		return fmt.Errorf("password must be at most %d bytes", maxPasswordBytes)
+		return fmt.Errorf("senha deve ter até %d bytes", maxPasswordBytes)
 	}
 	return nil
 }

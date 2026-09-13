@@ -31,7 +31,7 @@ func Interceptor(signer *Signer) connect.UnaryInterceptorFunc {
 			if err != nil {
 				// A bad token is an error, not an anonymous request: otherwise
 				// an expired session degrades into a confusing "not found".
-				return nil, connect.NewError(connect.CodeUnauthenticated, errors.New("invalid or expired session"))
+				return nil, connect.NewError(connect.CodeUnauthenticated, errors.New("sessão expirada — entre novamente"))
 			}
 
 			return next(WithSubject(ctx, subject), req)
@@ -82,7 +82,7 @@ func require(ctx context.Context, want Kind, message string) (string, error) {
 func RequireSubject(ctx context.Context) (Subject, error) {
 	subject, ok := SubjectFrom(ctx)
 	if !ok {
-		return Subject{}, connect.NewError(connect.CodeUnauthenticated, errors.New("authentication required"))
+		return Subject{}, connect.NewError(connect.CodeUnauthenticated, errors.New("entre para continuar"))
 	}
 	return subject, nil
 }
@@ -90,11 +90,11 @@ func RequireSubject(ctx context.Context) (Subject, error) {
 // RequireWorkshopID returns the authenticated workshop id, or a Connect
 // UNAUTHENTICATED error suitable for returning straight to the client.
 func RequireWorkshopID(ctx context.Context) (string, error) {
-	return require(ctx, KindWorkshop, "workshop authentication required")
+	return require(ctx, KindWorkshop, "entre como oficina para continuar")
 }
 
 // RequireOwnerID returns the authenticated owner id, or a Connect
 // UNAUTHENTICATED error.
 func RequireOwnerID(ctx context.Context) (string, error) {
-	return require(ctx, KindOwner, "owner authentication required")
+	return require(ctx, KindOwner, "entre como proprietário para continuar")
 }

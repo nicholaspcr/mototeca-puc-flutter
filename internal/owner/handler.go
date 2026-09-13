@@ -46,7 +46,7 @@ func (h *Handler) CreateOwner(ctx context.Context, req *connect.Request[ownerv1.
 	passwordHash, err := auth.HashPassword(input.Password)
 	if err != nil {
 		h.logger.ErrorContext(ctx, "hashing owner password failed", "err", err)
-		return nil, connect.NewError(connect.CodeInternal, errors.New("failed to create account"))
+		return nil, connect.NewError(connect.CodeInternal, errors.New("falha ao criar a conta"))
 	}
 
 	o, err := h.repo.Create(ctx, input, passwordHash)
@@ -55,7 +55,7 @@ func (h *Handler) CreateOwner(ctx context.Context, req *connect.Request[ownerv1.
 	}
 	if err != nil {
 		h.logger.ErrorContext(ctx, "create owner failed", "err", err)
-		return nil, connect.NewError(connect.CodeInternal, errors.New("failed to create account"))
+		return nil, connect.NewError(connect.CodeInternal, errors.New("falha ao criar a conta"))
 	}
 
 	token, err := h.issueToken(ctx, o.ID)
@@ -81,7 +81,7 @@ func (h *Handler) Login(ctx context.Context, req *connect.Request[ownerv1.LoginR
 	o, err := h.repo.FindByPhone(ctx, phone)
 	if err != nil {
 		h.logger.ErrorContext(ctx, "owner login lookup failed", "err", err)
-		return nil, connect.NewError(connect.CodeInternal, errors.New("failed to sign in"))
+		return nil, connect.NewError(connect.CodeInternal, errors.New("falha ao entrar"))
 	}
 
 	digest := dummyHash
@@ -112,7 +112,7 @@ func (h *Handler) ListMyVehicles(ctx context.Context, _ *connect.Request[ownerv1
 	owned, err := h.repo.ListVehicles(ctx, ownerID)
 	if err != nil {
 		h.logger.ErrorContext(ctx, "listing owner vehicles failed", "err", err)
-		return nil, connect.NewError(connect.CodeInternal, errors.New("failed to load your motorcycles"))
+		return nil, connect.NewError(connect.CodeInternal, errors.New("falha ao carregar suas motos"))
 	}
 
 	vehicles := make([]*ownerv1.OwnedVehicle, 0, len(owned))
@@ -135,7 +135,7 @@ func (h *Handler) ClaimVehicle(ctx context.Context, req *connect.Request[ownerv1
 
 	plate := vehicle.NormalizePlate(req.Msg.Plate)
 	if plate == "" {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("plate is required"))
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("informe a placa"))
 	}
 
 	owned, err := h.repo.Claim(ctx, ownerID, plate)
@@ -146,7 +146,7 @@ func (h *Handler) ClaimVehicle(ctx context.Context, req *connect.Request[ownerv1
 		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New("esta moto já está vinculada a outro proprietário"))
 	case err != nil:
 		h.logger.ErrorContext(ctx, "claiming vehicle failed", "err", err, "plate", plate)
-		return nil, connect.NewError(connect.CodeInternal, errors.New("failed to link the motorcycle"))
+		return nil, connect.NewError(connect.CodeInternal, errors.New("falha ao vincular a moto"))
 	}
 
 	converted, err := h.ownedToProto(ctx, *owned)
@@ -164,7 +164,7 @@ func (h *Handler) ReleaseVehicle(ctx context.Context, req *connect.Request[owner
 
 	plate := vehicle.NormalizePlate(req.Msg.Plate)
 	if plate == "" {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("plate is required"))
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("informe a placa"))
 	}
 
 	err = h.repo.Release(ctx, ownerID, plate)
@@ -173,7 +173,7 @@ func (h *Handler) ReleaseVehicle(ctx context.Context, req *connect.Request[owner
 	}
 	if err != nil {
 		h.logger.ErrorContext(ctx, "releasing vehicle failed", "err", err, "plate", plate)
-		return nil, connect.NewError(connect.CodeInternal, errors.New("failed to release the motorcycle"))
+		return nil, connect.NewError(connect.CodeInternal, errors.New("falha ao desvincular a moto"))
 	}
 
 	return connect.NewResponse(&ownerv1.ReleaseVehicleResponse{}), nil
@@ -183,7 +183,7 @@ func (h *Handler) issueToken(ctx context.Context, ownerID string) (string, error
 	token, err := h.signer.Issue(auth.Subject{Kind: auth.KindOwner, ID: ownerID}, time.Now())
 	if err != nil {
 		h.logger.ErrorContext(ctx, "issuing owner token failed", "err", err)
-		return "", connect.NewError(connect.CodeInternal, errors.New("failed to start session"))
+		return "", connect.NewError(connect.CodeInternal, errors.New("falha ao iniciar a sessão"))
 	}
 	return token, nil
 }
@@ -216,7 +216,7 @@ func (h *Handler) ownedToProto(ctx context.Context, v OwnedVehicle) (*ownerv1.Ow
 	record, err := h.records.FindByID(ctx, *v.LastServiceID)
 	if err != nil {
 		h.logger.ErrorContext(ctx, "loading last service failed", "err", err)
-		return nil, connect.NewError(connect.CodeInternal, errors.New("failed to load your motorcycles"))
+		return nil, connect.NewError(connect.CodeInternal, errors.New("falha ao carregar suas motos"))
 	}
 	if record != nil {
 		out.LastService = servicerecord.ToProto(record)
