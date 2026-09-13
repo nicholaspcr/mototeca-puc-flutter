@@ -52,11 +52,11 @@ func (h *Handler) CreateServiceRecord(ctx context.Context, req *connect.Request[
 
 	record, err := h.repo.Create(ctx, input)
 	if errors.Is(err, ErrVehicleNotFound) {
-		return nil, connect.NewError(connect.CodeNotFound, errors.New("vehicle not registered — register the plate first"))
+		return nil, connect.NewError(connect.CodeNotFound, errors.New("moto não cadastrada — cadastre a placa antes"))
 	}
 	if err != nil {
 		h.logger.ErrorContext(ctx, "create service record failed", "err", err, "plate", input.Plate)
-		return nil, connect.NewError(connect.CodeInternal, errors.New("failed to create service record"))
+		return nil, connect.NewError(connect.CodeInternal, errors.New("falha ao salvar o registro"))
 	}
 
 	return connect.NewResponse(&servicev1.CreateServiceRecordResponse{
@@ -70,7 +70,7 @@ func (h *Handler) ReviseServiceRecord(ctx context.Context, req *connect.Request[
 		return nil, err
 	}
 	if req.Msg.RecordId == "" {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("record id is required"))
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("informe o registro a corrigir"))
 	}
 
 	// The plate is not taken from the request: a correction stays on the same
@@ -78,10 +78,10 @@ func (h *Handler) ReviseServiceRecord(ctx context.Context, req *connect.Request[
 	original, err := h.repo.FindByID(ctx, req.Msg.RecordId)
 	if err != nil {
 		h.logger.ErrorContext(ctx, "loading record to revise failed", "err", err)
-		return nil, connect.NewError(connect.CodeInternal, errors.New("failed to revise service record"))
+		return nil, connect.NewError(connect.CodeInternal, errors.New("falha ao corrigir o registro"))
 	}
 	if original == nil {
-		return nil, connect.NewError(connect.CodeNotFound, errors.New("service record not found"))
+		return nil, connect.NewError(connect.CodeNotFound, errors.New("registro não encontrado"))
 	}
 
 	input := CreateInput{
@@ -102,13 +102,13 @@ func (h *Handler) ReviseServiceRecord(ctx context.Context, req *connect.Request[
 	record, err := h.repo.Revise(ctx, workshopID, req.Msg.RecordId, input)
 	switch {
 	case errors.Is(err, ErrRecordNotFound):
-		return nil, connect.NewError(connect.CodeNotFound, errors.New("service record not found"))
+		return nil, connect.NewError(connect.CodeNotFound, errors.New("registro não encontrado"))
 	case errors.Is(err, ErrAlreadySuperseded):
 		return nil, connect.NewError(connect.CodeFailedPrecondition,
 			errors.New("este registro já foi corrigido — revise a correção"))
 	case err != nil:
 		h.logger.ErrorContext(ctx, "revise service record failed", "err", err)
-		return nil, connect.NewError(connect.CodeInternal, errors.New("failed to revise service record"))
+		return nil, connect.NewError(connect.CodeInternal, errors.New("falha ao corrigir o registro"))
 	}
 
 	return connect.NewResponse(&servicev1.ReviseServiceRecordResponse{
@@ -138,16 +138,16 @@ func partsFromProto(raw []*servicev1.Part) []Part {
 
 func (h *Handler) GetServiceRecord(ctx context.Context, req *connect.Request[servicev1.GetServiceRecordRequest]) (*connect.Response[servicev1.GetServiceRecordResponse], error) {
 	if req.Msg.Id == "" {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("id is required"))
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("informe o registro"))
 	}
 
 	record, err := h.repo.FindByID(ctx, req.Msg.Id)
 	if err != nil {
 		h.logger.ErrorContext(ctx, "get service record failed", "err", err)
-		return nil, connect.NewError(connect.CodeInternal, errors.New("failed to load service record"))
+		return nil, connect.NewError(connect.CodeInternal, errors.New("falha ao carregar o registro"))
 	}
 	if record == nil {
-		return nil, connect.NewError(connect.CodeNotFound, errors.New("service record not found"))
+		return nil, connect.NewError(connect.CodeNotFound, errors.New("registro não encontrado"))
 	}
 
 	return connect.NewResponse(&servicev1.GetServiceRecordResponse{
@@ -158,16 +158,16 @@ func (h *Handler) GetServiceRecord(ctx context.Context, req *connect.Request[ser
 func (h *Handler) ListServiceRecordsByPlate(ctx context.Context, req *connect.Request[servicev1.ListServiceRecordsByPlateRequest]) (*connect.Response[servicev1.ListServiceRecordsByPlateResponse], error) {
 	plate := vehicle.NormalizePlate(req.Msg.Plate)
 	if plate == "" {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("plate is required"))
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("informe a placa"))
 	}
 
 	summary, records, err := h.repo.ListByPlate(ctx, plate, clampLimit(req.Msg.Limit))
 	if err != nil {
 		h.logger.ErrorContext(ctx, "list service records by plate failed", "err", err, "plate", plate)
-		return nil, connect.NewError(connect.CodeInternal, errors.New("failed to load history"))
+		return nil, connect.NewError(connect.CodeInternal, errors.New("falha ao carregar o histórico"))
 	}
 	if summary == nil {
-		return nil, connect.NewError(connect.CodeNotFound, errors.New("no vehicle registered under this plate"))
+		return nil, connect.NewError(connect.CodeNotFound, errors.New("nenhuma moto cadastrada com esta placa"))
 	}
 
 	return connect.NewResponse(&servicev1.ListServiceRecordsByPlateResponse{
@@ -185,7 +185,7 @@ func (h *Handler) ListWorkshopServiceRecords(ctx context.Context, req *connect.R
 	records, err := h.repo.ListByWorkshop(ctx, workshopID, clampLimit(req.Msg.Limit))
 	if err != nil {
 		h.logger.ErrorContext(ctx, "list workshop service records failed", "err", err)
-		return nil, connect.NewError(connect.CodeInternal, errors.New("failed to load records"))
+		return nil, connect.NewError(connect.CodeInternal, errors.New("falha ao carregar os registros"))
 	}
 
 	now := time.Now()
@@ -193,7 +193,7 @@ func (h *Handler) ListWorkshopServiceRecords(ctx context.Context, req *connect.R
 	count, err := h.repo.CountByWorkshopSince(ctx, workshopID, startOfMonth)
 	if err != nil {
 		h.logger.ErrorContext(ctx, "counting workshop records this month failed", "err", err)
-		return nil, connect.NewError(connect.CodeInternal, errors.New("failed to load records"))
+		return nil, connect.NewError(connect.CodeInternal, errors.New("falha ao carregar os registros"))
 	}
 
 	return connect.NewResponse(&servicev1.ListWorkshopServiceRecordsResponse{

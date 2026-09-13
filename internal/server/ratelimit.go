@@ -107,7 +107,7 @@ func RateLimitHTTP(limiter *RateLimiter, next http.Handler) http.Handler {
 	})
 }
 
-var errTooManyRequests = errors.New("too many requests — try again shortly")
+var errTooManyRequests = errors.New("muitas tentativas — aguarde um pouco e tente de novo")
 
 // clientIP drops the port: every new connection gets a fresh one, so keying on
 // the full address would hand each connection its own bucket.

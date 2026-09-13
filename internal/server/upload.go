@@ -54,7 +54,7 @@ func (h *UploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	workshopID, ok := h.authenticate(r)
 	if !ok {
-		writeError(w, http.StatusUnauthorized, "unauthenticated", "workshop authentication required")
+		writeError(w, http.StatusUnauthorized, "unauthenticated", "entre como oficina para continuar")
 		return
 	}
 
@@ -67,7 +67,7 @@ func (h *UploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if record == nil || record.WorkshopID != workshopID {
-		writeError(w, http.StatusNotFound, "not_found", "service record not found")
+		writeError(w, http.StatusNotFound, "not_found", "registro não encontrado")
 		return
 	}
 
@@ -125,7 +125,7 @@ func (h *UploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		h.removeOrphan(ctx, url)
 		if errors.Is(err, servicerecord.ErrRecordNotFound) {
-			writeError(w, http.StatusNotFound, "not_found", "service record not found")
+			writeError(w, http.StatusNotFound, "not_found", "registro não encontrado")
 			return
 		}
 		h.logger.ErrorContext(ctx, "linking attachment failed", "err", err)

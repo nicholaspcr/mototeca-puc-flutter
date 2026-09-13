@@ -38,7 +38,7 @@ func (h *Handler) GetVehicleByPlate(ctx context.Context, req *connect.Request[ve
 	if err != nil {
 		err = fmt.Errorf("finding vehicle by plate %q: %w", plate, err)
 		h.logger.ErrorContext(ctx, "get vehicle by plate failed", "err", err)
-		return nil, connect.NewError(connect.CodeInternal, errors.New("failed to look up vehicle"))
+		return nil, connect.NewError(connect.CodeInternal, errors.New("falha ao buscar a moto"))
 	}
 	if v == nil {
 		return nil, connect.NewError(connect.CodeNotFound, errors.New("nenhuma moto cadastrada com esta placa"))
@@ -76,7 +76,7 @@ func (h *Handler) CreateVehicle(ctx context.Context, req *connect.Request[vehicl
 	case err != nil:
 		err = fmt.Errorf("creating vehicle with plate %q: %w", input.Plate, err)
 		h.logger.ErrorContext(ctx, "create vehicle failed", "err", err)
-		return nil, connect.NewError(connect.CodeInternal, errors.New("failed to create vehicle"))
+		return nil, connect.NewError(connect.CodeInternal, errors.New("falha ao cadastrar a moto"))
 	}
 
 	return connect.NewResponse(&vehiclev1.CreateVehicleResponse{

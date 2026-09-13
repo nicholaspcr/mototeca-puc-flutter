@@ -44,17 +44,17 @@ func (h *Handler) CreateWorkshop(ctx context.Context, req *connect.Request[works
 	passwordHash, err := auth.HashPassword(input.Password)
 	if err != nil {
 		h.logger.ErrorContext(ctx, "hashing workshop password failed", "err", err)
-		return nil, connect.NewError(connect.CodeInternal, errors.New("failed to create workshop"))
+		return nil, connect.NewError(connect.CodeInternal, errors.New("falha ao cadastrar a oficina"))
 	}
 
 	w, err := h.repo.Create(ctx, input, passwordHash)
 	if errors.Is(err, ErrDuplicateCNPJ) {
-		return nil, connect.NewError(connect.CodeAlreadyExists, errors.New("this CNPJ is already registered"))
+		return nil, connect.NewError(connect.CodeAlreadyExists, errors.New("este CNPJ já tem cadastro"))
 	}
 	if err != nil {
 		// The CNPJ is logged for support; the password never is.
 		h.logger.ErrorContext(ctx, "create workshop failed", "err", fmt.Errorf("creating workshop: %w", err))
-		return nil, connect.NewError(connect.CodeInternal, errors.New("failed to create workshop"))
+		return nil, connect.NewError(connect.CodeInternal, errors.New("falha ao cadastrar a oficina"))
 	}
 
 	token, err := h.issueToken(ctx, w.ID)
@@ -81,7 +81,7 @@ func (h *Handler) Login(ctx context.Context, req *connect.Request[workshopv1.Log
 	w, err := h.repo.FindByCNPJ(ctx, cnpj)
 	if err != nil {
 		h.logger.ErrorContext(ctx, "workshop login lookup failed", "err", err)
-		return nil, connect.NewError(connect.CodeInternal, errors.New("failed to sign in"))
+		return nil, connect.NewError(connect.CodeInternal, errors.New("falha ao entrar"))
 	}
 
 	digest := dummyHash
@@ -107,7 +107,7 @@ func (h *Handler) issueToken(ctx context.Context, workshopID string) (string, er
 	token, err := h.signer.Issue(auth.Subject{Kind: auth.KindWorkshop, ID: workshopID}, time.Now())
 	if err != nil {
 		h.logger.ErrorContext(ctx, "issuing workshop token failed", "err", err)
-		return "", connect.NewError(connect.CodeInternal, errors.New("failed to start session"))
+		return "", connect.NewError(connect.CodeInternal, errors.New("falha ao iniciar a sessão"))
 	}
 	return token, nil
 }
