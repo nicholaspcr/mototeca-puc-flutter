@@ -53,7 +53,7 @@ Flutter code lives under `mobile/`; `design/` is the mockup/brand reference and 
 ## 6. Backend & Infrastructure
 
 - **Go** API at repo root (`go.mod`, `cmd/`, `internal/`), static binary.
-- **Postgres** — relational data, append-only trust ledger. Schema/migrations in `db/migrations`.
+- **Postgres** — relational data, append-only trust ledger. Schema/migrations in `db/migrations`, tracked in `schema_migrations` and applied by a one-shot compose service before the API starts.
 - Object storage (S3-compatible) for photos/attachments — MinIO in compose,
   reached over a multipart route rather than an RPC so bytes are not
   base64-inflated. Anonymous-read bucket, since the history it hangs off is
@@ -75,11 +75,13 @@ Daily full snapshot + WAL/point-in-time recovery, 30-day rolling window + monthl
 
 - CPF/phone/vehicle data is personal data: minimize collection, hash/encrypt CPF at rest, define retention.
 - Owner consent before linking a workshop entry to their identity; shared history links never leak owner PII.
-- Rate-limit plate lookups. Implemented per caller address, in-process, on the
-  plate lookup, `Login` and `CreateWorkshop`; a multi-instance deployment needs
-  a shared store instead.
+- Rate-limit plate lookups. Implemented per client IP, in-process, on every
+  endpoint, tighter on the plate lookup, logins and signups; a multi-instance
+  deployment needs a shared store instead.
 - The public plate lookup returns a reduced vehicle (plate, make, model, year)
-  — never the chassi or the owner.
+  — never the chassi or the owner. The full vehicle, chassi included, needs a
+  workshop session, and owner ids never leave the server.
+- Uploaded files are typed by content sniffing, not by what the client claims.
 
 ## 9. Low-Bandwidth Considerations
 
@@ -92,17 +94,17 @@ mototeca/
   go.mod, cmd/, internal/, db/migrations/   Go API, at repo root
   design/                                   screen mockups + brand tokens (not code)
   mobile/                                   Flutter app
-  scripts/e2e.sh                            end-to-end smoke test of every endpoint
+  scripts/e2e.sh                            asserts the response of every endpoint
 ```
 
 ```bash
 cp .env.example .env   # set DATABASE_URL and AUTH_SECRET
 make db-up              # local Postgres
-make migrate             # applies every db/migrations/*.sql in order
+make migrate             # applies pending db/migrations/*.sql
 make run                  # starts the API on :8080
 make test                 # scoped to ./cmd/... ./internal/...
 make test-integration     # + DB-backed tests, needs `make db-up` first
-make e2e                  # drives every endpoint against a running API
+make e2e                  # asserts every endpoint against `docker compose up -d`
 
 cd mobile && flutter test  # API client, contract and navigation tests
 ```
