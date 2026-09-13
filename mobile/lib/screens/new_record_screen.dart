@@ -63,6 +63,10 @@ typedef _Draft = ({
   List<Part> parts,
 });
 
+/// More would outgrow what a shop's connection uploads comfortably, and the
+/// server caps a record's files anyway.
+const maxPhotosPerPhase = 5;
+
 /// Novo Registro — the app's main action (design/NewRecord.dc.html). Also
 /// corrects an existing record, since a correction is a new record too.
 class NewRecordScreen extends StatefulWidget {
@@ -103,7 +107,7 @@ class _NewRecordScreenState extends State<NewRecordScreen> {
   late final _selectedOps = {...?widget.revising?.operations};
 
   final _picker = ImagePicker();
-  final _photos = <String, _PickedPhoto>{};
+  final _photos = <String, List<_PickedPhoto>>{'before': [], 'after': []};
   _PickedPhoto? _invoice;
 
   // A correction stays on the same bike, so its vehicle is known up front.
@@ -285,8 +289,8 @@ class _NewRecordScreenState extends State<NewRecordScreen> {
   Future<int> _uploadAttachments(String recordId) async {
     final repository = AppScope.read(context).serviceRecords;
     final uploads = [
-      for (final MapEntry(key: phase, value: photo) in _photos.entries)
-        (file: photo, kind: 'photo', phase: phase),
+      for (final MapEntry(key: phase, value: photos) in _photos.entries)
+        for (final photo in photos) (file: photo, kind: 'photo', phase: phase),
       if (_invoice case final invoice?)
         (file: invoice, kind: 'invoice', phase: null),
     ];
@@ -309,32 +313,43 @@ class _NewRecordScreenState extends State<NewRecordScreen> {
     return failed;
   }
 
-  Future<_PickedPhoto?> _pickImage() async {
-    final picked = await _picker.pickImage(
-      source: ImageSource.gallery,
-      // Shop connections are poor and the API caps uploads at 8 MiB
-      // (ARCHITECTURE.md §9).
-      maxWidth: 1600,
-      imageQuality: 80,
-    );
-    if (picked == null) return null;
+  // Shop connections are poor and the API caps uploads at 8 MiB
+  // (ARCHITECTURE.md §9).
+  static const _maxWidth = 1600.0;
+  static const _imageQuality = 80;
 
-    return _PickedPhoto(
-      bytes: await picked.readAsBytes(),
-      name: picked.name,
-      mimeType: picked.mimeType ?? 'image/jpeg',
-    );
-  }
+  static Future<_PickedPhoto> _read(XFile file) async => _PickedPhoto(
+    bytes: await file.readAsBytes(),
+    name: file.name,
+    mimeType: file.mimeType ?? 'image/jpeg',
+  );
 
-  Future<void> _pickPhoto(String phase) async {
-    final photo = await _pickImage();
-    if (photo == null || !mounted) return;
-    setState(() => _photos[phase] = photo);
+  Future<void> _pickPhotos(String phase) async {
+    final room = maxPhotosPerPhase - _photos[phase]!.length;
+    if (room <= 0) {
+      showApiError(context, 'Até $maxPhotosPerPhase fotos por etapa.');
+      return;
+    }
+
+    final picked = await _picker.pickMultiImage(
+      maxWidth: _maxWidth,
+      imageQuality: _imageQuality,
+      limit: room,
+    );
+    final photos = await Future.wait(picked.take(room).map(_read));
+    if (photos.isEmpty || !mounted) return;
+    setState(() => _photos[phase] = [..._photos[phase]!, ...photos]);
   }
 
   Future<void> _pickInvoice() async {
-    final invoice = await _pickImage();
-    if (invoice == null || !mounted) return;
+    final picked = await _picker.pickImage(
+      source: ImageSource.gallery,
+      maxWidth: _maxWidth,
+      imageQuality: _imageQuality,
+    );
+    if (picked == null) return;
+    final invoice = await _read(picked);
+    if (!mounted) return;
     setState(() => _invoice = invoice);
   }
 
@@ -601,17 +616,21 @@ class _NewRecordScreenState extends State<NewRecordScreen> {
             children: [
               Expanded(
                 child: _PhotoSlot(
-                  label: 'Foto antes',
-                  photo: _photos['before'],
-                  onTap: () => _pickPhoto('before'),
+                  key: const Key('novo-registro-fotos-antes'),
+                  label: 'Fotos antes',
+                  photos: _photos['before']!,
+                  onTap: () => _pickPhotos('before'),
+                  onClear: () => setState(() => _photos['before'] = []),
                 ),
               ),
               const SizedBox(width: 10),
               Expanded(
                 child: _PhotoSlot(
-                  label: 'Foto depois',
-                  photo: _photos['after'],
-                  onTap: () => _pickPhoto('after'),
+                  key: const Key('novo-registro-fotos-depois'),
+                  label: 'Fotos depois',
+                  photos: _photos['after']!,
+                  onTap: () => _pickPhotos('after'),
+                  onClear: () => setState(() => _photos['after'] = []),
                 ),
               ),
             ],
@@ -621,8 +640,9 @@ class _NewRecordScreenState extends State<NewRecordScreen> {
             key: const Key('novo-registro-nota-fiscal'),
             label: 'Foto da nota fiscal',
             icon: Icons.receipt_long_outlined,
-            photo: _invoice,
+            photos: [?_invoice],
             onTap: _pickInvoice,
+            onClear: () => setState(() => _invoice = null),
           ),
           const SizedBox(height: 6),
           MtFootnote(
@@ -679,23 +699,27 @@ class _NewRecordScreenState extends State<NewRecordScreen> {
   }
 }
 
+/// Tapping adds photos (or replaces the invoice); the corner button clears
+/// the slot.
 class _PhotoSlot extends StatelessWidget {
   const _PhotoSlot({
     super.key,
     required this.label,
+    required this.photos,
     required this.onTap,
-    this.photo,
+    required this.onClear,
     this.icon = Icons.add_a_photo_outlined,
   });
 
   final String label;
+  final List<_PickedPhoto> photos;
   final VoidCallback onTap;
-  final _PickedPhoto? photo;
+  final VoidCallback onClear;
   final IconData icon;
 
   @override
   Widget build(BuildContext context) {
-    final picked = photo;
+    final cover = photos.firstOrNull;
 
     return InkWell(
       onTap: onTap,
@@ -705,13 +729,13 @@ class _PhotoSlot extends StatelessWidget {
         decoration: BoxDecoration(
           color: MtColors.slate50,
           border: Border.all(
-            color: picked == null ? MtColors.slate200 : MtColors.petrol,
+            color: cover == null ? MtColors.slate200 : MtColors.petrol,
           ),
           borderRadius: BorderRadius.circular(MtSizes.controlRadius),
         ),
         clipBehavior: Clip.antiAlias,
         alignment: Alignment.center,
-        child: picked == null
+        child: cover == null
             ? Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -726,12 +750,50 @@ class _PhotoSlot extends StatelessWidget {
                   ),
                 ],
               )
-            : Image.memory(
-                picked.bytes,
-                fit: BoxFit.cover,
-                width: double.infinity,
-                height: 100,
+            : Stack(
+                fit: StackFit.expand,
+                children: [
+                  Image.memory(cover.bytes, fit: BoxFit.cover),
+                  if (photos.length > 1)
+                    Positioned(
+                      left: 6,
+                      bottom: 6,
+                      child: _Badge(child: Text('${photos.length} fotos')),
+                    ),
+                  Positioned(
+                    top: 0,
+                    right: 0,
+                    child: IconButton(
+                      tooltip: 'Remover',
+                      onPressed: onClear,
+                      icon: const _Badge(
+                        child: Icon(Icons.close, size: 14, color: Colors.white),
+                      ),
+                    ),
+                  ),
+                ],
               ),
+      ),
+    );
+  }
+}
+
+class _Badge extends StatelessWidget {
+  const _Badge({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+      decoration: BoxDecoration(
+        color: MtColors.graphite.withValues(alpha: 0.75),
+        borderRadius: BorderRadius.circular(9999),
+      ),
+      child: DefaultTextStyle.merge(
+        style: const TextStyle(fontSize: 11, color: Colors.white),
+        child: child,
       ),
     );
   }

@@ -331,8 +331,8 @@ class ServiceDetailScreen extends StatelessWidget {
   }
 }
 
-/// One phase's photo: the first image when the record has one, a placeholder
-/// otherwise.
+/// One phase's photos: the first as a thumbnail, all of them in a gallery
+/// on tap.
 class _Photo extends StatelessWidget {
   const _Photo({required this.label, this.attachments = const []});
 
@@ -345,33 +345,33 @@ class _Photo extends StatelessWidget {
 
     return Column(
       children: [
-        Container(
-          height: 100,
-          decoration: BoxDecoration(
-            color: MtColors.slate100,
-            border: Border.all(color: MtColors.slate200),
-            borderRadius: BorderRadius.circular(MtSizes.controlRadius),
-          ),
-          clipBehavior: Clip.antiAlias,
-          alignment: Alignment.center,
-          child: photo == null
-              ? const Icon(
-                  Icons.image_outlined,
-                  color: Color(0xFF94A3B8),
-                  size: 26,
-                )
-              : Image.network(
-                  photo.url,
-                  fit: BoxFit.cover,
-                  width: double.infinity,
-                  height: 100,
-                  // A broken URL must not take the whole record down.
-                  errorBuilder: (_, _, _) => const Icon(
-                    Icons.broken_image_outlined,
+        InkWell(
+          key: Key('detalhe-fotos-$label'),
+          onTap: photo == null
+              ? null
+              : () => showDialog<void>(
+                  context: context,
+                  builder: (_) =>
+                      _Gallery(label: label, attachments: attachments),
+                ),
+          borderRadius: BorderRadius.circular(MtSizes.controlRadius),
+          child: Container(
+            height: 100,
+            decoration: BoxDecoration(
+              color: MtColors.slate100,
+              border: Border.all(color: MtColors.slate200),
+              borderRadius: BorderRadius.circular(MtSizes.controlRadius),
+            ),
+            clipBehavior: Clip.antiAlias,
+            alignment: Alignment.center,
+            child: photo == null
+                ? const Icon(
+                    Icons.image_outlined,
                     color: Color(0xFF94A3B8),
                     size: 26,
-                  ),
-                ),
+                  )
+                : _NetworkPhoto(url: photo.url, fit: BoxFit.cover),
+          ),
         ),
         const SizedBox(height: 5),
         Text(
@@ -379,6 +379,96 @@ class _Photo extends StatelessWidget {
           style: const TextStyle(fontSize: 11, color: MtColors.slate500),
         ),
       ],
+    );
+  }
+}
+
+class _Gallery extends StatefulWidget {
+  const _Gallery({required this.label, required this.attachments});
+
+  final String label;
+  final List<Attachment> attachments;
+
+  @override
+  State<_Gallery> createState() => _GalleryState();
+}
+
+class _GalleryState extends State<_Gallery> {
+  var _page = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    final count = widget.attachments.length;
+
+    return Dialog(
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 4, 4, 4),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    count > 1
+                        ? '${widget.label} · ${_page + 1} de $count'
+                        : widget.label,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                IconButton(
+                  tooltip: 'Fechar',
+                  onPressed: () => Navigator.pop(context),
+                  icon: const Icon(Icons.close),
+                ),
+              ],
+            ),
+          ),
+          SizedBox(
+            height: 360,
+            child: PageView(
+              onPageChanged: (page) => setState(() => _page = page),
+              children: [
+                for (final attachment in widget.attachments)
+                  ColoredBox(
+                    color: MtColors.slate100,
+                    child: _NetworkPhoto(
+                      url: attachment.url,
+                      fit: BoxFit.contain,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _NetworkPhoto extends StatelessWidget {
+  const _NetworkPhoto({required this.url, required this.fit});
+
+  final String url;
+  final BoxFit fit;
+
+  @override
+  Widget build(BuildContext context) {
+    return Image.network(
+      url,
+      fit: fit,
+      width: double.infinity,
+      height: double.infinity,
+      // A broken URL must not take the whole record down.
+      errorBuilder: (_, _, _) => const Icon(
+        Icons.broken_image_outlined,
+        color: Color(0xFF94A3B8),
+        size: 26,
+      ),
     );
   }
 }
