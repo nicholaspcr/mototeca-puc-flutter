@@ -67,6 +67,9 @@ message ServiceRecord {
   google.protobuf.Timestamp created_at = 11;
   // Set when this record is itself a correction of an earlier one.
   optional string revises_record_id = 12;
+  // Set when a later correction replaced this record. Lists never return such
+  // a record; it is only reachable by id, e.g. from an old link.
+  optional string superseded_by_record_id = 13;
 }
 
 message CreateServiceRecordRequest {

@@ -78,6 +78,8 @@ type ServiceRecord struct {
 	CreatedAt    time.Time      `json:"createdAt"`
 	// Set when this record corrects an earlier one.
 	RevisesRecordID *string `json:"revisesRecordId"`
+	// Set when a later correction replaced this record.
+	SupersededByID *string `json:"supersededByRecordId"`
 }
 
 type CreateInput struct {

@@ -298,6 +298,8 @@ func ToProto(r *ServiceRecord) *servicev1.ServiceRecord {
 		Attachments:     attachments,
 		CreatedAt:       timestamppb.New(r.CreatedAt),
 		RevisesRecordId: r.RevisesRecordID,
+
+		SupersededByRecordId: r.SupersededByID,
 	}
 }
 

@@ -25,7 +25,8 @@ func NewRepository(pool *pgxpool.Pool) *Repository {
 const selectRecords = `
 	SELECT sr.id, sr.workshop_id, v.plate, v.make, v.model, v.year, w.name, m.name,
 	       sr.mileage_km, sr.cost_cents, sr.notes, sr.created_at,
-	       (SELECT p.id FROM service_records p WHERE p.superseded_by = sr.id)
+	       (SELECT p.id FROM service_records p WHERE p.superseded_by = sr.id),
+	       sr.superseded_by
 	FROM service_records sr
 	JOIN vehicles v ON v.id = sr.vehicle_id
 	JOIN workshops w ON w.id = sr.workshop_id
@@ -41,6 +42,7 @@ func scanRecords(rows pgx.Rows) ([]ServiceRecord, error) {
 			&r.ID, &r.WorkshopID, &r.Vehicle.Plate, &r.Vehicle.Make, &r.Vehicle.Model, &r.Vehicle.Year,
 			&r.WorkshopName, &r.MechanicName,
 			&r.MileageKm, &r.CostCents, &r.Notes, &r.CreatedAt, &r.RevisesRecordID,
+			&r.SupersededByID,
 		); err != nil {
 			return nil, err
 		}

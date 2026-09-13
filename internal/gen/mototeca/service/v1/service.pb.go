@@ -368,8 +368,11 @@ type ServiceRecord struct {
 	CreatedAt    *timestamppb.Timestamp `protobuf:"bytes,11,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
 	// Set when this record is itself a correction of an earlier one.
 	RevisesRecordId *string `protobuf:"bytes,12,opt,name=revises_record_id,json=revisesRecordId,proto3,oneof" json:"revises_record_id,omitempty"`
-	unknownFields   protoimpl.UnknownFields
-	sizeCache       protoimpl.SizeCache
+	// Set when a later correction replaced this record. Lists never return such
+	// a record; it is only reachable by id, e.g. from an old link.
+	SupersededByRecordId *string `protobuf:"bytes,13,opt,name=superseded_by_record_id,json=supersededByRecordId,proto3,oneof" json:"superseded_by_record_id,omitempty"`
+	unknownFields        protoimpl.UnknownFields
+	sizeCache            protoimpl.SizeCache
 }
 
 func (x *ServiceRecord) Reset() {
@@ -482,6 +485,13 @@ func (x *ServiceRecord) GetCreatedAt() *timestamppb.Timestamp {
 func (x *ServiceRecord) GetRevisesRecordId() string {
 	if x != nil && x.RevisesRecordId != nil {
 		return *x.RevisesRecordId
+	}
+	return ""
+}
+
+func (x *ServiceRecord) GetSupersededByRecordId() string {
+	if x != nil && x.SupersededByRecordId != nil {
+		return *x.SupersededByRecordId
 	}
 	return ""
 }
@@ -1088,7 +1098,7 @@ const file_mototeca_service_v1_service_proto_rawDesc = "" +
 	"\x05plate\x18\x01 \x01(\tR\x05plate\x12\x12\n" +
 	"\x04make\x18\x02 \x01(\tR\x04make\x12\x14\n" +
 	"\x05model\x18\x03 \x01(\tR\x05model\x12\x12\n" +
-	"\x04year\x18\x04 \x01(\x05R\x04year\"\xee\x04\n" +
+	"\x04year\x18\x04 \x01(\x05R\x04year\"\xc6\x05\n" +
 	"\rServiceRecord\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12=\n" +
 	"\avehicle\x18\x02 \x01(\v2#.mototeca.service.v1.VehicleSummaryR\avehicle\x12#\n" +
@@ -1107,11 +1117,13 @@ const file_mototeca_service_v1_service_proto_rawDesc = "" +
 	" \x03(\v2\x1f.mototeca.service.v1.AttachmentR\vattachments\x129\n" +
 	"\n" +
 	"created_at\x18\v \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x12/\n" +
-	"\x11revises_record_id\x18\f \x01(\tH\x03R\x0frevisesRecordId\x88\x01\x01B\x10\n" +
+	"\x11revises_record_id\x18\f \x01(\tH\x03R\x0frevisesRecordId\x88\x01\x01\x12:\n" +
+	"\x17superseded_by_record_id\x18\r \x01(\tH\x04R\x14supersededByRecordId\x88\x01\x01B\x10\n" +
 	"\x0e_mechanic_nameB\r\n" +
 	"\v_cost_centsB\b\n" +
 	"\x06_notesB\x14\n" +
-	"\x12_revises_record_id\"\x8c\x03\n" +
+	"\x12_revises_record_idB\x1a\n" +
+	"\x18_superseded_by_record_id\"\x8c\x03\n" +
 	"\x1aCreateServiceRecordRequest\x12\x14\n" +
 	"\x05plate\x18\x01 \x01(\tR\x05plate\x12(\n" +
 	"\rmechanic_name\x18\x02 \x01(\tH\x00R\fmechanicName\x88\x01\x01\x12@\n" +
