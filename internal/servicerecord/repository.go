@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -22,7 +23,7 @@ func NewRepository(pool *pgxpool.Pool) *Repository {
 // selectRecords is the shared projection: a record always travels with enough
 // of its vehicle and workshop to render a history row without a second query.
 const selectRecords = `
-	SELECT sr.id, v.plate, v.make, v.model, v.year, w.name, m.name,
+	SELECT sr.id, sr.workshop_id, v.plate, v.make, v.model, v.year, w.name, m.name,
 	       sr.mileage_km, sr.cost_cents, sr.notes, sr.created_at,
 	       (SELECT p.id FROM service_records p WHERE p.superseded_by = sr.id)
 	FROM service_records sr
@@ -37,7 +38,7 @@ func scanRecords(rows pgx.Rows) ([]ServiceRecord, error) {
 	for rows.Next() {
 		var r ServiceRecord
 		if err := rows.Scan(
-			&r.ID, &r.Vehicle.Plate, &r.Vehicle.Make, &r.Vehicle.Model, &r.Vehicle.Year,
+			&r.ID, &r.WorkshopID, &r.Vehicle.Plate, &r.Vehicle.Make, &r.Vehicle.Model, &r.Vehicle.Year,
 			&r.WorkshopName, &r.MechanicName,
 			&r.MileageKm, &r.CostCents, &r.Notes, &r.CreatedAt, &r.RevisesRecordID,
 		); err != nil {
@@ -129,7 +130,16 @@ func eachRow(rows pgx.Rows, scan func(pgx.Rows) error) error {
 	return rows.Err()
 }
 
+// validID keeps a malformed id away from the uuid column, where Postgres would
+// fail the query instead of simply finding nothing.
+func validID(id string) bool {
+	return len(id) == 36 && uuid.Validate(id) == nil
+}
+
 func (r *Repository) FindByID(ctx context.Context, id string) (*ServiceRecord, error) {
+	if !validID(id) {
+		return nil, nil
+	}
 	rows, err := r.pool.Query(ctx, selectRecords+` WHERE sr.id = $1`, id)
 	if err != nil {
 		return nil, err
@@ -290,6 +300,9 @@ func (r *Repository) write(ctx context.Context, input CreateInput, rev *revision
 // AddAttachment refuses a record the workshop does not own, so one shop cannot
 // staple photos onto another's work.
 func (r *Repository) AddAttachment(ctx context.Context, workshopID, recordID string, a Attachment) (*Attachment, error) {
+	if !validID(recordID) {
+		return nil, ErrRecordNotFound
+	}
 	var ownerWorkshop string
 	err := r.pool.QueryRow(ctx,
 		`SELECT workshop_id FROM service_records WHERE id = $1`, recordID).Scan(&ownerWorkshop)
@@ -317,6 +330,9 @@ func (r *Repository) AddAttachment(ctx context.Context, workshopID, recordID str
 // checkRevisable locks the original so two concurrent corrections cannot both
 // claim it, and refuses one that isn't the caller's or is already superseded.
 func checkRevisable(ctx context.Context, tx pgx.Tx, rev *revision) error {
+	if !validID(rev.recordID) {
+		return ErrRecordNotFound
+	}
 	var ownerWorkshop string
 	var supersededBy *string
 	err := tx.QueryRow(ctx,

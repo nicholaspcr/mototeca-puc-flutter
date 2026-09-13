@@ -63,7 +63,9 @@ type VehicleSummary struct {
 }
 
 type ServiceRecord struct {
-	ID           string         `json:"id"`
+	ID string `json:"id"`
+	// WorkshopID is who may attach files or revise; never sent to clients.
+	WorkshopID   string         `json:"-"`
 	Vehicle      VehicleSummary `json:"vehicle"`
 	WorkshopName string         `json:"workshopName"`
 	MechanicName *string        `json:"mechanicName"`
