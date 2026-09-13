@@ -43,8 +43,11 @@ const (
 
 // VehicleServiceClient is a client for the mototeca.vehicle.v1.VehicleService service.
 type VehicleServiceClient interface {
-	// Returns NOT_FOUND if the plate has no history yet.
+	// Requires a workshop token, since the response carries the chassi.
+	// Returns NOT_FOUND if the plate is not registered.
 	GetVehicleByPlate(context.Context, *connect.Request[v1.GetVehicleByPlateRequest]) (*connect.Response[v1.GetVehicleByPlateResponse], error)
+	// Requires a workshop or owner token. Returns ALREADY_EXISTS when the plate
+	// or the chassi is already registered.
 	CreateVehicle(context.Context, *connect.Request[v1.CreateVehicleRequest]) (*connect.Response[v1.CreateVehicleResponse], error)
 }
 
@@ -92,8 +95,11 @@ func (c *vehicleServiceClient) CreateVehicle(ctx context.Context, req *connect.R
 
 // VehicleServiceHandler is an implementation of the mototeca.vehicle.v1.VehicleService service.
 type VehicleServiceHandler interface {
-	// Returns NOT_FOUND if the plate has no history yet.
+	// Requires a workshop token, since the response carries the chassi.
+	// Returns NOT_FOUND if the plate is not registered.
 	GetVehicleByPlate(context.Context, *connect.Request[v1.GetVehicleByPlateRequest]) (*connect.Response[v1.GetVehicleByPlateResponse], error)
+	// Requires a workshop or owner token. Returns ALREADY_EXISTS when the plate
+	// or the chassi is already registered.
 	CreateVehicle(context.Context, *connect.Request[v1.CreateVehicleRequest]) (*connect.Response[v1.CreateVehicleResponse], error)
 }
 

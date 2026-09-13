@@ -23,17 +23,16 @@ const (
 )
 
 type Vehicle struct {
-	state          protoimpl.MessageState `protogen:"open.v1"`
-	Id             string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	Plate          string                 `protobuf:"bytes,2,opt,name=plate,proto3" json:"plate,omitempty"`
-	Chassi         string                 `protobuf:"bytes,3,opt,name=chassi,proto3" json:"chassi,omitempty"`
-	Make           string                 `protobuf:"bytes,4,opt,name=make,proto3" json:"make,omitempty"`
-	Model          string                 `protobuf:"bytes,5,opt,name=model,proto3" json:"model,omitempty"`
-	Year           int32                  `protobuf:"varint,6,opt,name=year,proto3" json:"year,omitempty"`
-	CurrentOwnerId *string                `protobuf:"bytes,7,opt,name=current_owner_id,json=currentOwnerId,proto3,oneof" json:"current_owner_id,omitempty"`
-	CreatedAt      *timestamppb.Timestamp `protobuf:"bytes,8,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
-	unknownFields  protoimpl.UnknownFields
-	sizeCache      protoimpl.SizeCache
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Plate         string                 `protobuf:"bytes,2,opt,name=plate,proto3" json:"plate,omitempty"`
+	Chassi        string                 `protobuf:"bytes,3,opt,name=chassi,proto3" json:"chassi,omitempty"`
+	Make          string                 `protobuf:"bytes,4,opt,name=make,proto3" json:"make,omitempty"`
+	Model         string                 `protobuf:"bytes,5,opt,name=model,proto3" json:"model,omitempty"`
+	Year          int32                  `protobuf:"varint,6,opt,name=year,proto3" json:"year,omitempty"`
+	CreatedAt     *timestamppb.Timestamp `protobuf:"bytes,8,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *Vehicle) Reset() {
@@ -106,13 +105,6 @@ func (x *Vehicle) GetYear() int32 {
 		return x.Year
 	}
 	return 0
-}
-
-func (x *Vehicle) GetCurrentOwnerId() string {
-	if x != nil && x.CurrentOwnerId != nil {
-		return *x.CurrentOwnerId
-	}
-	return ""
 }
 
 func (x *Vehicle) GetCreatedAt() *timestamppb.Timestamp {
@@ -334,18 +326,16 @@ var File_mototeca_vehicle_v1_vehicle_proto protoreflect.FileDescriptor
 
 const file_mototeca_vehicle_v1_vehicle_proto_rawDesc = "" +
 	"\n" +
-	"!mototeca/vehicle/v1/vehicle.proto\x12\x13mototeca.vehicle.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\x84\x02\n" +
+	"!mototeca/vehicle/v1/vehicle.proto\x12\x13mototeca.vehicle.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"\xd8\x01\n" +
 	"\aVehicle\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x14\n" +
 	"\x05plate\x18\x02 \x01(\tR\x05plate\x12\x16\n" +
 	"\x06chassi\x18\x03 \x01(\tR\x06chassi\x12\x12\n" +
 	"\x04make\x18\x04 \x01(\tR\x04make\x12\x14\n" +
 	"\x05model\x18\x05 \x01(\tR\x05model\x12\x12\n" +
-	"\x04year\x18\x06 \x01(\x05R\x04year\x12-\n" +
-	"\x10current_owner_id\x18\a \x01(\tH\x00R\x0ecurrentOwnerId\x88\x01\x01\x129\n" +
+	"\x04year\x18\x06 \x01(\x05R\x04year\x129\n" +
 	"\n" +
-	"created_at\x18\b \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAtB\x13\n" +
-	"\x11_current_owner_id\"0\n" +
+	"created_at\x18\b \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAtJ\x04\b\a\x10\bR\x10current_owner_id\"0\n" +
 	"\x18GetVehicleByPlateRequest\x12\x14\n" +
 	"\x05plate\x18\x01 \x01(\tR\x05plate\"S\n" +
 	"\x19GetVehicleByPlateResponse\x126\n" +
@@ -404,7 +394,6 @@ func file_mototeca_vehicle_v1_vehicle_proto_init() {
 	if File_mototeca_vehicle_v1_vehicle_proto != nil {
 		return
 	}
-	file_mototeca_vehicle_v1_vehicle_proto_msgTypes[0].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{

@@ -4,6 +4,7 @@ package vehicle
 
 import (
 	"context"
+	"errors"
 	"os"
 	"testing"
 
@@ -81,6 +82,18 @@ func TestRepositoryIntegration(t *testing.T) {
 		}
 		if found.Make != input.Make || found.Model != input.Model {
 			t.Errorf("Make/Model = %q/%q, want %q/%q", found.Make, found.Model, input.Make, input.Model)
+		}
+	})
+
+	t.Run("duplicates name the key that clashed", func(t *testing.T) {
+		samePlate := CreateInput{Plate: integrationTestPlate, Chassi: "ZZZ1111111111ZZZZ", Make: "Honda", Model: "CG", Year: 2022}
+		if _, err := repo.Create(ctx, samePlate); !errors.Is(err, ErrDuplicatePlate) {
+			t.Errorf("same plate: err = %v, want ErrDuplicatePlate", err)
+		}
+
+		sameChassi := CreateInput{Plate: "ZZZ9Z98", Chassi: integrationTestChassi, Make: "Honda", Model: "CG", Year: 2022}
+		if _, err := repo.Create(ctx, sameChassi); !errors.Is(err, ErrDuplicateChassi) {
+			t.Errorf("same chassi: err = %v, want ErrDuplicateChassi", err)
 		}
 	})
 }
