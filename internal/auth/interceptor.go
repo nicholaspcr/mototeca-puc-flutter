@@ -78,6 +78,15 @@ func require(ctx context.Context, want Kind, message string) (string, error) {
 	return subject.ID, nil
 }
 
+// RequireSubject accepts a session of either kind.
+func RequireSubject(ctx context.Context) (Subject, error) {
+	subject, ok := SubjectFrom(ctx)
+	if !ok {
+		return Subject{}, connect.NewError(connect.CodeUnauthenticated, errors.New("authentication required"))
+	}
+	return subject, nil
+}
+
 // RequireWorkshopID returns the authenticated workshop id, or a Connect
 // UNAUTHENTICATED error suitable for returning straight to the client.
 func RequireWorkshopID(ctx context.Context) (string, error) {

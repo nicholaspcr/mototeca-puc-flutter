@@ -11,7 +11,9 @@ message Vehicle {
   string make = 4;
   string model = 5;
   int32 year = 6;
-  optional string current_owner_id = 7;
+  // Owner ids stay server-side (ARCHITECTURE.md §8).
+  reserved 7;
+  reserved "current_owner_id";
   google.protobuf.Timestamp created_at = 8;
 }
 
@@ -36,7 +38,10 @@ message CreateVehicleResponse {
 }
 
 service VehicleService {
-  // Returns NOT_FOUND if the plate has no history yet.
+  // Requires a workshop token, since the response carries the chassi.
+  // Returns NOT_FOUND if the plate is not registered.
   rpc GetVehicleByPlate(GetVehicleByPlateRequest) returns (GetVehicleByPlateResponse);
+  // Requires a workshop or owner token. Returns ALREADY_EXISTS when the plate
+  // or the chassi is already registered.
   rpc CreateVehicle(CreateVehicleRequest) returns (CreateVehicleResponse);
 }

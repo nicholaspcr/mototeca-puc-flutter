@@ -10,6 +10,7 @@ import (
 
 	"connectrpc.com/connect"
 
+	"mototeca-backend/internal/auth"
 	vehiclev1 "mototeca-backend/internal/gen/mototeca/vehicle/v1"
 )
 
@@ -46,6 +47,11 @@ func (f *fakeStore) Create(_ context.Context, input CreateInput) (*Vehicle, erro
 	return v, nil
 }
 
+var (
+	workshopCtx = auth.WithWorkshopID(context.Background(), "workshop-1")
+	ownerCtx    = auth.WithOwnerID(context.Background(), "owner-1")
+)
+
 func discardLogger() *slog.Logger {
 	return slog.New(slog.NewTextHandler(io.Discard, nil))
 }
@@ -65,21 +71,29 @@ func assertConnectCode(t *testing.T, err error, want connect.Code) {
 }
 
 func TestHandlerGetVehicleByPlate(t *testing.T) {
+	t.Run("requires a workshop session", func(t *testing.T) {
+		h := NewHandler(&fakeStore{}, discardLogger())
+		for _, ctx := range []context.Context{context.Background(), ownerCtx} {
+			_, err := h.GetVehicleByPlate(ctx, connect.NewRequest(&vehiclev1.GetVehicleByPlateRequest{Plate: "ABC1D23"}))
+			assertConnectCode(t, err, connect.CodeUnauthenticated)
+		}
+	})
+
 	t.Run("empty plate is invalid argument", func(t *testing.T) {
 		h := NewHandler(&fakeStore{}, discardLogger())
-		_, err := h.GetVehicleByPlate(context.Background(), connect.NewRequest(&vehiclev1.GetVehicleByPlateRequest{Plate: ""}))
+		_, err := h.GetVehicleByPlate(workshopCtx, connect.NewRequest(&vehiclev1.GetVehicleByPlateRequest{Plate: ""}))
 		assertConnectCode(t, err, connect.CodeInvalidArgument)
 	})
 
 	t.Run("not found", func(t *testing.T) {
 		h := NewHandler(&fakeStore{vehicles: map[string]*Vehicle{}}, discardLogger())
-		_, err := h.GetVehicleByPlate(context.Background(), connect.NewRequest(&vehiclev1.GetVehicleByPlateRequest{Plate: "ABC1D23"}))
+		_, err := h.GetVehicleByPlate(workshopCtx, connect.NewRequest(&vehiclev1.GetVehicleByPlateRequest{Plate: "ABC1D23"}))
 		assertConnectCode(t, err, connect.CodeNotFound)
 	})
 
 	t.Run("store error becomes internal", func(t *testing.T) {
 		h := NewHandler(&fakeStore{findErr: errors.New("boom")}, discardLogger())
-		_, err := h.GetVehicleByPlate(context.Background(), connect.NewRequest(&vehiclev1.GetVehicleByPlateRequest{Plate: "ABC1D23"}))
+		_, err := h.GetVehicleByPlate(workshopCtx, connect.NewRequest(&vehiclev1.GetVehicleByPlateRequest{Plate: "ABC1D23"}))
 		assertConnectCode(t, err, connect.CodeInternal)
 	})
 
@@ -89,7 +103,7 @@ func TestHandlerGetVehicleByPlate(t *testing.T) {
 			Make: "Honda", Model: "CG 160", Year: 2022, CreatedAt: time.Now(),
 		}
 		h := NewHandler(&fakeStore{vehicles: map[string]*Vehicle{"ABC1D23": want}}, discardLogger())
-		resp, err := h.GetVehicleByPlate(context.Background(), connect.NewRequest(&vehiclev1.GetVehicleByPlateRequest{Plate: "abc1d23"}))
+		resp, err := h.GetVehicleByPlate(workshopCtx, connect.NewRequest(&vehiclev1.GetVehicleByPlateRequest{Plate: "abc1d23"}))
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -117,20 +131,55 @@ func TestHandlerCreateVehicle(t *testing.T) {
 			Model:  validReq.Model,
 			Year:   validReq.Year,
 		}
-		_, err := h.CreateVehicle(context.Background(), connect.NewRequest(bad))
+		_, err := h.CreateVehicle(workshopCtx, connect.NewRequest(bad))
 		assertConnectCode(t, err, connect.CodeInvalidArgument)
+	})
+
+	t.Run("requires a session", func(t *testing.T) {
+		h := NewHandler(&fakeStore{}, discardLogger())
+		_, err := h.CreateVehicle(context.Background(), connect.NewRequest(validReq))
+		assertConnectCode(t, err, connect.CodeUnauthenticated)
+	})
+
+	t.Run("an owner may register a bike", func(t *testing.T) {
+		h := NewHandler(&fakeStore{}, discardLogger())
+		if _, err := h.CreateVehicle(ownerCtx, connect.NewRequest(validReq)); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+	})
+
+	t.Run("duplicates are already exists", func(t *testing.T) {
+		for _, dup := range []error{ErrDuplicatePlate, ErrDuplicateChassi} {
+			h := NewHandler(&fakeStore{createErr: dup}, discardLogger())
+			_, err := h.CreateVehicle(workshopCtx, connect.NewRequest(validReq))
+			assertConnectCode(t, err, connect.CodeAlreadyExists)
+		}
+	})
+
+	t.Run("input is normalized before storing", func(t *testing.T) {
+		store := &fakeStore{}
+		h := NewHandler(store, discardLogger())
+		messy := &vehiclev1.CreateVehicleRequest{
+			Plate: "abc 1d23", Chassi: " 9bwzzz377vt004251 ", Make: " Honda ", Model: "CG 160", Year: 2022,
+		}
+		if _, err := h.CreateVehicle(workshopCtx, connect.NewRequest(messy)); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if store.created.Chassi != "9BWZZZ377VT004251" || store.created.Make != "Honda" {
+			t.Errorf("stored %+v, want trimmed and upper-cased fields", store.created)
+		}
 	})
 
 	t.Run("store error becomes internal", func(t *testing.T) {
 		h := NewHandler(&fakeStore{createErr: errors.New("boom")}, discardLogger())
-		_, err := h.CreateVehicle(context.Background(), connect.NewRequest(validReq))
+		_, err := h.CreateVehicle(workshopCtx, connect.NewRequest(validReq))
 		assertConnectCode(t, err, connect.CodeInternal)
 	})
 
 	t.Run("success", func(t *testing.T) {
 		store := &fakeStore{}
 		h := NewHandler(store, discardLogger())
-		resp, err := h.CreateVehicle(context.Background(), connect.NewRequest(validReq))
+		resp, err := h.CreateVehicle(workshopCtx, connect.NewRequest(validReq))
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -144,16 +193,14 @@ func TestHandlerCreateVehicle(t *testing.T) {
 }
 
 func BenchmarkToProto(b *testing.B) {
-	ownerID := "owner-1"
 	v := &Vehicle{
-		ID:             "1",
-		Plate:          "ABC1D23",
-		Chassi:         "9BWZZZ377VT004251",
-		Make:           "Honda",
-		Model:          "CG 160 Start",
-		Year:           2022,
-		CurrentOwnerID: &ownerID,
-		CreatedAt:      time.Now(),
+		ID:        "1",
+		Plate:     "ABC1D23",
+		Chassi:    "9BWZZZ377VT004251",
+		Make:      "Honda",
+		Model:     "CG 160 Start",
+		Year:      2022,
+		CreatedAt: time.Now(),
 	}
 	for b.Loop() {
 		toProto(v)

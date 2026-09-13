@@ -6,6 +6,7 @@ func TestNormalizePlate(t *testing.T) {
 	cases := map[string]string{
 		"abc-1234": "ABC1234",
 		"ABC1D23":  "ABC1D23",
+		"abc 1d23": "ABC1D23",
 	}
 	for input, want := range cases {
 		if got := NormalizePlate(input); got != want {
@@ -36,6 +37,17 @@ func TestCreateInputValidate(t *testing.T) {
 	invalidChassi.Chassi = "TOO-SHORT"
 	if err := invalidChassi.Validate(); err == nil {
 		t.Fatal("expected error for invalid chassi, got nil")
+	}
+
+	lowerChassi := CreateInput{Plate: "abc1234", Chassi: "9bwzzz377vt004251", Make: "Honda", Model: "CG", Year: 2022}
+	if err := lowerChassi.Normalized().Validate(); err != nil {
+		t.Fatalf("expected normalized input to be valid, got: %v", err)
+	}
+
+	blankMake := valid
+	blankMake.Make = "   "
+	if err := blankMake.Normalized().Validate(); err == nil {
+		t.Fatal("expected error for blank make, got nil")
 	}
 
 	invalidYear := valid
