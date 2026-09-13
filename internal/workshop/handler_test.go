@@ -202,6 +202,29 @@ func TestLoginFailuresAreIndistinguishable(t *testing.T) {
 	}
 }
 
+// Guesses spread across many addresses still lock the one account, and the
+// right password does not get through while it is locked.
+func TestLoginLocksAnAccountAfterRepeatedFailures(t *testing.T) {
+	h := newTestHandler(t, newFakeStore())
+	if _, err := h.CreateWorkshop(context.Background(), connect.NewRequest(&workshopv1.CreateWorkshopRequest{
+		Cnpj: validCNPJ, Name: "Oficina", Password: validPassword,
+	})); err != nil {
+		t.Fatalf("CreateWorkshop: %v", err)
+	}
+
+	login := func(password string) error {
+		_, err := h.Login(context.Background(), connect.NewRequest(&workshopv1.LoginRequest{
+			Cnpj: validCNPJ, Password: password,
+		}))
+		return err
+	}
+
+	for range auth.LoginFailureLimit {
+		assertConnectCode(t, login("senha-errada-123"), connect.CodeUnauthenticated)
+	}
+	assertConnectCode(t, login(validPassword), connect.CodeResourceExhausted)
+}
+
 func TestLoginRejectsEmptyCredentials(t *testing.T) {
 	h := newTestHandler(t, newFakeStore())
 	_, err := h.Login(context.Background(), connect.NewRequest(&workshopv1.LoginRequest{}))

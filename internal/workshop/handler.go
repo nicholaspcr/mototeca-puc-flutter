@@ -21,13 +21,19 @@ import (
 const dummyHash = "$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy"
 
 type Handler struct {
-	repo   Store
-	signer *auth.Signer
-	logger *slog.Logger
+	repo     Store
+	signer   *auth.Signer
+	logger   *slog.Logger
+	throttle *auth.LoginThrottle
 }
 
 func NewHandler(repo Store, signer *auth.Signer, logger *slog.Logger) *Handler {
-	return &Handler{repo: repo, signer: signer, logger: logger}
+	return &Handler{
+		repo:     repo,
+		signer:   signer,
+		logger:   logger,
+		throttle: auth.NewLoginThrottle(auth.LoginFailureLimit, auth.LoginLockout),
+	}
 }
 
 func (h *Handler) CreateWorkshop(ctx context.Context, req *connect.Request[workshopv1.CreateWorkshopRequest]) (*connect.Response[workshopv1.CreateWorkshopResponse], error) {
@@ -77,6 +83,9 @@ func (h *Handler) Login(ctx context.Context, req *connect.Request[workshopv1.Log
 	if cnpj == "" || req.Msg.Password == "" {
 		return nil, unauthenticated
 	}
+	if h.throttle.Locked(cnpj) {
+		return nil, connect.NewError(connect.CodeResourceExhausted, errors.New(auth.LockedMessage))
+	}
 
 	w, err := h.repo.FindByCNPJ(ctx, cnpj)
 	if err != nil {
@@ -89,8 +98,10 @@ func (h *Handler) Login(ctx context.Context, req *connect.Request[workshopv1.Log
 		digest = w.PasswordHash
 	}
 	if !auth.CheckPassword(digest, req.Msg.Password) || w == nil {
+		h.throttle.Fail(cnpj)
 		return nil, unauthenticated
 	}
+	h.throttle.Succeed(cnpj)
 
 	token, err := h.issueToken(ctx, w.ID)
 	if err != nil {

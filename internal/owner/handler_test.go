@@ -202,6 +202,19 @@ func TestLogin(t *testing.T) {
 	}
 }
 
+// An unregistered phone locks the same way, so a lock reveals nothing.
+func TestLoginLocksAPhoneAfterRepeatedFailures(t *testing.T) {
+	h := newTestHandler(t, newFakeStore(), &fakeRecords{})
+
+	var err error
+	for range auth.LoginFailureLimit + 1 {
+		_, err = h.Login(context.Background(), connect.NewRequest(&ownerv1.LoginRequest{
+			Phone: "31988887777", Password: "senha-errada-123",
+		}))
+	}
+	assertConnectCode(t, err, connect.CodeResourceExhausted)
+}
+
 // An unknown phone and a wrong password must be indistinguishable.
 func TestLoginFailuresAreIndistinguishable(t *testing.T) {
 	h := newTestHandler(t, newFakeStore(), &fakeRecords{})
