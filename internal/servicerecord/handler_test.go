@@ -412,3 +412,16 @@ func TestOperationProtoMappingIsTotal(t *testing.T) {
 		}
 	}
 }
+
+// 22:00 on 31 August in São Paulo is already September in UTC; the dashboard
+// must still count it as August.
+func TestStartOfMonthUsesBrazilianTime(t *testing.T) {
+	lateAugust := time.Date(2026, time.September, 1, 1, 0, 0, 0, time.UTC)
+
+	got := startOfMonth(lateAugust)
+
+	want := time.Date(2026, time.August, 1, 3, 0, 0, 0, time.UTC)
+	if !got.Equal(want) {
+		t.Errorf("startOfMonth = %v, want %v", got.UTC(), want)
+	}
+}
