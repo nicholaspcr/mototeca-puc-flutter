@@ -252,6 +252,13 @@ func (r *Repository) write(ctx context.Context, input CreateInput, rev *revision
 		return nil, err
 	}
 
+	// A correction may lower the mileage: fixing a typo is the point of it.
+	if rev == nil && !input.ConfirmLowerMileage {
+		if err := checkMileage(ctx, tx, vehicleID, input.MileageKm); err != nil {
+			return nil, err
+		}
+	}
+
 	mechanicID, err := upsertMechanic(ctx, tx, input.WorkshopID, input.MechanicName)
 	if err != nil {
 		return nil, fmt.Errorf("resolving mechanic: %w", err)
@@ -357,6 +364,19 @@ func checkRevisable(ctx context.Context, tx pgx.Tx, rev *revision) error {
 	}
 	if supersededBy != nil {
 		return ErrAlreadySuperseded
+	}
+	return nil
+}
+
+func checkMileage(ctx context.Context, tx pgx.Tx, vehicleID string, mileageKm int) error {
+	var highest *int
+	if err := tx.QueryRow(ctx,
+		`SELECT MAX(mileage_km) FROM service_records
+		 WHERE vehicle_id = $1 AND superseded_by IS NULL`, vehicleID).Scan(&highest); err != nil {
+		return fmt.Errorf("reading highest mileage: %w", err)
+	}
+	if highest != nil && mileageKm < *highest {
+		return &LowerMileageError{HighestKm: *highest}
 	}
 	return nil
 }

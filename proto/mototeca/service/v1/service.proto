@@ -78,6 +78,11 @@ message CreateServiceRecordRequest {
   optional int32 cost_cents = 5;
   optional string notes = 6;
   repeated Part parts = 7;
+  // A mileage below the bike's highest recorded one is refused with
+  // FAILED_PRECONDITION — a rolled-back odometer is the fraud this history
+  // exists to expose. Set after the user confirms a real reason, such as a
+  // replaced instrument cluster.
+  bool confirm_lower_mileage = 8;
 }
 
 message CreateServiceRecordResponse {
