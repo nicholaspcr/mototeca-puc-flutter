@@ -24,7 +24,8 @@ func LoggingInterceptor(logger *slog.Logger) connect.Interceptor {
 				"duration_ms", duration.Milliseconds(),
 			}
 			if err != nil {
-				logger.ErrorContext(ctx, "rpc failed", append(attrs, "code", codeOf(err), "err", err)...)
+				code := codeOf(err)
+				logger.Log(ctx, levelFor(code), "rpc failed", append(attrs, "code", code, "err", err)...)
 			} else {
 				logger.InfoContext(ctx, "rpc handled", attrs...)
 			}
@@ -32,6 +33,19 @@ func LoggingInterceptor(logger *slog.Logger) connect.Interceptor {
 			return res, err
 		}
 	})
+}
+
+// levelFor keeps a wrong password or an unknown plate out of the error log,
+// which should only hold failures someone needs to act on.
+func levelFor(code connect.Code) slog.Level {
+	switch code {
+	case connect.CodeInvalidArgument, connect.CodeNotFound, connect.CodeAlreadyExists,
+		connect.CodeUnauthenticated, connect.CodePermissionDenied,
+		connect.CodeFailedPrecondition, connect.CodeResourceExhausted:
+		return slog.LevelWarn
+	default:
+		return slog.LevelError
+	}
 }
 
 // codeOf extracts the Connect status code from err, falling back to
