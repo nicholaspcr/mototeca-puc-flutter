@@ -53,6 +53,32 @@ class ServiceRecordRepository {
     );
   }
 
+  /// Corrects a record the workshop wrote. The original is superseded, never
+  /// edited, and its photos and invoice move to the correction.
+  Future<ServiceRecord> revise({
+    required String recordId,
+    required List<ServiceOperation> operations,
+    required int mileageKm,
+    String? mechanicName,
+    int? costCents,
+    String? notes,
+    List<Part> parts = const [],
+  }) async {
+    final body = await _client.call('$_service/ReviseServiceRecord', {
+      'recordId': recordId,
+      'operations': operations.map((o) => o.wire).toList(),
+      'mileageKm': mileageKm,
+      if (mechanicName != null && mechanicName.trim().isNotEmpty)
+        'mechanicName': mechanicName.trim(),
+      'costCents': ?costCents,
+      if (notes != null && notes.trim().isNotEmpty) 'notes': notes.trim(),
+      if (parts.isNotEmpty) 'parts': parts.map((p) => p.toJson()).toList(),
+    });
+    return ServiceRecord.fromJson(
+      body['record'] as Map<String, dynamic>? ?? const {},
+    );
+  }
+
   /// Returns null when no vehicle is registered under the plate — the empty
   /// state the Portal do Proprietário shows, not an error.
   Future<PlateHistory?> historyByPlate(String plate) async {

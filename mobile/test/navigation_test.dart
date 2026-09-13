@@ -310,6 +310,80 @@ void main() {
     expect(find.byType(ServiceDetailScreen), findsOneWidget);
   });
 
+  testWidgets('oficina corrige um registro a partir do detalhe', (
+    tester,
+  ) async {
+    final api = await pumpApp(tester);
+    await signInAsWorkshop(tester);
+    await tapAndSettle(tester, find.byKey(const Key('record-r1')));
+
+    await tapAndSettle(tester, find.byKey(const Key('detalhe-corrigir')));
+    expect(find.text('Corrigir Registro'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.byKey(const Key('novo-registro-km')),
+      240,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(
+      tester
+          .widget<TextField>(
+            find.descendant(
+              of: find.byKey(const Key('novo-registro-km')),
+              matching: find.byType(TextField),
+            ),
+          )
+          .controller
+          ?.text,
+      '18420',
+      reason: 'the form starts from the record being corrected',
+    );
+
+    await enterInField(tester, const Key('novo-registro-km'), '18500');
+    await tapAndSettle(tester, find.byKey(const Key('novo-registro-salvar')));
+
+    const revise =
+        'mototeca.service.v1.ServiceRecordService/ReviseServiceRecord';
+    expect(api.lastBody[revise]?['recordId'], 'r1');
+    expect(api.lastBody[revise]?['mileageKm'], 18500);
+    expect(find.byType(ServiceDetailScreen), findsOneWidget);
+    expect(find.text('Correção de um registro anterior'), findsOneWidget);
+
+    await tapAndSettle(tester, find.byType(BackButton));
+    expect(find.byType(DashboardScreen), findsOneWidget);
+  });
+
+  testWidgets('registro corrigido leva à correção', (tester) async {
+    final api = await pumpApp(tester);
+    api.responses['mototeca.service.v1.ServiceRecordService/ListServiceRecordsByPlate'] =
+        {
+          'vehicle': FakeApi.vehicleSummaryJson,
+          'records': [
+            {...FakeApi.recordJson, 'supersededByRecordId': 'r2'},
+          ],
+        };
+    await tapAndSettle(tester, find.byKey(const Key('login-consulta')));
+    await tester.enterText(find.byType(TextField).first, 'ABC1D23');
+    await tapAndSettle(tester, find.byKey(const Key('portal-consultar')));
+    await tapAndSettle(tester, find.byKey(const Key('history-r1')));
+
+    expect(
+      find.text('Este registro foi corrigido pela oficina.'),
+      findsOneWidget,
+    );
+    expect(find.byKey(const Key('detalhe-corrigir')), findsNothing);
+
+    await tapAndSettle(tester, find.byKey(const Key('detalhe-ver-correcao')));
+
+    expect(
+      api.lastBody['mototeca.service.v1.ServiceRecordService/GetServiceRecord'],
+      {'id': 'r2'},
+    );
+    expect(
+      find.text('Este registro foi corrigido pela oficina.'),
+      findsNothing,
+    );
+  });
+
   testWidgets('voltar do detalhe retorna à tela anterior', (tester) async {
     await pumpApp(tester);
     await signInAsWorkshop(tester);

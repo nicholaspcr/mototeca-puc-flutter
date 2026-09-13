@@ -23,6 +23,9 @@ class FakeApi {
   /// Procedures in [failures] that fail only on their next call.
   final failOnce = <String>{};
 
+  /// Response bodies that replace the default for a procedure.
+  final responses = <String, Map<String, dynamic>>{};
+
   static const ownerJson = {
     'id': 'owner-1',
     'name': 'Marcos Souza',
@@ -98,6 +101,8 @@ class FakeApi {
       }, failure.status);
     }
 
+    if (responses[procedure] case final body?) return _json(body);
+
     return switch (procedure) {
       'mototeca.workshop.v1.WorkshopService/CreateWorkshop' ||
       'mototeca.workshop.v1.WorkshopService/Login' => _json({
@@ -121,6 +126,14 @@ class FakeApi {
       'mototeca.service.v1.ServiceRecordService/CreateServiceRecord' ||
       'mototeca.service.v1.ServiceRecordService/GetServiceRecord' => _json({
         'record': recordJson,
+      }),
+      'mototeca.service.v1.ServiceRecordService/ReviseServiceRecord' => _json({
+        'record': {
+          ...recordJson,
+          'id': 'r2',
+          'mileageKm': 18500,
+          'revisesRecordId': 'r1',
+        },
       }),
       'mototeca.owner.v1.OwnerService/CreateOwner' ||
       'mototeca.owner.v1.OwnerService/Login' => _json({

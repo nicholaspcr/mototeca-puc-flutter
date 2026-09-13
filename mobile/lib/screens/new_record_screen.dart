@@ -34,6 +34,13 @@ class _PartDraft {
       quantity = TextEditingController(text: '1'),
       cost = TextEditingController();
 
+  _PartDraft.from(Part part)
+    : name = TextEditingController(text: part.name),
+      quantity = TextEditingController(text: '${part.quantity}'),
+      cost = TextEditingController(
+        text: part.costCents == null ? '' : formatCents(part.costCents!),
+      );
+
   final TextEditingController name;
   final TextEditingController quantity;
   final TextEditingController cost;
@@ -47,31 +54,60 @@ class _PartDraft {
   }
 }
 
-/// Novo Registro — the app's main action (design/NewRecord.dc.html).
+typedef _Draft = ({
+  List<ServiceOperation> operations,
+  int mileageKm,
+  String mechanicName,
+  int? costCents,
+  String notes,
+  List<Part> parts,
+});
+
+/// Novo Registro — the app's main action (design/NewRecord.dc.html). Also
+/// corrects an existing record, since a correction is a new record too.
 class NewRecordScreen extends StatefulWidget {
-  const NewRecordScreen({super.key, this.initialPlate});
+  const NewRecordScreen({super.key, this.initialPlate, this.revising});
 
   /// Pre-filled when the mechanic arrives from the dashboard search box.
   final String? initialPlate;
+
+  /// The record being corrected; its fields start the form.
+  final ServiceRecord? revising;
 
   @override
   State<NewRecordScreen> createState() => _NewRecordScreenState();
 }
 
 class _NewRecordScreenState extends State<NewRecordScreen> {
-  late final _plate = TextEditingController(text: widget.initialPlate ?? '');
-  final _mechanic = TextEditingController();
-  final _mileage = TextEditingController();
-  final _cost = TextEditingController();
-  final _notes = TextEditingController();
-  final _parts = <_PartDraft>[_PartDraft()];
-  final _selectedOps = <ServiceOperation>{};
+  late final _plate = TextEditingController(
+    text: widget.revising?.vehicle.plate ?? widget.initialPlate ?? '',
+  );
+  late final _mechanic = TextEditingController(
+    text: widget.revising?.mechanicName ?? '',
+  );
+  late final _mileage = TextEditingController(
+    text: widget.revising?.mileageKm.toString() ?? '',
+  );
+  late final _cost = TextEditingController(
+    text: switch (widget.revising?.costCents) {
+      final cents? => formatCents(cents),
+      null => '',
+    },
+  );
+  late final _notes = TextEditingController(text: widget.revising?.notes ?? '');
+  late final _parts = [
+    for (final part in widget.revising?.parts ?? const <Part>[])
+      _PartDraft.from(part),
+    if (widget.revising?.parts.isEmpty ?? true) _PartDraft(),
+  ];
+  late final _selectedOps = {...?widget.revising?.operations};
 
   final _picker = ImagePicker();
   final _photos = <String, _PickedPhoto>{};
   _PickedPhoto? _invoice;
 
-  Vehicle? _vehicle;
+  // A correction stays on the same bike, so its vehicle is known up front.
+  late VehicleSummary? _vehicle = widget.revising?.vehicle;
   bool _searched = false;
   bool _searching = false;
   bool _saving = false;
@@ -107,7 +143,7 @@ class _NewRecordScreenState extends State<NewRecordScreen> {
           .findByPlate(_plate.text);
       if (!mounted) return;
       setState(() {
-        _vehicle = vehicle;
+        _vehicle = vehicle?.summary;
         _searched = true;
       });
     } catch (error) {
@@ -139,52 +175,83 @@ class _NewRecordScreenState extends State<NewRecordScreen> {
       return;
     }
 
+    final draft = (
+      operations: _selectedOps.toList(),
+      mileageKm: mileage,
+      mechanicName: _mechanic.text,
+      costCents: costCents,
+      notes: _notes.text,
+      parts: parts,
+    );
+    final original = widget.revising;
+
     setState(() => _saving = true);
     try {
-      final repository = AppScope.read(context).serviceRecords;
-      Future<ServiceRecord> create({bool confirmLowerMileage = false}) =>
-          repository.create(
-            plate: vehicle.plate,
-            operations: _selectedOps.toList(),
-            mileageKm: mileage,
-            mechanicName: _mechanic.text,
-            costCents: costCents,
-            notes: _notes.text,
-            parts: parts,
-            confirmLowerMileage: confirmLowerMileage,
-          );
+      final record = original == null
+          ? await _create(vehicle.plate, draft)
+          : await _revise(original, draft);
+      if (record == null || !mounted) return;
 
-      ServiceRecord record;
-      try {
-        record = await create();
-      } on ApiException catch (error) {
-        if (error.code != ApiErrorCode.failedPrecondition || !mounted) rethrow;
-        // No spinner behind the question: nothing is saving while it waits.
-        setState(() => _saving = false);
-        if (!await _confirmLowerMileage(error.message) || !mounted) return;
-        setState(() => _saving = true);
-        record = await create(confirmLowerMileage: true);
-      }
-      if (!mounted) return;
       // Attachments need the record to exist, so they follow the save. A
       // failed photo must not discard a saved record — the record is the part
       // that matters.
       final failed = await _uploadAttachments(record.id);
       if (!mounted) return;
+      final saved = original == null ? 'Registro salvo' : 'Correção salva';
       showSuccess(
         context,
         failed == 0
-            ? 'Registro salvo no histórico da moto.'
-            : 'Registro salvo, mas $failed arquivo(s) não subiram.',
+            ? '$saved no histórico da moto.'
+            : '$saved, mas $failed arquivo(s) não subiram.',
       );
-      // true tells the dashboard its feed is stale.
-      Navigator.pop(context, true);
+      // A new record only tells the dashboard its feed is stale; a correction
+      // hands back the record that replaced the one on screen.
+      Navigator.pop(context, original == null ? true : record);
     } catch (error) {
       if (!mounted) return;
       showApiError(context, error);
     } finally {
       if (mounted) setState(() => _saving = false);
     }
+  }
+
+  /// Returns null when the mechanic declines to save a lower mileage.
+  Future<ServiceRecord?> _create(String plate, _Draft draft) async {
+    final repository = AppScope.read(context).serviceRecords;
+    Future<ServiceRecord> create({bool confirmLowerMileage = false}) =>
+        repository.create(
+          plate: plate,
+          operations: draft.operations,
+          mileageKm: draft.mileageKm,
+          mechanicName: draft.mechanicName,
+          costCents: draft.costCents,
+          notes: draft.notes,
+          parts: draft.parts,
+          confirmLowerMileage: confirmLowerMileage,
+        );
+
+    try {
+      return await create();
+    } on ApiException catch (error) {
+      if (error.code != ApiErrorCode.failedPrecondition || !mounted) rethrow;
+      // No spinner behind the question: nothing is saving while it waits.
+      setState(() => _saving = false);
+      if (!await _confirmLowerMileage(error.message) || !mounted) return null;
+      setState(() => _saving = true);
+      return create(confirmLowerMileage: true);
+    }
+  }
+
+  Future<ServiceRecord> _revise(ServiceRecord original, _Draft draft) {
+    return AppScope.read(context).serviceRecords.revise(
+      recordId: original.id,
+      operations: draft.operations,
+      mileageKm: draft.mileageKm,
+      mechanicName: draft.mechanicName,
+      costCents: draft.costCents,
+      notes: draft.notes,
+      parts: draft.parts,
+    );
   }
 
   /// A lower odometer than before is how a rolled-back bike looks, so the
@@ -285,7 +352,11 @@ class _NewRecordScreenState extends State<NewRecordScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Novo Registro')),
+      appBar: AppBar(
+        title: Text(
+          widget.revising == null ? 'Novo Registro' : 'Corrigir Registro',
+        ),
+      ),
       body: ListView(
         padding: const EdgeInsets.all(MtSizes.screenPadding),
         children: [
@@ -308,7 +379,11 @@ class _NewRecordScreenState extends State<NewRecordScreen> {
                         color: Colors.white,
                       ),
                     )
-                  : const Text('Salvar Registro'),
+                  : Text(
+                      widget.revising == null
+                          ? 'Salvar Registro'
+                          : 'Salvar Correção',
+                    ),
             ),
             const SizedBox(height: 10),
             OutlinedButton(
@@ -331,34 +406,38 @@ class _NewRecordScreenState extends State<NewRecordScreen> {
             style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 10),
-          Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: _plate,
-                  textCapitalization: TextCapitalization.characters,
-                  style: const TextStyle(fontFamily: 'monospace', fontSize: 15),
-                  decoration: const InputDecoration(hintText: 'ABC1D23'),
-                  onSubmitted: (_) => _search(),
+          if (widget.revising == null)
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _plate,
+                    textCapitalization: TextCapitalization.characters,
+                    style: const TextStyle(
+                      fontFamily: 'monospace',
+                      fontSize: 15,
+                    ),
+                    decoration: const InputDecoration(hintText: 'ABC1D23'),
+                    onSubmitted: (_) => _search(),
+                  ),
                 ),
-              ),
-              const SizedBox(width: 8),
-              SizedBox(
-                width: 96,
-                child: OutlinedButton(
-                  key: const Key('novo-registro-buscar'),
-                  onPressed: _searching ? null : _search,
-                  child: _searching
-                      ? const SizedBox(
-                          height: 16,
-                          width: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Text('Buscar'),
+                const SizedBox(width: 8),
+                SizedBox(
+                  width: 96,
+                  child: OutlinedButton(
+                    key: const Key('novo-registro-buscar'),
+                    onPressed: _searching ? null : _search,
+                    child: _searching
+                        ? const SizedBox(
+                            height: 16,
+                            width: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Text('Buscar'),
+                  ),
                 ),
-              ),
-            ],
-          ),
+              ],
+            ),
           if (_searched && _vehicle == null) ...[
             const SizedBox(height: 14),
             Container(
@@ -546,7 +625,12 @@ class _NewRecordScreenState extends State<NewRecordScreen> {
             onTap: _pickInvoice,
           ),
           const SizedBox(height: 6),
-          const MtFootnote('Os arquivos sobem depois que o registro é salvo.'),
+          MtFootnote(
+            widget.revising == null
+                ? 'Os arquivos sobem depois que o registro é salvo.'
+                : 'Fotos e nota já anexadas passam para a correção; '
+                      'as escolhidas aqui são somadas a elas.',
+          ),
         ],
       ),
     );

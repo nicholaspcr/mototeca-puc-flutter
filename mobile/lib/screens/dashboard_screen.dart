@@ -280,11 +280,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget _recordTile(ServiceRecord record) {
     return InkWell(
       key: Key('record-${record.id}'),
-      onTap: () => Navigator.pushNamed(
-        context,
-        Routes.serviceDetail,
-        arguments: ServiceDetailArgs(record: record),
-      ),
+      onTap: () async {
+        final corrected = await Navigator.pushNamed(
+          context,
+          Routes.serviceDetail,
+          arguments: ServiceDetailArgs(record: record, canRevise: true),
+        );
+        if (corrected == true && mounted) await _reload();
+      },
       borderRadius: BorderRadius.circular(MtSizes.cardRadius),
       child: MtCard(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
