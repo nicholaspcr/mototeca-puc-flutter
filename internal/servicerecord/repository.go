@@ -146,7 +146,7 @@ func (r *Repository) FindByID(ctx context.Context, id string) (*ServiceRecord, e
 	return &records[0], nil
 }
 
-func (r *Repository) ListByPlate(ctx context.Context, plate string) (*VehicleSummary, []ServiceRecord, error) {
+func (r *Repository) ListByPlate(ctx context.Context, plate string, limit int) (*VehicleSummary, []ServiceRecord, error) {
 	var vehicleID string
 	var summary VehicleSummary
 	err := r.pool.QueryRow(ctx,
@@ -160,7 +160,8 @@ func (r *Repository) ListByPlate(ctx context.Context, plate string) (*VehicleSum
 	}
 
 	rows, err := r.pool.Query(ctx,
-		selectRecords+` WHERE sr.vehicle_id = $1 ORDER BY sr.created_at DESC`, vehicleID)
+		selectRecords+` WHERE sr.vehicle_id = $1 ORDER BY sr.created_at DESC LIMIT $2`,
+		vehicleID, limit)
 	if err != nil {
 		return nil, nil, err
 	}

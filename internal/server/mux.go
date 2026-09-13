@@ -4,9 +4,11 @@
 package server
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"net/http"
+	"time"
 
 	"connectrpc.com/connect"
 	"connectrpc.com/otelconnect"
@@ -17,6 +19,11 @@ import (
 	"mototeca-backend/internal/gen/mototeca/vehicle/v1/vehiclev1connect"
 	"mototeca-backend/internal/gen/mototeca/workshop/v1/workshopv1connect"
 )
+
+// Pinger is the health check's view of the database.
+type Pinger interface {
+	Ping(ctx context.Context) error
+}
 
 // Handlers are the per-domain Connect implementations the mux serves.
 type Handlers struct {
@@ -44,7 +51,7 @@ func rateLimits() map[string]*RateLimiter {
 // Interceptor order is outermost first: tracing covers the whole request, then
 // rate limiting rejects abuse before any work is done, then logging, then
 // authentication, so an unauthenticated request is still traced and logged.
-func NewMux(handlers Handlers, signer *auth.Signer, logger *slog.Logger) (*http.ServeMux, error) {
+func NewMux(handlers Handlers, signer *auth.Signer, db Pinger, logger *slog.Logger) (*http.ServeMux, error) {
 	otelInterceptor, err := otelconnect.NewInterceptor()
 	if err != nil {
 		return nil, fmt.Errorf("creating otel interceptor: %w", err)
@@ -77,7 +84,17 @@ func NewMux(handlers Handlers, signer *auth.Signer, logger *slog.Logger) (*http.
 		mux.Handle(path, handler)
 	}
 
-	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, _ *http.Request) {
+	// Reports the database too: an instance that can't reach Postgres serves
+	// nothing useful, and a 200 would keep a load balancer routing to it.
+	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request) {
+		ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
+		defer cancel()
+
+		if err := db.Ping(ctx); err != nil {
+			logger.ErrorContext(ctx, "health check failed", "err", err)
+			http.Error(w, "database unavailable", http.StatusServiceUnavailable)
+			return
+		}
 		w.WriteHeader(http.StatusOK)
 	})
 

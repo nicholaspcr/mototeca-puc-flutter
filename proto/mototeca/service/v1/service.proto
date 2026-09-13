@@ -92,6 +92,9 @@ message GetServiceRecordResponse {
 
 message ListServiceRecordsByPlateRequest {
   string plate = 1;
+  // Newest first. Defaults to 50, capped at 100 — this endpoint is public and
+  // a long-lived bike should not return its whole history in one response.
+  int32 limit = 2;
 }
 
 message ListServiceRecordsByPlateResponse {

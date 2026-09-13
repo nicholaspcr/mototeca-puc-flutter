@@ -208,6 +208,31 @@ void main() {
     expect(find.byType(DashboardScreen), findsOneWidget);
   });
 
+  // A 12h token can expire while the app is open; the user must land back on
+  // login rather than face a screen that only ever errors.
+  testWidgets('sessão expirada volta ao Login', (tester) async {
+    final api = await pumpApp(tester);
+    await signInAsWorkshop(tester);
+    expect(find.byType(DashboardScreen), findsOneWidget);
+
+    api.failures['mototeca.service.v1.ServiceRecordService/ListWorkshopServiceRecords'] =
+        (
+          status: 401,
+          code: 'unauthenticated',
+          message: 'invalid or expired session',
+        );
+
+    await tester.fling(
+      find.byType(RefreshIndicator),
+      const Offset(0, 400),
+      1000,
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byType(LoginScreen), findsOneWidget);
+    expect(find.byType(DashboardScreen), findsNothing);
+  });
+
   testWidgets('sair volta ao Login', (tester) async {
     await pumpApp(tester);
     await signInAsWorkshop(tester);

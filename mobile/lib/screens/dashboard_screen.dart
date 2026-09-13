@@ -41,7 +41,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
     setState(() {
       _feed = reloaded;
     });
-    await reloaded;
+    // The FutureBuilder renders the failure; awaiting it here too would make
+    // the same error unhandled a second time.
+    try {
+      await reloaded;
+    } on Object {
+      // handled above
+    }
   }
 
   void _signOut() {
@@ -49,7 +55,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     Navigator.pushReplacementNamed(context, Routes.login);
   }
 
-  /// Searching just pre-fills the plate on Novo Registro.
   Future<void> _openNewRecord({String? plate}) async {
     final created = await Navigator.pushNamed(
       context,
@@ -57,6 +62,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
       arguments: plate,
     );
     if (created == true && mounted) await _reload();
+  }
+
+  /// The search box promises history, so it opens the history view — the same
+  /// public lookup the owner portal uses.
+  void _openHistory() {
+    if (_plate.text.trim().isEmpty) return;
+    Navigator.pushNamed(context, Routes.customerPortal, arguments: _plate.text);
   }
 
   @override
@@ -206,7 +218,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   textCapitalization: TextCapitalization.characters,
                   style: const TextStyle(fontFamily: 'monospace', fontSize: 15),
                   decoration: const InputDecoration(hintText: 'ABC1D23'),
-                  onSubmitted: (value) => _openNewRecord(plate: value),
+                  onSubmitted: (_) => _openHistory(),
                 ),
               ),
               const SizedBox(width: 8),
@@ -214,7 +226,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 width: 96,
                 child: OutlinedButton(
                   key: const Key('dashboard-buscar'),
-                  onPressed: () => _openNewRecord(plate: _plate.text),
+                  onPressed: _openHistory,
                   child: const Text('Buscar'),
                 ),
               ),

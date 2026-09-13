@@ -29,7 +29,13 @@ class _RemindersScreenState extends State<RemindersScreen> {
     setState(() {
       _vehicles = reloaded;
     });
-    await reloaded;
+    // The FutureBuilder renders the failure; awaiting it here too would make
+    // the same error unhandled a second time.
+    try {
+      await reloaded;
+    } on Object {
+      // handled above
+    }
   }
 
   @override

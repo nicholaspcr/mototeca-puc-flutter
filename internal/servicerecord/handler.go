@@ -17,7 +17,7 @@ import (
 // Dashboard page size when the client doesn't ask for one, and the ceiling it
 // cannot exceed however large a limit it sends.
 const (
-	defaultListLimit = 20
+	defaultListLimit = 50
 	maxListLimit     = 100
 )
 
@@ -103,7 +103,7 @@ func (h *Handler) ListServiceRecordsByPlate(ctx context.Context, req *connect.Re
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("plate is required"))
 	}
 
-	summary, records, err := h.repo.ListByPlate(ctx, plate)
+	summary, records, err := h.repo.ListByPlate(ctx, plate, clampLimit(req.Msg.Limit))
 	if err != nil {
 		h.logger.ErrorContext(ctx, "list service records by plate failed", "err", err, "plate", plate)
 		return nil, connect.NewError(connect.CodeInternal, errors.New("failed to load history"))
@@ -124,13 +124,7 @@ func (h *Handler) ListWorkshopServiceRecords(ctx context.Context, req *connect.R
 		return nil, err
 	}
 
-	limit := int(req.Msg.Limit)
-	if limit <= 0 {
-		limit = defaultListLimit
-	}
-	limit = min(limit, maxListLimit)
-
-	records, err := h.repo.ListByWorkshop(ctx, workshopID, limit)
+	records, err := h.repo.ListByWorkshop(ctx, workshopID, clampLimit(req.Msg.Limit))
 	if err != nil {
 		h.logger.ErrorContext(ctx, "list workshop service records failed", "err", err)
 		return nil, connect.NewError(connect.CodeInternal, errors.New("failed to load records"))
@@ -148,6 +142,14 @@ func (h *Handler) ListWorkshopServiceRecords(ctx context.Context, req *connect.R
 		Records:        recordsToProto(records),
 		CountThisMonth: int32(count),
 	}), nil
+}
+
+// clampLimit applies the default and the ceiling a client cannot exceed.
+func clampLimit(requested int32) int {
+	if requested <= 0 {
+		return defaultListLimit
+	}
+	return min(int(requested), maxListLimit)
 }
 
 func intPtr(v *int32) *int {

@@ -23,9 +23,13 @@ class ApiClient {
   final String baseUrl;
   final http.Client _http;
 
-  /// Bearer token for the signed-in workshop, or null when anonymous. The
+  /// Bearer token for the signed-in account, or null when anonymous. The
   /// public plate lookup deliberately works without one.
   String? authToken;
+
+  /// Called when the server rejects the token. Set by [AppState] so an expired
+  /// session is handled once, not by every screen that happens to catch it.
+  void Function()? onUnauthenticated;
 
   static const _timeout = Duration(seconds: 15);
 
@@ -58,10 +62,12 @@ class ApiClient {
     final body = _decode(response.body);
 
     if (response.statusCode != 200) {
-      throw ApiException(
+      final error = ApiException(
         ApiErrorCode.parse(body['code'] as String?),
         body['message'] as String? ?? 'Falha na comunicação com o servidor.',
       );
+      if (error.isSessionExpired && token != null) onUnauthenticated?.call();
+      throw error;
     }
     return body;
   }

@@ -13,24 +13,20 @@ void showApiError(BuildContext context, Object error) {
     _ => 'Algo deu errado. Tente novamente.',
   };
 
-  ScaffoldMessenger.of(context)
-    ..hideCurrentSnackBar()
-    ..showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: MtColors.danger,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+  _snack(context, message, MtColors.danger);
 }
 
 void showSuccess(BuildContext context, String message) {
+  _snack(context, message, MtColors.petrol);
+}
+
+void _snack(BuildContext context, String message, Color background) {
   ScaffoldMessenger.of(context)
     ..hideCurrentSnackBar()
     ..showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: MtColors.petrol,
+        backgroundColor: background,
         behavior: SnackBarBehavior.floating,
       ),
     );

@@ -15,6 +15,7 @@ import '../repositories/workshop_repository.dart';
 /// saves. A session is a workshop or an owner, never both.
 class AppState extends ChangeNotifier {
   AppState({ApiClient? client}) : _client = client ?? ApiClient() {
+    _client.onUnauthenticated = _expireSession;
     workshops = WorkshopRepository(_client);
     owners = OwnerRepository(_client);
     vehicles = VehicleRepository(_client);
@@ -30,6 +31,20 @@ class AppState extends ChangeNotifier {
 
   Workshop? _workshop;
   Owner? _owner;
+  bool _sessionExpired = false;
+
+  /// Set when the server rejected a token we were holding. The app watches it
+  /// to send the user back to login; [acknowledgeExpiry] clears it.
+  bool get sessionExpired => _sessionExpired;
+
+  void _expireSession() {
+    if (!isSignedIn) return;
+    signOut();
+    _sessionExpired = true;
+    notifyListeners();
+  }
+
+  void acknowledgeExpiry() => _sessionExpired = false;
 
   /// The signed-in oficina, or null when nobody is signed in as one.
   Workshop? get workshop => _workshop;

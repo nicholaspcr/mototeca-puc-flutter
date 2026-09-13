@@ -18,7 +18,7 @@ type Store interface {
 	FindByID(ctx context.Context, id string) (*ServiceRecord, error)
 	// ListByPlate returns nil, nil, nil when the plate has no vehicle.
 	// Records are newest first.
-	ListByPlate(ctx context.Context, plate string) (*VehicleSummary, []ServiceRecord, error)
+	ListByPlate(ctx context.Context, plate string, limit int) (*VehicleSummary, []ServiceRecord, error)
 	// ListByWorkshop returns the workshop's own records, newest first.
 	ListByWorkshop(ctx context.Context, workshopID string, limit int) ([]ServiceRecord, error)
 	CountByWorkshopSince(ctx context.Context, workshopID string, since time.Time) (int, error)

@@ -69,7 +69,7 @@ func main() {
 		Owner:         owner.NewHandler(owner.NewRepository(pool), serviceRecords, signer, logger),
 	}
 
-	mux, err := server.NewMux(handlers, signer, logger)
+	mux, err := server.NewMux(handlers, signer, pool, logger)
 	if err != nil {
 		logger.Error("building http mux", "err", err)
 		os.Exit(1)

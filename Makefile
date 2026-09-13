@@ -42,3 +42,9 @@ db-logs: ## Tail the Postgres container logs
 e2e: ## Smoke-test the API end to end inside the compose network (needs `docker compose up -d api`)
 	docker run --rm --network mototeca_default \
 		-v "$$PWD/scripts/e2e.sh:/e2e.sh:ro" curlimages/curl:latest sh /e2e.sh
+
+test-integration-docker: ## Run integration tests inside the compose network (works when the host can't reach the db port)
+	docker run --rm --network mototeca_default \
+		-v "$$PWD":/src -w /src -v mototeca-gocache:/go/pkg/mod \
+		-e DATABASE_URL=postgres://user:password@db:5432/mototeca?sslmode=disable \
+		golang:1.27-alpine go test -tags=integration ./internal/...
