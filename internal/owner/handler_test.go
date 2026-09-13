@@ -78,7 +78,7 @@ func (f *fakeRecords) Create(context.Context, servicerecord.CreateInput) (*servi
 func (f *fakeRecords) FindByID(context.Context, string) (*servicerecord.ServiceRecord, error) {
 	return f.record, nil
 }
-func (f *fakeRecords) ListByPlate(context.Context, string) (*servicerecord.VehicleSummary, []servicerecord.ServiceRecord, error) {
+func (f *fakeRecords) ListByPlate(context.Context, string, int) (*servicerecord.VehicleSummary, []servicerecord.ServiceRecord, error) {
 	return nil, nil, nil
 }
 func (f *fakeRecords) ListByWorkshop(context.Context, string, int) ([]servicerecord.ServiceRecord, error) {

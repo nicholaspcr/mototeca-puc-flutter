@@ -1,0 +1,9 @@
+# Build context is only the Go API; everything below either bloats it or
+# should never reach an image.
+.git
+.env
+mobile/
+design/
+scripts/
+bin/
+*.md

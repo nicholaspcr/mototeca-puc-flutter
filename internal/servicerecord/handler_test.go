@@ -26,6 +26,7 @@ type fakeStore struct {
 	listErr    error
 	created    *CreateInput
 	countMonth int
+	lastLimit  int
 }
 
 func newFakeStore() *fakeStore {
@@ -66,7 +67,8 @@ func (f *fakeStore) FindByID(_ context.Context, id string) (*ServiceRecord, erro
 	return f.records[id], nil
 }
 
-func (f *fakeStore) ListByPlate(_ context.Context, plate string) (*VehicleSummary, []ServiceRecord, error) {
+func (f *fakeStore) ListByPlate(_ context.Context, plate string, limit int) (*VehicleSummary, []ServiceRecord, error) {
+	f.lastLimit = limit
 	if f.listErr != nil {
 		return nil, nil, f.listErr
 	}
@@ -257,6 +259,35 @@ func TestListWorkshopServiceRecordsReportsMonthlyCount(t *testing.T) {
 	}
 	if res.Msg.CountThisMonth != 7 {
 		t.Errorf("countThisMonth = %d, want 7", res.Msg.CountThisMonth)
+	}
+}
+
+// The public lookup must not let a caller ask for an unbounded page.
+func TestListLimitIsClamped(t *testing.T) {
+	for requested, want := range map[int32]int{
+		0:      defaultListLimit,
+		-1:     defaultListLimit,
+		10:     10,
+		100000: maxListLimit,
+	} {
+		if got := clampLimit(requested); got != want {
+			t.Errorf("clampLimit(%d) = %d, want %d", requested, got, want)
+		}
+	}
+}
+
+func TestListByPlatePassesTheClampedLimit(t *testing.T) {
+	store := newFakeStore()
+	h := newTestHandler(store)
+
+	if _, err := h.ListServiceRecordsByPlate(context.Background(),
+		connect.NewRequest(&servicev1.ListServiceRecordsByPlateRequest{
+			Plate: testPlate, Limit: 100000,
+		})); err != nil {
+		t.Fatalf("ListServiceRecordsByPlate: %v", err)
+	}
+	if store.lastLimit != maxListLimit {
+		t.Errorf("limit reaching the store = %d, want it capped at %d", store.lastLimit, maxListLimit)
 	}
 }
 

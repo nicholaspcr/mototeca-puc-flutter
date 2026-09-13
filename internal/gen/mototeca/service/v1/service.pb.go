@@ -703,8 +703,11 @@ func (x *GetServiceRecordResponse) GetRecord() *ServiceRecord {
 }
 
 type ListServiceRecordsByPlateRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Plate         string                 `protobuf:"bytes,1,opt,name=plate,proto3" json:"plate,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	Plate string                 `protobuf:"bytes,1,opt,name=plate,proto3" json:"plate,omitempty"`
+	// Newest first. Defaults to 50, capped at 100 — this endpoint is public and
+	// a long-lived bike should not return its whole history in one response.
+	Limit         int32 `protobuf:"varint,2,opt,name=limit,proto3" json:"limit,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -744,6 +747,13 @@ func (x *ListServiceRecordsByPlateRequest) GetPlate() string {
 		return x.Plate
 	}
 	return ""
+}
+
+func (x *ListServiceRecordsByPlateRequest) GetLimit() int32 {
+	if x != nil {
+		return x.Limit
+	}
+	return 0
 }
 
 type ListServiceRecordsByPlateResponse struct {
@@ -960,9 +970,10 @@ const file_mototeca_service_v1_service_proto_rawDesc = "" +
 	"\x17GetServiceRecordRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\"V\n" +
 	"\x18GetServiceRecordResponse\x12:\n" +
-	"\x06record\x18\x01 \x01(\v2\".mototeca.service.v1.ServiceRecordR\x06record\"8\n" +
+	"\x06record\x18\x01 \x01(\v2\".mototeca.service.v1.ServiceRecordR\x06record\"N\n" +
 	" ListServiceRecordsByPlateRequest\x12\x14\n" +
-	"\x05plate\x18\x01 \x01(\tR\x05plate\"\xa0\x01\n" +
+	"\x05plate\x18\x01 \x01(\tR\x05plate\x12\x14\n" +
+	"\x05limit\x18\x02 \x01(\x05R\x05limit\"\xa0\x01\n" +
 	"!ListServiceRecordsByPlateResponse\x12=\n" +
 	"\avehicle\x18\x01 \x01(\v2#.mototeca.service.v1.VehicleSummaryR\avehicle\x12<\n" +
 	"\arecords\x18\x02 \x03(\v2\".mototeca.service.v1.ServiceRecordR\arecords\"9\n" +

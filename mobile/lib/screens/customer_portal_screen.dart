@@ -10,18 +10,29 @@ import 'service_detail_screen.dart';
 
 /// Portal do Proprietário — public plate lookup, no account required.
 class CustomerPortalScreen extends StatefulWidget {
-  const CustomerPortalScreen({super.key});
+  const CustomerPortalScreen({super.key, this.initialPlate});
+
+  /// Pre-filled when a mechanic arrives from the dashboard search box.
+  final String? initialPlate;
 
   @override
   State<CustomerPortalScreen> createState() => _CustomerPortalScreenState();
 }
 
 class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
-  final _plate = TextEditingController();
+  late final _plate = TextEditingController(text: widget.initialPlate ?? '');
 
   PlateHistory? _history;
   bool _searched = false;
   bool _busy = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if ((widget.initialPlate ?? '').trim().isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _search());
+    }
+  }
 
   @override
   void dispose() {

@@ -44,9 +44,28 @@ class MototecaApp extends StatefulWidget {
 class _MototecaAppState extends State<MototecaApp> {
   late final AppState _state = widget.state ?? AppState();
   late final bool _ownsState = widget.state == null;
+  final _navigator = GlobalKey<NavigatorState>();
+
+  @override
+  void initState() {
+    super.initState();
+    _state.addListener(_onStateChanged);
+  }
+
+  /// The session can expire on any request, including ones a screen renders
+  /// through a FutureBuilder and never catches, so the redirect lives here.
+  void _onStateChanged() {
+    if (!_state.sessionExpired) return;
+    _state.acknowledgeExpiry();
+    _navigator.currentState?.pushNamedAndRemoveUntil(
+      Routes.login,
+      (_) => false,
+    );
+  }
 
   @override
   void dispose() {
+    _state.removeListener(_onStateChanged);
     // Only close the client this widget created; an injected one belongs to
     // whoever passed it in.
     if (_ownsState) _state.dispose();
@@ -60,6 +79,7 @@ class _MototecaAppState extends State<MototecaApp> {
 
   Widget _buildApp(BuildContext context) {
     return MaterialApp(
+      navigatorKey: _navigator,
       title: 'Mototeca',
       debugShowCheckedModeBanner: false,
       theme: buildMototecaTheme(),
@@ -82,7 +102,6 @@ class _MototecaAppState extends State<MototecaApp> {
         Routes.ownerRegister: (_) => const OwnerRegisterScreen(),
         Routes.myVehicles: (_) => const MyVehiclesScreen(),
         Routes.reminders: (_) => const RemindersScreen(),
-        Routes.customerPortal: (_) => const CustomerPortalScreen(),
         Routes.about: (_) => const AboutScreen(),
       },
       // Routes that carry an argument. Everything else is in `routes` above.
@@ -97,6 +116,11 @@ class _MototecaAppState extends State<MototecaApp> {
         Routes.newRecord => MaterialPageRoute(
           builder: (_) =>
               NewRecordScreen(initialPlate: settings.arguments as String?),
+          settings: settings,
+        ),
+        Routes.customerPortal => MaterialPageRoute(
+          builder: (_) =>
+              CustomerPortalScreen(initialPlate: settings.arguments as String?),
           settings: settings,
         ),
         Routes.vehicleRegister => MaterialPageRoute(
