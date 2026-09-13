@@ -45,6 +45,26 @@ stubs (ARCHITECTURE.md section 5).
 All procedure names are prefixed with `mototeca.` — e.g.
 `POST /mototeca.workshop.v1.WorkshopService/Login`.
 
+### Photo upload
+
+One route is not an RPC: `POST /v1/service-records/{id}/attachments`, multipart,
+with the same bearer token. Protobuf would carry the bytes base64-encoded —
+a third larger and entirely in memory — so photos stream instead. Fields:
+`file` (required), `kind` (`photo` default, or `invoice`), `phase`
+(`before`/`after`, photos only).
+
+Files go to S3-compatible storage (MinIO in compose), capped at 8 MiB, with an
+allowlist of jpeg/png/webp/pdf. The stored name is a generated UUID — never
+the client's filename — so an upload cannot overwrite another or smuggle a
+path. Success and failure bodies match the Connect shape, so the client parses
+them the same way.
+
+The bucket is anonymous-read: the plate lookup is public, so the photos on it
+must be too. Names are unguessable UUIDs, but that is obscurity rather than
+authorization — presigned expiring URLs are the hardening step if photos ever
+carry anything sensitive. Without `STORAGE_ENDPOINT` the API starts normally
+and only this route is absent.
+
 ### Corrections are append-only
 
 A record is never edited. `ReviseServiceRecord` writes a new one and points the
@@ -143,6 +163,7 @@ internal/
   workshop/            oficina signup + login
   owner/               proprietário signup + login, their bikes, reminders
   servicerecord/       the core: records, operations, parts
+  storage/             S3-compatible object storage for photos
   gen/                 generated Go protobuf/Connect code — do not edit
 proto/mototeca/…/*.proto   API contracts, source of truth for gen/
 db/migrations/       plain SQL migrations, applied in order
@@ -208,6 +229,11 @@ Backend env vars (`.env`, see `.env.example`):
 |---|---|---|
 | `DATABASE_URL` | — | required |
 | `AUTH_SECRET` | — | **required**, min 32 chars — signs session tokens, never defaulted |
+| `STORAGE_ENDPOINT` | — | object storage host:port; empty disables photo upload |
+| `STORAGE_ACCESS_KEY` / `STORAGE_SECRET_KEY` | — | required when storage is enabled |
+| `STORAGE_BUCKET` | — | required when storage is enabled |
+| `STORAGE_PUBLIC_URL` | — | how clients reach the bucket (differs from the internal endpoint) |
+| `STORAGE_USE_SSL` | `false` | `true` for an https endpoint |
 | `PORT` | `8080` | |
 | `LOG_FORMAT` | `text` | `text` or `json` |
 | `OTEL_EXPORTER` | `none` | `none`, `stdout`, or `otlp` |

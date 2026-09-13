@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 
 import 'api_exception.dart';
 
@@ -32,6 +33,9 @@ class ApiClient {
   void Function()? onUnauthenticated;
 
   static const _timeout = Duration(seconds: 15);
+  // Photos are far larger than an RPC body, and often on a shop's poor
+  // connection (ARCHITECTURE.md §9).
+  static const _uploadTimeout = Duration(seconds: 60);
 
   /// Calls [procedure] (e.g. `mototeca.vehicle.v1.VehicleService/CreateVehicle`)
   /// and returns the decoded response body.
@@ -65,6 +69,51 @@ class ApiClient {
       final error = ApiException(
         ApiErrorCode.parse(body['code'] as String?),
         body['message'] as String? ?? 'Falha na comunicação com o servidor.',
+      );
+      if (error.isSessionExpired && token != null) onUnauthenticated?.call();
+      throw error;
+    }
+    return body;
+  }
+
+  /// Uploads one file to a plain multipart route (not an RPC — see the Go
+  /// side for why) and returns the decoded response.
+  Future<Map<String, dynamic>> upload(
+    String path, {
+    required List<int> bytes,
+    required String filename,
+    required String contentType,
+    Map<String, String> fields = const {},
+  }) async {
+    final request = http.MultipartRequest('POST', Uri.parse('$baseUrl/$path'))
+      ..fields.addAll(fields)
+      ..files.add(
+        http.MultipartFile.fromBytes(
+          'file',
+          bytes,
+          filename: filename,
+          contentType: MediaType.parse(contentType),
+        ),
+      );
+
+    final token = authToken;
+    if (token != null) request.headers['Authorization'] = 'Bearer $token';
+
+    http.Response response;
+    try {
+      // Send through this client, not request.send(), which would create its
+      // own and ignore everything configured here.
+      response = await http.Response.fromStream(await _http.send(request))
+          .timeout(_uploadTimeout);
+    } on Exception {
+      throw const ApiException.offline();
+    }
+
+    final body = _decode(response.body);
+    if (response.statusCode != 200) {
+      final error = ApiException(
+        ApiErrorCode.parse(body['code'] as String?),
+        body['message'] as String? ?? 'Falha ao enviar o arquivo.',
       );
       if (error.isSessionExpired && token != null) onUnauthenticated?.call();
       throw error;

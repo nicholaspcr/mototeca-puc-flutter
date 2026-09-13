@@ -1,4 +1,7 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../main.dart';
 import '../models/service_operation.dart';
@@ -8,6 +11,20 @@ import '../state/app_scope.dart';
 import '../theme.dart';
 import '../widgets/feedback.dart';
 import '../widgets/mt_widgets.dart';
+
+/// A photo chosen but not yet uploaded. Bytes are held in memory because the
+/// upload only happens once the record exists to attach them to.
+class _PickedPhoto {
+  const _PickedPhoto({
+    required this.bytes,
+    required this.name,
+    required this.mimeType,
+  });
+
+  final Uint8List bytes;
+  final String name;
+  final String mimeType;
+}
 
 /// One editable row in the parts list.
 class _PartDraft {
@@ -48,6 +65,9 @@ class _NewRecordScreenState extends State<NewRecordScreen> {
   final _notes = TextEditingController();
   final _parts = <_PartDraft>[_PartDraft()];
   final _selectedOps = <ServiceOperation>{};
+
+  final _picker = ImagePicker();
+  final _photos = <String, _PickedPhoto>{};
 
   Vehicle? _vehicle;
   bool _searched = false;
@@ -121,7 +141,7 @@ class _NewRecordScreenState extends State<NewRecordScreen> {
 
     setState(() => _saving = true);
     try {
-      await AppScope.read(context).serviceRecords.create(
+      final record = await AppScope.read(context).serviceRecords.create(
         plate: vehicle.plate,
         operations: _selectedOps.toList(),
         mileageKm: mileage,
@@ -131,7 +151,17 @@ class _NewRecordScreenState extends State<NewRecordScreen> {
         parts: parts,
       );
       if (!mounted) return;
-      showSuccess(context, 'Registro salvo no histórico da moto.');
+      // Attachments need the record to exist, so they follow the save. A
+      // failed photo must not discard a saved record — the record is the part
+      // that matters.
+      final failed = await _uploadPhotos(record.id);
+      if (!mounted) return;
+      showSuccess(
+        context,
+        failed == 0
+            ? 'Registro salvo no histórico da moto.'
+            : 'Registro salvo, mas $failed foto(s) não subiram.',
+      );
       // true tells the dashboard its feed is stale.
       Navigator.pop(context, true);
     } catch (error) {
@@ -140,6 +170,46 @@ class _NewRecordScreenState extends State<NewRecordScreen> {
     } finally {
       if (mounted) setState(() => _saving = false);
     }
+  }
+
+  /// Returns how many uploads failed.
+  Future<int> _uploadPhotos(String recordId) async {
+    var failed = 0;
+    for (final entry in _photos.entries) {
+      try {
+        await AppScope.read(context).serviceRecords.uploadAttachment(
+          recordId: recordId,
+          bytes: entry.value.bytes,
+          filename: entry.value.name,
+          contentType: entry.value.mimeType,
+          phase: entry.key,
+        );
+      } on Object {
+        failed++;
+      }
+    }
+    return failed;
+  }
+
+  Future<void> _pickPhoto(String phase) async {
+    final picked = await _picker.pickImage(
+      source: ImageSource.gallery,
+      // Shop connections are poor and the API caps uploads at 8 MiB
+      // (ARCHITECTURE.md §9).
+      maxWidth: 1600,
+      imageQuality: 80,
+    );
+    if (picked == null) return;
+
+    final bytes = await picked.readAsBytes();
+    if (!mounted) return;
+    setState(() {
+      _photos[phase] = _PickedPhoto(
+        bytes: bytes,
+        name: picked.name,
+        mimeType: picked.mimeType ?? 'image/jpeg',
+      );
+    });
   }
 
   /// Blank rows are the user leaving the last row untouched, not an error.
@@ -389,17 +459,27 @@ class _NewRecordScreenState extends State<NewRecordScreen> {
             style: TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
           ),
           const SizedBox(height: 8),
-          const Row(
+          Row(
             children: [
-              Expanded(child: _PhotoSlot(label: 'Foto antes')),
-              SizedBox(width: 10),
-              Expanded(child: _PhotoSlot(label: 'Foto depois')),
+              Expanded(
+                child: _PhotoSlot(
+                  label: 'Foto antes',
+                  photo: _photos['before'],
+                  onTap: () => _pickPhoto('before'),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _PhotoSlot(
+                  label: 'Foto depois',
+                  photo: _photos['after'],
+                  onTap: () => _pickPhoto('after'),
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 6),
-          const MtFootnote(
-            'O envio de fotos ainda não está disponível nesta versão.',
-          ),
+          const MtFootnote('As fotos sobem depois que o registro é salvo.'),
         ],
       ),
     );
@@ -449,30 +529,54 @@ class _NewRecordScreenState extends State<NewRecordScreen> {
 }
 
 class _PhotoSlot extends StatelessWidget {
-  const _PhotoSlot({required this.label});
+  const _PhotoSlot({required this.label, required this.onTap, this.photo});
 
   final String label;
+  final VoidCallback onTap;
+  final _PickedPhoto? photo;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 100,
-      decoration: BoxDecoration(
-        color: MtColors.slate50,
-        border: Border.all(color: MtColors.slate200),
-        borderRadius: BorderRadius.circular(MtSizes.controlRadius),
-      ),
-      alignment: Alignment.center,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.image_outlined, color: Color(0xFF94A3B8)),
-          const SizedBox(height: 6),
-          Text(
-            label,
-            style: const TextStyle(fontSize: 11, color: MtColors.slate500),
+    final picked = photo;
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(MtSizes.controlRadius),
+      child: Container(
+        height: 100,
+        decoration: BoxDecoration(
+          color: MtColors.slate50,
+          border: Border.all(
+            color: picked == null ? MtColors.slate200 : MtColors.petrol,
           ),
-        ],
+          borderRadius: BorderRadius.circular(MtSizes.controlRadius),
+        ),
+        clipBehavior: Clip.antiAlias,
+        alignment: Alignment.center,
+        child: picked == null
+            ? Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.add_a_photo_outlined,
+                    color: Color(0xFF94A3B8),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    label,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: MtColors.slate500,
+                    ),
+                  ),
+                ],
+              )
+            : Image.memory(
+                picked.bytes,
+                fit: BoxFit.cover,
+                width: double.infinity,
+                height: 100,
+              ),
       ),
     );
   }

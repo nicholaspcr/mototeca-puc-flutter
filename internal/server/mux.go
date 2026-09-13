@@ -51,7 +51,9 @@ func rateLimits() map[string]*RateLimiter {
 // Interceptor order is outermost first: tracing covers the whole request, then
 // rate limiting rejects abuse before any work is done, then logging, then
 // authentication, so an unauthenticated request is still traced and logged.
-func NewMux(handlers Handlers, signer *auth.Signer, db Pinger, logger *slog.Logger) (*http.ServeMux, error) {
+// NewMux registers the upload route only when uploads is non-nil, so the API
+// runs without object storage configured.
+func NewMux(handlers Handlers, uploads *UploadHandler, signer *auth.Signer, db Pinger, logger *slog.Logger) (*http.ServeMux, error) {
 	otelInterceptor, err := otelconnect.NewInterceptor()
 	if err != nil {
 		return nil, fmt.Errorf("creating otel interceptor: %w", err)
@@ -86,6 +88,10 @@ func NewMux(handlers Handlers, signer *auth.Signer, db Pinger, logger *slog.Logg
 
 	// Reports the database too: an instance that can't reach Postgres serves
 	// nothing useful, and a 200 would keep a load balancer routing to it.
+	if uploads != nil {
+		mux.Handle("POST /v1/service-records/{id}/attachments", uploads)
+	}
+
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request) {
 		ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
 		defer cancel()

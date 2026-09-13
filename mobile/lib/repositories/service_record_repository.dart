@@ -77,6 +77,26 @@ class ServiceRecordRepository {
     );
   }
 
+  /// Attaches a photo or the invoice to a record the workshop owns. The record
+  /// must exist first, which is why this runs after the record is saved.
+  Future<Attachment> uploadAttachment({
+    required String recordId,
+    required List<int> bytes,
+    required String filename,
+    required String contentType,
+    String kind = 'photo',
+    String? phase,
+  }) async {
+    final body = await _client.upload(
+      'v1/service-records/$recordId/attachments',
+      bytes: bytes,
+      filename: filename,
+      contentType: contentType,
+      fields: {'kind': kind, 'phase': ?phase},
+    );
+    return Attachment.fromJson(body);
+  }
+
   Future<WorkshopFeed> workshopFeed({int limit = 20}) async {
     final body = await _client.call('$_service/ListWorkshopServiceRecords', {
       'limit': limit,

@@ -17,6 +17,7 @@ import (
 	"mototeca-backend/internal/owner"
 	"mototeca-backend/internal/server"
 	"mototeca-backend/internal/servicerecord"
+	"mototeca-backend/internal/storage"
 	"mototeca-backend/internal/telemetry"
 	"mototeca-backend/internal/vehicle"
 	"mototeca-backend/internal/workshop"
@@ -69,7 +70,28 @@ func main() {
 		Owner:         owner.NewHandler(owner.NewRepository(pool), serviceRecords, signer, logger),
 	}
 
-	mux, err := server.NewMux(handlers, signer, pool, logger)
+	// Uploads are optional: without STORAGE_ENDPOINT the API serves everything
+	// else and only the attachment route is absent.
+	var uploads *server.UploadHandler
+	if cfg.StorageEnabled() {
+		photos, err := storage.New(context.Background(), storage.Config{
+			Endpoint:  cfg.StorageEndpoint,
+			AccessKey: cfg.StorageAccessKey,
+			SecretKey: cfg.StorageSecretKey,
+			Bucket:    cfg.StorageBucket,
+			PublicURL: cfg.StoragePublicURL,
+			UseSSL:    cfg.StorageUseSSL,
+		})
+		if err != nil {
+			logger.Error("connecting to object storage", "err", err)
+			os.Exit(1)
+		}
+		uploads = server.NewUploadHandler(photos, serviceRecords, signer, logger)
+	} else {
+		logger.Warn("STORAGE_ENDPOINT not set — photo uploads are disabled")
+	}
+
+	mux, err := server.NewMux(handlers, uploads, signer, pool, logger)
 	if err != nil {
 		logger.Error("building http mux", "err", err)
 		os.Exit(1)
