@@ -1,5 +1,5 @@
 -- Mototeca initial schema
--- Apply with: npm run migrate  (wraps `psql "$DATABASE_URL" -f db/migrations/0001_init.sql`)
+-- Applied by scripts/migrate.sh (`make migrate`, or the compose migrate service).
 
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
