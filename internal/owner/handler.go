@@ -21,16 +21,23 @@ import (
 const dummyHash = "$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy"
 
 type Handler struct {
-	repo    Store
-	records servicerecord.Store
-	signer  *auth.Signer
-	logger  *slog.Logger
+	repo     Store
+	records  servicerecord.Store
+	signer   *auth.Signer
+	logger   *slog.Logger
+	throttle *auth.LoginThrottle
 }
 
 // NewHandler takes the record store too, so "Minhas Motos" can show the last
 // service without re-implementing its hydration.
 func NewHandler(repo Store, records servicerecord.Store, signer *auth.Signer, logger *slog.Logger) *Handler {
-	return &Handler{repo: repo, records: records, signer: signer, logger: logger}
+	return &Handler{
+		repo:     repo,
+		records:  records,
+		signer:   signer,
+		logger:   logger,
+		throttle: auth.NewLoginThrottle(auth.LoginFailureLimit, auth.LoginLockout),
+	}
 }
 
 func (h *Handler) CreateOwner(ctx context.Context, req *connect.Request[ownerv1.CreateOwnerRequest]) (*connect.Response[ownerv1.CreateOwnerResponse], error) {
@@ -77,6 +84,9 @@ func (h *Handler) Login(ctx context.Context, req *connect.Request[ownerv1.LoginR
 	if phone == "" || req.Msg.Password == "" {
 		return nil, unauthenticated
 	}
+	if h.throttle.Locked(phone) {
+		return nil, connect.NewError(connect.CodeResourceExhausted, errors.New(auth.LockedMessage))
+	}
 
 	o, err := h.repo.FindByPhone(ctx, phone)
 	if err != nil {
@@ -89,8 +99,10 @@ func (h *Handler) Login(ctx context.Context, req *connect.Request[ownerv1.LoginR
 		digest = o.PasswordHash
 	}
 	if !auth.CheckPassword(digest, req.Msg.Password) || o == nil {
+		h.throttle.Fail(phone)
 		return nil, unauthenticated
 	}
+	h.throttle.Succeed(phone)
 
 	token, err := h.issueToken(ctx, o.ID)
 	if err != nil {
