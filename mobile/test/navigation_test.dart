@@ -183,6 +183,74 @@ void main() {
     expect(find.byType(RemindersScreen), findsOneWidget);
   });
 
+  // A bike a workshop already registered is claimed straight away, with its
+  // history — the owner never retypes the chassi.
+  testWidgets('minhas motos vincula uma moto já cadastrada pela placa', (
+    tester,
+  ) async {
+    final api = await pumpApp(tester);
+    await signInAsOwner(tester);
+
+    await tapAndSettle(tester, find.byKey(const Key('minhas-motos-cadastrar')));
+    await enterInField(tester, const Key('adicionar-moto-placa'), 'abc-1d23');
+    await tapAndSettle(
+      tester,
+      find.byKey(const Key('adicionar-moto-continuar')),
+    );
+
+    expect(find.byType(MyVehiclesScreen), findsOneWidget);
+    expect(find.byType(VehicleRegisterScreen), findsNothing);
+    expect(api.calls, contains('mototeca.owner.v1.OwnerService/ClaimVehicle'));
+    expect(
+      api.calls,
+      isNot(contains('mototeca.vehicle.v1.VehicleService/CreateVehicle')),
+    );
+  });
+
+  testWidgets('minhas motos cadastra e vincula uma placa desconhecida', (
+    tester,
+  ) async {
+    final api = await pumpApp(tester);
+    await signInAsOwner(tester);
+    const claim = 'mototeca.owner.v1.OwnerService/ClaimVehicle';
+    api.failures[claim] = (
+      status: 404,
+      code: 'not_found',
+      message: 'nenhuma moto cadastrada com esta placa',
+    );
+
+    await tapAndSettle(tester, find.byKey(const Key('minhas-motos-cadastrar')));
+    await enterInField(tester, const Key('adicionar-moto-placa'), 'ABC1D23');
+    await tapAndSettle(
+      tester,
+      find.byKey(const Key('adicionar-moto-continuar')),
+    );
+
+    expect(find.byType(VehicleRegisterScreen), findsOneWidget);
+    expect(
+      tester.widget<TextField>(find.byType(TextField).first).controller?.text,
+      'ABC1D23',
+      reason: 'the plate the owner typed carries over',
+    );
+
+    api.failures.remove(claim);
+    await tester.enterText(find.byType(TextField).at(1), '9C2KC1670GR000001');
+    await tester.enterText(find.byType(TextField).at(2), 'Honda');
+    await tester.enterText(find.byType(TextField).at(3), 'CG 160 Start');
+    await tester.enterText(find.byType(TextField).at(4), '2022');
+    await tapAndSettle(
+      tester,
+      find.byKey(const Key('cadastro-veiculo-salvar')),
+    );
+
+    expect(find.byType(MyVehiclesScreen), findsOneWidget);
+    expect(
+      api.calls.where((c) => c == claim).length,
+      2,
+      reason: 'claims once, registers, then claims the new bike',
+    );
+  });
+
   testWidgets('consulta por placa lista o histórico e abre um serviço', (
     tester,
   ) async {
@@ -219,7 +287,7 @@ void main() {
         (
           status: 401,
           code: 'unauthenticated',
-          message: 'invalid or expired session',
+          message: 'sessão expirada — entre novamente',
         );
 
     await tester.fling(

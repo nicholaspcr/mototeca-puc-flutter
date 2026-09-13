@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../api/api_exception.dart';
 import '../main.dart';
 import '../models/owner.dart';
+import '../models/vehicle.dart';
 import '../state/app_scope.dart';
 import '../theme.dart';
 import '../widgets/feedback.dart';
@@ -45,20 +47,45 @@ class _MyVehiclesScreenState extends State<MyVehiclesScreen> {
     Navigator.pushReplacementNamed(context, Routes.login);
   }
 
-  /// Register then claim: a vehicle exists independently of any owner, which
-  /// is what lets its history survive a sale.
   Future<void> _addVehicle() async {
-    final created = await Navigator.pushNamed(context, Routes.vehicleRegister);
-    if (created is! String || !mounted) return;
+    final plate = await showDialog<String>(
+      context: context,
+      builder: (_) => const _PlateDialog(),
+    );
+    if (plate == null || !mounted) return;
 
     try {
-      await AppScope.read(context).owners.claimVehicle(created);
-      if (!mounted) return;
+      final linked = await _claimOrRegister(plate);
+      if (!linked || !mounted) return;
+      showSuccess(context, 'Moto vinculada.');
       await _reload();
     } catch (error) {
       if (!mounted) return;
       showApiError(context, error);
     }
+  }
+
+  /// Claims by plate first: a bike that was already serviced is registered
+  /// by the shop, and its history comes along. Only an unknown plate needs
+  /// the registration form.
+  Future<bool> _claimOrRegister(String plate) async {
+    final owners = AppScope.read(context).owners;
+    try {
+      await owners.claimVehicle(plate);
+      return true;
+    } on ApiException catch (error) {
+      if (error.code != ApiErrorCode.notFound) rethrow;
+    }
+    if (!mounted) return false;
+
+    final created = await Navigator.pushNamed(
+      context,
+      Routes.vehicleRegister,
+      arguments: normalizePlate(plate),
+    );
+    if (created is! String) return false;
+    await owners.claimVehicle(created);
+    return true;
   }
 
   @override
@@ -263,6 +290,70 @@ class _MyVehiclesScreenState extends State<MyVehiclesScreen> {
               ),
             ),
             const Icon(Icons.chevron_right, color: MtColors.slate500, size: 18),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PlateDialog extends StatefulWidget {
+  const _PlateDialog();
+
+  @override
+  State<_PlateDialog> createState() => _PlateDialogState();
+}
+
+class _PlateDialogState extends State<_PlateDialog> {
+  final _plate = TextEditingController();
+
+  @override
+  void dispose() {
+    _plate.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    final plate = _plate.text.trim();
+    if (plate.isEmpty) return;
+    Navigator.pop(context, plate);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      child: Padding(
+        padding: const EdgeInsets.all(MtSizes.screenPadding),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Text(
+              'Adicionar moto',
+              style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 16),
+            MtField(
+              key: const Key('adicionar-moto-placa'),
+              label: 'Placa',
+              hint: 'ABC1D23',
+              helper:
+                  'Se a moto já passou por uma oficina, o histórico vem junto.',
+              mono: true,
+              controller: _plate,
+              textCapitalization: TextCapitalization.characters,
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              key: const Key('adicionar-moto-continuar'),
+              onPressed: _submit,
+              child: const Text('Continuar'),
+            ),
+            const SizedBox(height: 8),
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancelar'),
+            ),
           ],
         ),
       ),
