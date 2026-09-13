@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../models/service_record.dart';
 import '../theme.dart';
+import '../widgets/feedback.dart';
 import '../widgets/mt_widgets.dart';
 
 class ServiceDetailArgs {
@@ -124,7 +126,7 @@ class ServiceDetailScreen extends StatelessWidget {
             ),
           ],
           const SizedBox(height: 16),
-          _photosCard(record),
+          _photosCard(context, record),
           const SizedBox(height: 16),
           const MtFootnote(
             'Registro imutável: correções geram uma nova revisão, '
@@ -135,7 +137,17 @@ class ServiceDetailScreen extends StatelessWidget {
     );
   }
 
-  Widget _photosCard(ServiceRecord record) {
+  Future<void> _openInvoice(BuildContext context, Attachment invoice) async {
+    final opened = await launchUrl(
+      Uri.parse(invoice.url),
+      mode: LaunchMode.externalApplication,
+    ).catchError((Object _) => false);
+    if (!opened && context.mounted) {
+      showApiError(context, 'Não foi possível abrir a nota fiscal.');
+    }
+  }
+
+  Widget _photosCard(BuildContext context, ServiceRecord record) {
     final before = record.attachments
         .where((a) => a.phase == 'PHOTO_PHASE_BEFORE')
         .toList();
@@ -165,46 +177,55 @@ class ServiceDetailScreen extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            decoration: BoxDecoration(
-              border: Border.all(color: MtColors.slate200),
-              borderRadius: BorderRadius.circular(MtSizes.controlRadius),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Flexible(
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.description_outlined,
-                        size: 18,
-                        color: MtColors.petrol,
-                      ),
-                      SizedBox(width: 8),
-                      Flexible(
-                        child: Text(
-                          'Nota fiscal',
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w500,
+          InkWell(
+            key: const Key('detalhe-nota-fiscal'),
+            onTap: invoice == null
+                ? null
+                : () => _openInvoice(context, invoice),
+            borderRadius: BorderRadius.circular(MtSizes.controlRadius),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                border: Border.all(color: MtColors.slate200),
+                borderRadius: BorderRadius.circular(MtSizes.controlRadius),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Flexible(
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.description_outlined,
+                          size: 18,
+                          color: MtColors.petrol,
+                        ),
+                        SizedBox(width: 8),
+                        Flexible(
+                          child: Text(
+                            'Nota fiscal',
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  invoice == null ? 'Não anexada' : 'Baixar',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: invoice == null ? MtColors.slate500 : MtColors.rust,
+                  const SizedBox(width: 8),
+                  Text(
+                    invoice == null ? 'Não anexada' : 'Baixar',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: invoice == null
+                          ? MtColors.slate500
+                          : MtColors.rust,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ],
@@ -213,9 +234,8 @@ class ServiceDetailScreen extends StatelessWidget {
   }
 }
 
-/// One phase's photo. Shows the first image when the record has one and the
-/// empty placeholder otherwise — uploads aren't implemented yet, so in
-/// practice this renders the placeholder.
+/// One phase's photo: the first image when the record has one, a placeholder
+/// otherwise.
 class _Photo extends StatelessWidget {
   const _Photo({required this.label, this.attachments = const []});
 

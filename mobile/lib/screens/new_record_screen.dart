@@ -68,6 +68,7 @@ class _NewRecordScreenState extends State<NewRecordScreen> {
 
   final _picker = ImagePicker();
   final _photos = <String, _PickedPhoto>{};
+  _PickedPhoto? _invoice;
 
   Vehicle? _vehicle;
   bool _searched = false;
@@ -154,13 +155,13 @@ class _NewRecordScreenState extends State<NewRecordScreen> {
       // Attachments need the record to exist, so they follow the save. A
       // failed photo must not discard a saved record — the record is the part
       // that matters.
-      final failed = await _uploadPhotos(record.id);
+      final failed = await _uploadAttachments(record.id);
       if (!mounted) return;
       showSuccess(
         context,
         failed == 0
             ? 'Registro salvo no histórico da moto.'
-            : 'Registro salvo, mas $failed foto(s) não subiram.',
+            : 'Registro salvo, mas $failed arquivo(s) não subiram.',
       );
       // true tells the dashboard its feed is stale.
       Navigator.pop(context, true);
@@ -173,16 +174,25 @@ class _NewRecordScreenState extends State<NewRecordScreen> {
   }
 
   /// Returns how many uploads failed.
-  Future<int> _uploadPhotos(String recordId) async {
+  Future<int> _uploadAttachments(String recordId) async {
+    final repository = AppScope.read(context).serviceRecords;
+    final uploads = [
+      for (final MapEntry(key: phase, value: photo) in _photos.entries)
+        (file: photo, kind: 'photo', phase: phase),
+      if (_invoice case final invoice?)
+        (file: invoice, kind: 'invoice', phase: null),
+    ];
+
     var failed = 0;
-    for (final entry in _photos.entries) {
+    for (final upload in uploads) {
       try {
-        await AppScope.read(context).serviceRecords.uploadAttachment(
+        await repository.uploadAttachment(
           recordId: recordId,
-          bytes: entry.value.bytes,
-          filename: entry.value.name,
-          contentType: entry.value.mimeType,
-          phase: entry.key,
+          bytes: upload.file.bytes,
+          filename: upload.file.name,
+          contentType: upload.file.mimeType,
+          kind: upload.kind,
+          phase: upload.phase,
         );
       } on Object {
         failed++;
@@ -191,7 +201,7 @@ class _NewRecordScreenState extends State<NewRecordScreen> {
     return failed;
   }
 
-  Future<void> _pickPhoto(String phase) async {
+  Future<_PickedPhoto?> _pickImage() async {
     final picked = await _picker.pickImage(
       source: ImageSource.gallery,
       // Shop connections are poor and the API caps uploads at 8 MiB
@@ -199,17 +209,25 @@ class _NewRecordScreenState extends State<NewRecordScreen> {
       maxWidth: 1600,
       imageQuality: 80,
     );
-    if (picked == null) return;
+    if (picked == null) return null;
 
-    final bytes = await picked.readAsBytes();
-    if (!mounted) return;
-    setState(() {
-      _photos[phase] = _PickedPhoto(
-        bytes: bytes,
-        name: picked.name,
-        mimeType: picked.mimeType ?? 'image/jpeg',
-      );
-    });
+    return _PickedPhoto(
+      bytes: await picked.readAsBytes(),
+      name: picked.name,
+      mimeType: picked.mimeType ?? 'image/jpeg',
+    );
+  }
+
+  Future<void> _pickPhoto(String phase) async {
+    final photo = await _pickImage();
+    if (photo == null || !mounted) return;
+    setState(() => _photos[phase] = photo);
+  }
+
+  Future<void> _pickInvoice() async {
+    final invoice = await _pickImage();
+    if (invoice == null || !mounted) return;
+    setState(() => _invoice = invoice);
   }
 
   /// Blank rows are the user leaving the last row untouched, not an error.
@@ -478,8 +496,16 @@ class _NewRecordScreenState extends State<NewRecordScreen> {
               ),
             ],
           ),
+          const SizedBox(height: 10),
+          _PhotoSlot(
+            key: const Key('novo-registro-nota-fiscal'),
+            label: 'Foto da nota fiscal',
+            icon: Icons.receipt_long_outlined,
+            photo: _invoice,
+            onTap: _pickInvoice,
+          ),
           const SizedBox(height: 6),
-          const MtFootnote('As fotos sobem depois que o registro é salvo.'),
+          const MtFootnote('Os arquivos sobem depois que o registro é salvo.'),
         ],
       ),
     );
@@ -529,11 +555,18 @@ class _NewRecordScreenState extends State<NewRecordScreen> {
 }
 
 class _PhotoSlot extends StatelessWidget {
-  const _PhotoSlot({required this.label, required this.onTap, this.photo});
+  const _PhotoSlot({
+    super.key,
+    required this.label,
+    required this.onTap,
+    this.photo,
+    this.icon = Icons.add_a_photo_outlined,
+  });
 
   final String label;
   final VoidCallback onTap;
   final _PickedPhoto? photo;
+  final IconData icon;
 
   @override
   Widget build(BuildContext context) {
@@ -557,10 +590,7 @@ class _PhotoSlot extends StatelessWidget {
             ? Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(
-                    Icons.add_a_photo_outlined,
-                    color: Color(0xFF94A3B8),
-                  ),
+                  Icon(icon, color: const Color(0xFF94A3B8)),
                   const SizedBox(height: 6),
                   Text(
                     label,
