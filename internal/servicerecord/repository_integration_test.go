@@ -246,6 +246,12 @@ func TestReviseSupersedesTheOriginal(t *testing.T) {
 		t.Fatalf("Create: %v", err)
 	}
 
+	phase := PhaseBefore
+	if _, err := repo.AddAttachment(ctx, workshopID, original.ID,
+		Attachment{URL: "http://storage/bucket/before.jpg", Kind: "photo", Phase: &phase}); err != nil {
+		t.Fatalf("AddAttachment: %v", err)
+	}
+
 	revised, err := repo.Revise(ctx, workshopID, original.ID, CreateInput{
 		WorkshopID: workshopID,
 		Plate:      testPlateIntegration,
@@ -257,6 +263,9 @@ func TestReviseSupersedesTheOriginal(t *testing.T) {
 	}
 	if revised.RevisesRecordID == nil || *revised.RevisesRecordID != original.ID {
 		t.Errorf("revisesRecordId = %v, want %q", revised.RevisesRecordID, original.ID)
+	}
+	if len(revised.Attachments) != 1 || revised.Attachments[0].Phase == nil || *revised.Attachments[0].Phase != PhaseBefore {
+		t.Errorf("attachments = %+v, want the original's photo carried over", revised.Attachments)
 	}
 
 	// History shows the correction, not the record it replaced.

@@ -288,6 +288,14 @@ func (r *Repository) write(ctx context.Context, input CreateInput, rev *revision
 			recordID, rev.recordID); err != nil {
 			return nil, fmt.Errorf("superseding %s: %w", rev.recordID, err)
 		}
+		// Photos and the invoice describe the job, not the typo being fixed,
+		// so they move to the correction rather than vanish with the original.
+		if _, err := tx.Exec(ctx,
+			`INSERT INTO attachments (service_record_id, url, kind, phase, created_at)
+			 SELECT $1, url, kind, phase, created_at FROM attachments WHERE service_record_id = $2`,
+			recordID, rev.recordID); err != nil {
+			return nil, fmt.Errorf("carrying attachments of %s: %w", rev.recordID, err)
+		}
 	}
 
 	if err := tx.Commit(ctx); err != nil {
