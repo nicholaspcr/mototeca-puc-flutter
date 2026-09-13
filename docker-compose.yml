@@ -6,8 +6,8 @@ services:
     build: .
     restart: unless-stopped
     depends_on:
-      db:
-        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
       storage:
         condition: service_healthy
     environment:
@@ -26,6 +26,20 @@ services:
       PORT: "8080"
     ports:
       - "8080:8080"
+
+  # Applies pending migrations, then exits; the API waits for it.
+  migrate:
+    image: postgres:16-alpine
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://user:password@db:5432/mototeca?sslmode=disable
+      MIGRATIONS_DIR: /migrations
+    volumes:
+      - ./db/migrations:/migrations:ro
+      - ./scripts/migrate.sh:/migrate.sh:ro
+    entrypoint: ["sh", "/migrate.sh"]
 
   # S3-compatible object storage for service photos (ARCHITECTURE.md §6).
   storage:
