@@ -76,7 +76,7 @@ void main() {
     test('turns a Connect error body into a typed ApiException', () async {
       final client = clientReturning({
         'code': 'invalid_argument',
-        'message': 'select at least one operation',
+        'message': 'selecione ao menos uma operação',
       }, status: 400);
 
       expect(
@@ -87,7 +87,7 @@ void main() {
               .having(
                 (e) => e.message,
                 'message',
-                'select at least one operation',
+                'selecione ao menos uma operação',
               ),
         ),
       );
