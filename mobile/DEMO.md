@@ -96,26 +96,32 @@ Mostra os dois perfis e a consulta pública, que é o diferencial do produto:
    caracteres) → cai direto no Painel da Oficina, já autenticado.
    (Se já rodou `make e2e`, esse CNPJ existe: entre com a senha
    `senha-forte-123`.)
-2. No painel, **Cadastrar veículo** → placa `ABC1D23`, chassi de 17 caracteres,
-   marca, modelo, ano.
+2. No painel, **Cadastrar veículo** → placa `ABC1D23`, chassi
+   `9C2KC1670GR000001`, marca, modelo, ano.
 3. **Criar Registro** → busca a placa → seleciona duas operações → preenche km,
-   valor e uma peça → toca em **Foto antes** e em **Foto da nota fiscal** e
-   escolhe imagens → **Salvar Registro**. Volta ao painel e o contador do mês
-   sobe. (Os arquivos sobem depois do registro: precisam dele para se anexar.)
+   valor e uma peça → toca em **Fotos antes** (dá para escolher várias) e em
+   **Foto da nota fiscal** → **Salvar Registro**. Volta ao painel e o contador
+   do mês sobe. (Os arquivos sobem depois do registro: precisam dele para se
+   anexar.)
 4. Toca no **registro recente** → Detalhe do Serviço (peças, observações,
-   fotos, nota fiscal — **Baixar** abre a imagem) → voltar.
+   fotos — toque para ver todas —, nota fiscal — **Baixar** abre a imagem) →
+   **Corrigir registro** → muda a quilometragem → **Salvar Correção**. O
+   detalhe passa a mostrar a correção; o original fica guardado.
 5. **Sair** → **Consultar sem cadastro** → digita `ABC1D23` → **Consultar** →
    o mesmo serviço aparece, sem login. É o argumento central do produto.
    **Baixar PDF** gera o histórico em PDF no próprio aparelho.
 6. **Sair** → "Sou proprietário" → **Cadastre-se** → nome, celular
    `(31) 99000-1234`, senha → cai em Minhas Motos (vazio no começo).
    (Se já rodou `make e2e`, esse celular existe: entre com `senha-forte-123`.)
-7. **+ Cadastrar nova moto** → digita a placa `ABC1D23` → **Continuar** → como
-   a oficina já cadastrou a moto, ela é vinculada direto, com a quilometragem e
-   o último serviço do passo 3. Uma placa que ninguém cadastrou abre o
+7. **+ Cadastrar nova moto** → placa `ABC1D23` e final do chassi `000001` (os
+   6 últimos caracteres, que estão no documento da moto) → **Continuar** →
+   como a oficina já cadastrou a moto, ela é vinculada direto, com a
+   quilometragem e o último serviço. Uma placa que ninguém cadastrou abre o
    formulário de cadastro e vincula a moto ao salvar.
 8. **Lembretes de manutenção** → a barra e o aviso saem da própria
    quilometragem: 3.000 km desde a última troca de óleo.
+9. De volta em Minhas Motos, o menu **⋮** da moto → **Vendi esta moto** →
+   **Desvincular**. O histórico continua com a placa para o próximo dono.
 
 ### Erros que valem mostrar
 
@@ -128,6 +134,12 @@ São respostas reais do backend, não mensagens de enfeite:
   veículo antes.
 - Vincular uma moto que já tem dono → *"esta moto já está vinculada a outro
   proprietário"*.
+- Vincular com o final do chassi errado → *"o final do chassi não confere com
+  esta placa"*.
+- Lançar um registro com quilometragem menor que a última → o app pergunta se
+  o painel foi trocado antes de salvar. É o sinal de hodômetro adulterado.
+- Errar a senha cinco vezes seguidas → *"muitas tentativas para esta conta"*,
+  por alguns minutos.
 
 ## Se quiser provar que está testado
 

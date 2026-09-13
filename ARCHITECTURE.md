@@ -82,6 +82,10 @@ Daily full snapshot + WAL/point-in-time recovery, 30-day rolling window + monthl
   — never the chassi or the owner. The full vehicle, chassi included, needs a
   workshop session, and owner ids never leave the server.
 - Uploaded files are typed by content sniffing, not by what the client claims.
+- Claiming a bike needs the end of its chassi, since the plate is public;
+  CPF + OTP with the seller's confirmation is the stronger design (BACKLOG.md).
+- Repeated failed logins lock the account for a few minutes, independent of
+  the caller's address.
 
 ## 9. Low-Bandwidth Considerations
 
