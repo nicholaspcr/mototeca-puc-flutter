@@ -81,16 +81,18 @@ func clean(t *testing.T, pool *pgxpool.Pool) {
 	}
 }
 
-func (f fixture) addService(t *testing.T, km int, ops ...servicerecord.Operation) {
+func (f fixture) addService(t *testing.T, km int, ops ...servicerecord.Operation) *servicerecord.ServiceRecord {
 	t.Helper()
-	if _, err := f.records.Create(context.Background(), servicerecord.CreateInput{
+	record, err := f.records.Create(context.Background(), servicerecord.CreateInput{
 		WorkshopID: f.workshopID,
 		Plate:      testPlateIntegration,
 		Operations: ops,
 		MileageKm:  km,
-	}); err != nil {
+	})
+	if err != nil {
 		t.Fatalf("seeding service: %v", err)
 	}
+	return record
 }
 
 func TestClaimLinksTheVehicle(t *testing.T) {
@@ -311,5 +313,47 @@ func TestReleaseRefusesABikeYouDoNotHold(t *testing.T) {
 
 	if err := repo.Release(ctx, stranger.ID, testPlateIntegration); err != ErrVehicleNotFound {
 		t.Errorf("err = %v, want a stranger's release to be refused", err)
+	}
+}
+
+// A mileage typo that was corrected must not keep inflating the odometer.
+func TestListVehiclesIgnoresSupersededRecords(t *testing.T) {
+	f := setup(t)
+	repo := NewRepository(f.pool)
+	ctx := context.Background()
+
+	if _, err := repo.Claim(ctx, f.ownerID, testPlateIntegration); err != nil {
+		t.Fatalf("Claim: %v", err)
+	}
+	f.addService(t, 15000, servicerecord.OperationBrakes)
+	typo := f.addService(t, 160000, servicerecord.OperationOilChange)
+
+	correction, err := f.records.Revise(ctx, f.workshopID, typo.ID, servicerecord.CreateInput{
+		WorkshopID: f.workshopID,
+		Plate:      testPlateIntegration,
+		Operations: []servicerecord.Operation{servicerecord.OperationOilChange},
+		MileageKm:  16000,
+	})
+	if err != nil {
+		t.Fatalf("Revise: %v", err)
+	}
+
+	vehicles, err := repo.ListVehicles(ctx, f.ownerID)
+	if err != nil {
+		t.Fatalf("ListVehicles: %v", err)
+	}
+	got := vehicles[0]
+
+	if got.CurrentMileageKm != 16000 {
+		t.Errorf("currentMileageKm = %d, want the corrected 16000", got.CurrentMileageKm)
+	}
+	if got.ServiceCount != 2 {
+		t.Errorf("serviceCount = %d, want 2 — a correction is not an extra service", got.ServiceCount)
+	}
+	if got.LastOilChangeKm == nil || *got.LastOilChangeKm != 16000 {
+		t.Errorf("lastOilChangeKm = %v, want 16000", got.LastOilChangeKm)
+	}
+	if got.LastServiceID == nil || *got.LastServiceID != correction.ID {
+		t.Errorf("lastServiceId = %v, want the correction %q", got.LastServiceID, correction.ID)
 	}
 }

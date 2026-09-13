@@ -78,18 +78,21 @@ func (r *Repository) Release(ctx context.Context, ownerID, plate string) error {
 
 // ownedVehicleQuery derives the whole owner screen in one pass: odometer
 // (highest mileage any workshop recorded), service count, newest record, and
-// the mileage at the last oil change.
+// the mileage at the last oil change. Superseded records are skipped, so a
+// corrected typo in the mileage stops counting.
 const ownedVehicleQuery = `
 	SELECT v.plate, v.make, v.model, v.year,
 	       COALESCE(MAX(sr.mileage_km), 0) AS current_km,
 	       COUNT(sr.id) AS service_count,
 	       (SELECT id FROM service_records
-	         WHERE vehicle_id = v.id ORDER BY created_at DESC LIMIT 1) AS last_service_id,
+	         WHERE vehicle_id = v.id AND superseded_by IS NULL
+	         ORDER BY created_at DESC LIMIT 1) AS last_service_id,
 	       (SELECT MAX(oil.mileage_km) FROM service_records oil
 	          JOIN service_record_operations op ON op.service_record_id = oil.id
-	         WHERE oil.vehicle_id = v.id AND op.type = 'oil_change') AS last_oil_change_km
+	         WHERE oil.vehicle_id = v.id AND oil.superseded_by IS NULL
+	           AND op.type = 'oil_change') AS last_oil_change_km
 	FROM vehicles v
-	LEFT JOIN service_records sr ON sr.vehicle_id = v.id`
+	LEFT JOIN service_records sr ON sr.vehicle_id = v.id AND sr.superseded_by IS NULL`
 
 func scanOwnedVehicles(rows pgx.Rows) ([]OwnedVehicle, error) {
 	defer rows.Close()
@@ -130,7 +133,7 @@ func (r *Repository) Claim(ctx context.Context, ownerID, plate string) (*OwnedVe
 	var vehicleID string
 	var currentOwner *string
 	err = tx.QueryRow(ctx,
-		`SELECT id, current_owner_id FROM vehicles WHERE plate = $1`, plate,
+		`SELECT id, current_owner_id FROM vehicles WHERE plate = $1 FOR UPDATE`, plate,
 	).Scan(&vehicleID, &currentOwner)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, ErrVehicleNotFound
@@ -139,6 +142,7 @@ func (r *Repository) Claim(ctx context.Context, ownerID, plate string) (*OwnedVe
 		return nil, err
 	}
 
+	// The row lock above keeps two owners from both seeing it unclaimed.
 	// Re-claiming your own bike is a no-op; taking someone else's is refused.
 	// Transfer on sale is a separate flow (ARCHITECTURE.md §3).
 	if currentOwner != nil && *currentOwner != ownerID {
