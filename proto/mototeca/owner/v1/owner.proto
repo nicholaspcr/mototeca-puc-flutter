@@ -64,6 +64,9 @@ message ListMyVehiclesResponse {
 
 message ClaimVehicleRequest {
   string plate = 1;
+  // Last 6 characters of the chassi, printed on the registration document
+  // (CRLV). The plate alone is public, so it cannot prove ownership.
+  string chassi_suffix = 2;
 }
 
 // Unlinks a bike from the signed-in owner, so its next owner can claim it.
@@ -87,6 +90,7 @@ service OwnerService {
   // Requires an owner token; lists only that owner's bikes.
   rpc ListMyVehicles(ListMyVehiclesRequest) returns (ListMyVehiclesResponse);
   // Links an existing vehicle to the signed-in owner. Returns
+  // PERMISSION_DENIED when the chassi suffix does not match and
   // FAILED_PRECONDITION when someone else already owns it.
   rpc ClaimVehicle(ClaimVehicleRequest) returns (ClaimVehicleResponse);
   // Releases a bike on sale. Only the current owner may release it.

@@ -138,8 +138,15 @@ func (h *Handler) ClaimVehicle(ctx context.Context, req *connect.Request[ownerv1
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("informe a placa"))
 	}
 
-	owned, err := h.repo.Claim(ctx, ownerID, plate)
+	suffix := NormalizeChassiSuffix(req.Msg.ChassiSuffix)
+	if err := ValidateChassiSuffix(suffix); err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
+
+	owned, err := h.repo.Claim(ctx, ownerID, plate, suffix)
 	switch {
+	case errors.Is(err, ErrChassiMismatch):
+		return nil, connect.NewError(connect.CodePermissionDenied, errors.New("o final do chassi não confere com esta placa"))
 	case errors.Is(err, ErrVehicleNotFound):
 		return nil, connect.NewError(connect.CodeNotFound, errors.New("nenhuma moto cadastrada com esta placa"))
 	case errors.Is(err, ErrVehicleClaimed):

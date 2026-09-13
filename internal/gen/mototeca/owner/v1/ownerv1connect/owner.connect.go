@@ -58,6 +58,7 @@ type OwnerServiceClient interface {
 	// Requires an owner token; lists only that owner's bikes.
 	ListMyVehicles(context.Context, *connect.Request[v1.ListMyVehiclesRequest]) (*connect.Response[v1.ListMyVehiclesResponse], error)
 	// Links an existing vehicle to the signed-in owner. Returns
+	// PERMISSION_DENIED when the chassi suffix does not match and
 	// FAILED_PRECONDITION when someone else already owns it.
 	ClaimVehicle(context.Context, *connect.Request[v1.ClaimVehicleRequest]) (*connect.Response[v1.ClaimVehicleResponse], error)
 	// Releases a bike on sale. Only the current owner may release it.
@@ -151,6 +152,7 @@ type OwnerServiceHandler interface {
 	// Requires an owner token; lists only that owner's bikes.
 	ListMyVehicles(context.Context, *connect.Request[v1.ListMyVehiclesRequest]) (*connect.Response[v1.ListMyVehiclesResponse], error)
 	// Links an existing vehicle to the signed-in owner. Returns
+	// PERMISSION_DENIED when the chassi suffix does not match and
 	// FAILED_PRECONDITION when someone else already owns it.
 	ClaimVehicle(context.Context, *connect.Request[v1.ClaimVehicleRequest]) (*connect.Response[v1.ClaimVehicleResponse], error)
 	// Releases a bike on sale. Only the current owner may release it.

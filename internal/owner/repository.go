@@ -3,6 +3,7 @@ package owner
 import (
 	"context"
 	"errors"
+	"strings"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -123,23 +124,29 @@ func (r *Repository) ListVehicles(ctx context.Context, ownerID string) ([]OwnedV
 	return scanOwnedVehicles(rows)
 }
 
-func (r *Repository) Claim(ctx context.Context, ownerID, plate string) (*OwnedVehicle, error) {
+func (r *Repository) Claim(ctx context.Context, ownerID, plate, chassiSuffix string) (*OwnedVehicle, error) {
 	tx, err := r.pool.Begin(ctx)
 	if err != nil {
 		return nil, err
 	}
 	defer func() { _ = tx.Rollback(ctx) }()
 
-	var vehicleID string
+	var vehicleID, chassi string
 	var currentOwner *string
 	err = tx.QueryRow(ctx,
-		`SELECT id, current_owner_id FROM vehicles WHERE plate = $1 FOR UPDATE`, plate,
-	).Scan(&vehicleID, &currentOwner)
+		`SELECT id, chassi, current_owner_id FROM vehicles WHERE plate = $1 FOR UPDATE`, plate,
+	).Scan(&vehicleID, &chassi, &currentOwner)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, ErrVehicleNotFound
 	}
 	if err != nil {
 		return nil, err
+	}
+
+	// Checked before ownership, so who holds a bike is only revealed to
+	// someone with its papers.
+	if !strings.HasSuffix(chassi, chassiSuffix) {
+		return nil, ErrChassiMismatch
 	}
 
 	// The row lock above keeps two owners from both seeing it unclaimed.
