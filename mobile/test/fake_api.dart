@@ -14,6 +14,9 @@ class FakeApi {
   /// actually hit the backend.
   final calls = <String>[];
 
+  /// The JSON body of the latest call to each procedure.
+  final lastBody = <String, Map<String, dynamic>>{};
+
   /// Procedures that should fail, mapped to the Connect error to return.
   final failures = <String, ({int status, String code, String message})>{};
 
@@ -79,6 +82,9 @@ class FakeApi {
   http.Client get client => MockClient((request) async {
     final procedure = request.url.path.replaceFirst('/', '');
     calls.add(procedure);
+    if (request.body.startsWith('{')) {
+      lastBody[procedure] = jsonDecode(request.body) as Map<String, dynamic>;
+    }
 
     final failure = failures[procedure];
     if (failure != null) {

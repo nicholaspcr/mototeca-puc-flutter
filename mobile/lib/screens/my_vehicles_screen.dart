@@ -48,14 +48,14 @@ class _MyVehiclesScreenState extends State<MyVehiclesScreen> {
   }
 
   Future<void> _addVehicle() async {
-    final plate = await showDialog<String>(
+    final claim = await showDialog<_Claim>(
       context: context,
-      builder: (_) => const _PlateDialog(),
+      builder: (_) => const _ClaimDialog(),
     );
-    if (plate == null || !mounted) return;
+    if (claim == null || !mounted) return;
 
     try {
-      final linked = await _claimOrRegister(plate);
+      final linked = await _claimOrRegister(claim);
       if (!linked || !mounted) return;
       showSuccess(context, 'Moto vinculada.');
       await _reload();
@@ -68,10 +68,10 @@ class _MyVehiclesScreenState extends State<MyVehiclesScreen> {
   /// Claims by plate first: a bike that was already serviced is registered
   /// by the shop, and its history comes along. Only an unknown plate needs
   /// the registration form.
-  Future<bool> _claimOrRegister(String plate) async {
+  Future<bool> _claimOrRegister(_Claim claim) async {
     final owners = AppScope.read(context).owners;
     try {
-      await owners.claimVehicle(plate);
+      await owners.claimVehicle(claim.plate, claim.chassiSuffix);
       return true;
     } on ApiException catch (error) {
       if (error.code != ApiErrorCode.notFound) rethrow;
@@ -81,10 +81,11 @@ class _MyVehiclesScreenState extends State<MyVehiclesScreen> {
     final created = await Navigator.pushNamed(
       context,
       Routes.vehicleRegister,
-      arguments: normalizePlate(plate),
+      arguments: normalizePlate(claim.plate),
     );
-    if (created is! String) return false;
-    await owners.claimVehicle(created);
+    if (created is! Vehicle) return false;
+    // The owner just typed the whole chassi, so its end is known.
+    await owners.claimVehicle(created.plate, created.chassiSuffix);
     return true;
   }
 
@@ -297,26 +298,38 @@ class _MyVehiclesScreenState extends State<MyVehiclesScreen> {
   }
 }
 
-class _PlateDialog extends StatefulWidget {
-  const _PlateDialog();
+typedef _Claim = ({String plate, String chassiSuffix});
+
+class _ClaimDialog extends StatefulWidget {
+  const _ClaimDialog();
 
   @override
-  State<_PlateDialog> createState() => _PlateDialogState();
+  State<_ClaimDialog> createState() => _ClaimDialogState();
 }
 
-class _PlateDialogState extends State<_PlateDialog> {
+class _ClaimDialogState extends State<_ClaimDialog> {
   final _plate = TextEditingController();
+  final _chassiSuffix = TextEditingController();
 
   @override
   void dispose() {
     _plate.dispose();
+    _chassiSuffix.dispose();
     super.dispose();
   }
 
   void _submit() {
     final plate = _plate.text.trim();
+    final suffix = _chassiSuffix.text.trim();
     if (plate.isEmpty) return;
-    Navigator.pop(context, plate);
+    if (suffix.length != chassiSuffixLength) {
+      showApiError(
+        context,
+        'Informe os $chassiSuffixLength últimos caracteres do chassi.',
+      );
+      return;
+    }
+    Navigator.pop<_Claim>(context, (plate: plate, chassiSuffix: suffix));
   }
 
   @override
@@ -337,10 +350,20 @@ class _PlateDialogState extends State<_PlateDialog> {
               key: const Key('adicionar-moto-placa'),
               label: 'Placa',
               hint: 'ABC1D23',
-              helper:
-                  'Se a moto já passou por uma oficina, o histórico vem junto.',
               mono: true,
               controller: _plate,
+              textCapitalization: TextCapitalization.characters,
+            ),
+            const SizedBox(height: 14),
+            MtField(
+              key: const Key('adicionar-moto-chassi'),
+              label: 'Final do chassi',
+              hint: '000001',
+              helper:
+                  'Os $chassiSuffixLength últimos caracteres, no documento '
+                  'da moto (CRLV). Provam que ela é sua.',
+              mono: true,
+              controller: _chassiSuffix,
               textCapitalization: TextCapitalization.characters,
             ),
             const SizedBox(height: 20),

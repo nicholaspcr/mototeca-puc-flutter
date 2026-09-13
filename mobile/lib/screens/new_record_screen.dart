@@ -347,8 +347,8 @@ class _NewRecordScreenState extends State<NewRecordScreen> {
                         Routes.vehicleRegister,
                         arguments: normalizePlate(_plate.text),
                       );
-                      if (created is String && mounted) {
-                        _plate.text = created;
+                      if (created is Vehicle && mounted) {
+                        _plate.text = created.plate;
                         await _search();
                       }
                     },
