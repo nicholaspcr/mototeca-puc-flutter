@@ -33,9 +33,9 @@ type Handlers struct {
 	Owner         ownerv1connect.OwnerServiceHandler
 }
 
-// rateLimits throttles the endpoints an anonymous caller can reach: signing in
-// (password guessing) and the public plate lookup (scraping the history of
-// every bike in Brazil one plate at a time).
+// rateLimits are tighter limits for the endpoints an anonymous caller can
+// abuse: signing in (password guessing) and the public plate lookup (scraping
+// the history of every bike in Brazil one plate at a time).
 func rateLimits() map[string]*RateLimiter {
 	return map[string]*RateLimiter{
 		workshopv1connect.WorkshopServiceLoginProcedure:                         NewRateLimiter(0.2, 5),
@@ -61,7 +61,7 @@ func NewMux(handlers Handlers, uploads *UploadHandler, signer *auth.Signer, db P
 
 	interceptors := connect.WithInterceptors(
 		otelInterceptor,
-		RateLimitInterceptor(rateLimits()),
+		RateLimitInterceptor(rateLimits(), NewRateLimiter(10, 40)),
 		LoggingInterceptor(logger),
 		auth.Interceptor(signer),
 	)
@@ -86,12 +86,12 @@ func NewMux(handlers Handlers, uploads *UploadHandler, signer *auth.Signer, db P
 		mux.Handle(path, handler)
 	}
 
-	// Reports the database too: an instance that can't reach Postgres serves
-	// nothing useful, and a 200 would keep a load balancer routing to it.
 	if uploads != nil {
-		mux.Handle("POST /v1/service-records/{id}/attachments", uploads)
+		mux.Handle("POST /v1/service-records/{id}/attachments", RateLimitHTTP(NewRateLimiter(1, 10), uploads))
 	}
 
+	// Reports the database too: an instance that can't reach Postgres serves
+	// nothing useful, and a 200 would keep a load balancer routing to it.
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request) {
 		ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
 		defer cancel()

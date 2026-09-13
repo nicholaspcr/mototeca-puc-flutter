@@ -1,6 +1,9 @@
 package server
 
 import (
+	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 	"time"
 )
@@ -71,5 +74,36 @@ func TestRateLimiterEvictsIdleCallers(t *testing.T) {
 	defer limiter.mu.Unlock()
 	if _, exists := limiter.buckets["1.2.3.4"]; exists {
 		t.Error("an idle caller's bucket should have been swept, or the map grows without bound")
+	}
+}
+
+func TestClientIPIgnoresThePort(t *testing.T) {
+	cases := map[string]string{
+		"203.0.113.7:51234": "203.0.113.7",
+		"[2001:db8::1]:443": "2001:db8::1",
+		"not-an-address":    "not-an-address",
+	}
+	for addr, want := range cases {
+		if got := clientIP(addr); got != want {
+			t.Errorf("clientIP(%q) = %q, want %q", addr, got, want)
+		}
+	}
+}
+
+func TestRateLimitHTTPSharesABucketAcrossConnections(t *testing.T) {
+	limiter, _ := newTestLimiter(1, 2)
+	handler := RateLimitHTTP(limiter, http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
+
+	var codes []int
+	for port := range 3 {
+		req := httptest.NewRequest(http.MethodPost, "/v1/service-records/x/attachments", nil)
+		req.RemoteAddr = fmt.Sprintf("203.0.113.7:%d", 50000+port)
+		rec := httptest.NewRecorder()
+		handler.ServeHTTP(rec, req)
+		codes = append(codes, rec.Code)
+	}
+
+	if codes[2] != http.StatusTooManyRequests {
+		t.Fatalf("third request from the same IP on a new port: got %v, want the last one throttled", codes)
 	}
 }

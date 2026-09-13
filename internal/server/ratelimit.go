@@ -3,6 +3,8 @@ package server
 import (
 	"context"
 	"errors"
+	"net"
+	"net/http"
 	"sync"
 	"time"
 
@@ -76,23 +78,43 @@ func (l *RateLimiter) evictStaleLocked(now time.Time) {
 	}
 }
 
-// RateLimitInterceptor throttles the named procedures per calling address.
-// Procedures absent from the map are not limited.
-func RateLimitInterceptor(limiters map[string]*RateLimiter) connect.UnaryInterceptorFunc {
+// RateLimitInterceptor throttles each procedure per client IP. Procedures
+// absent from limiters share fallback, so no endpoint is unlimited.
+func RateLimitInterceptor(limiters map[string]*RateLimiter, fallback *RateLimiter) connect.UnaryInterceptorFunc {
 	return func(next connect.UnaryFunc) connect.UnaryFunc {
 		return func(ctx context.Context, req connect.AnyRequest) (connect.AnyResponse, error) {
 			limiter, ok := limiters[req.Spec().Procedure]
 			if !ok {
-				return next(ctx, req)
+				limiter = fallback
 			}
 
-			if !limiter.Allow(req.Peer().Addr) {
-				return nil, connect.NewError(
-					connect.CodeResourceExhausted,
-					errors.New("too many requests — try again shortly"),
-				)
+			if !limiter.Allow(clientIP(req.Peer().Addr)) {
+				return nil, connect.NewError(connect.CodeResourceExhausted, errTooManyRequests)
 			}
 			return next(ctx, req)
 		}
 	}
+}
+
+// RateLimitHTTP is RateLimitInterceptor for plain HTTP routes.
+func RateLimitHTTP(limiter *RateLimiter, next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !limiter.Allow(clientIP(r.RemoteAddr)) {
+			writeError(w, http.StatusTooManyRequests, "resource_exhausted", errTooManyRequests.Error())
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+var errTooManyRequests = errors.New("too many requests — try again shortly")
+
+// clientIP drops the port: every new connection gets a fresh one, so keying on
+// the full address would hand each connection its own bucket.
+func clientIP(addr string) string {
+	host, _, err := net.SplitHostPort(addr)
+	if err != nil {
+		return addr
+	}
+	return host
 }
