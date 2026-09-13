@@ -20,6 +20,9 @@ class FakeApi {
   /// Procedures that should fail, mapped to the Connect error to return.
   final failures = <String, ({int status, String code, String message})>{};
 
+  /// Procedures in [failures] that fail only on their next call.
+  final failOnce = <String>{};
+
   static const ownerJson = {
     'id': 'owner-1',
     'name': 'Marcos Souza',
@@ -88,6 +91,7 @@ class FakeApi {
 
     final failure = failures[procedure];
     if (failure != null) {
+      if (failOnce.remove(procedure)) failures.remove(procedure);
       return _json({
         'code': failure.code,
         'message': failure.message,

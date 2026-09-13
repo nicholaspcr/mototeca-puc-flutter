@@ -8,6 +8,7 @@ enum ApiErrorCode {
   alreadyExists,
   unauthenticated,
   permissionDenied,
+  failedPrecondition,
   resourceExhausted,
   unavailable,
   unknown;
@@ -18,6 +19,7 @@ enum ApiErrorCode {
     'already_exists' => ApiErrorCode.alreadyExists,
     'unauthenticated' => ApiErrorCode.unauthenticated,
     'permission_denied' => ApiErrorCode.permissionDenied,
+    'failed_precondition' => ApiErrorCode.failedPrecondition,
     'resource_exhausted' => ApiErrorCode.resourceExhausted,
     'unavailable' => ApiErrorCode.unavailable,
     _ => ApiErrorCode.unknown,
