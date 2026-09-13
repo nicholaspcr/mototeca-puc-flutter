@@ -402,6 +402,38 @@ void main() {
     );
   });
 
+  testWidgets('detalhe abre todas as fotos de uma etapa', (tester) async {
+    final api = await pumpApp(tester);
+    api.responses['mototeca.service.v1.ServiceRecordService/ListWorkshopServiceRecords'] =
+        {
+          'countThisMonth': 1,
+          'records': [
+            {
+              ...FakeApi.recordJson,
+              'attachments': [
+                for (final id in ['a1', 'a2'])
+                  {
+                    'id': id,
+                    'url': 'http://storage/$id.jpg',
+                    'kind': 'photo',
+                    'phase': 'PHOTO_PHASE_BEFORE',
+                  },
+              ],
+            },
+          ],
+        };
+    await signInAsWorkshop(tester);
+    await tapAndSettle(tester, find.byKey(const Key('record-r1')));
+
+    expect(find.text('Antes (2)'), findsOneWidget);
+    await tapAndSettle(tester, find.byKey(const Key('detalhe-fotos-Antes')));
+
+    expect(find.text('Antes · 1 de 2'), findsOneWidget);
+    await tester.fling(find.byType(PageView), const Offset(-300, 0), 1000);
+    await tester.pumpAndSettle();
+    expect(find.text('Antes · 2 de 2'), findsOneWidget);
+  });
+
   testWidgets('voltar do detalhe retorna à tela anterior', (tester) async {
     await pumpApp(tester);
     await signInAsWorkshop(tester);
