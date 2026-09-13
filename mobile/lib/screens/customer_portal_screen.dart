@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:printing/printing.dart';
 
 import '../main.dart';
+import '../reports/history_pdf.dart';
 import '../repositories/service_record_repository.dart';
 import '../state/app_scope.dart';
 import '../theme.dart';
@@ -59,6 +61,20 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
       showApiError(context, error);
     } finally {
       if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  /// Downloads on the web; opens the share sheet on a phone.
+  Future<void> _sharePdf(PlateHistory history) async {
+    try {
+      final bytes = await buildHistoryPdf(history);
+      await Printing.sharePdf(
+        bytes: bytes,
+        filename: 'historico-${history.vehicle.plate}.pdf',
+      );
+    } on Object {
+      if (!mounted) return;
+      showApiError(context, 'Não foi possível gerar o PDF.');
     }
   }
 
@@ -174,9 +190,8 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
             ),
             const SizedBox(height: 10),
             OutlinedButton(
-              onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Resumo em PDF gerado.')),
-              ),
+              key: const Key('portal-baixar-pdf'),
+              onPressed: () => _sharePdf(history),
               child: const Text('Baixar PDF'),
             ),
           ],
