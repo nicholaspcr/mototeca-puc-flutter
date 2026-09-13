@@ -128,6 +128,11 @@ func (h *UploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			writeError(w, http.StatusNotFound, "not_found", "registro não encontrado")
 			return
 		}
+		if errors.Is(err, servicerecord.ErrTooManyAttachments) {
+			writeError(w, http.StatusBadRequest, "invalid_argument",
+				fmt.Sprintf("um registro aceita até %d arquivos", servicerecord.MaxAttachmentsPerRecord))
+			return
+		}
 		h.logger.ErrorContext(ctx, "linking attachment failed", "err", err)
 		writeError(w, http.StatusInternalServerError, "internal", "falha ao vincular o arquivo")
 		return
