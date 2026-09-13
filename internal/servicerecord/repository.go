@@ -320,9 +320,17 @@ func (r *Repository) AddAttachment(ctx context.Context, workshopID, recordID str
 	if !validID(recordID) {
 		return nil, ErrRecordNotFound
 	}
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+
+	// Locking the record serializes concurrent uploads, so the count below
+	// cannot be raced past the cap.
 	var ownerWorkshop string
-	err := r.pool.QueryRow(ctx,
-		`SELECT workshop_id FROM service_records WHERE id = $1`, recordID).Scan(&ownerWorkshop)
+	err = tx.QueryRow(ctx,
+		`SELECT workshop_id FROM service_records WHERE id = $1 FOR UPDATE`, recordID).Scan(&ownerWorkshop)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, ErrRecordNotFound
 	}
@@ -333,12 +341,24 @@ func (r *Repository) AddAttachment(ctx context.Context, workshopID, recordID str
 		return nil, ErrRecordNotFound
 	}
 
+	var count int
+	if err := tx.QueryRow(ctx,
+		`SELECT count(*) FROM attachments WHERE service_record_id = $1`, recordID).Scan(&count); err != nil {
+		return nil, err
+	}
+	if count >= MaxAttachmentsPerRecord {
+		return nil, ErrTooManyAttachments
+	}
+
 	var stored Attachment
-	if err := r.pool.QueryRow(ctx,
+	if err := tx.QueryRow(ctx,
 		`INSERT INTO attachments (service_record_id, url, kind, phase)
 		 VALUES ($1, $2, $3, $4) RETURNING id, url, kind, phase`,
 		recordID, a.URL, a.Kind, a.Phase,
 	).Scan(&stored.ID, &stored.URL, &stored.Kind, &stored.Phase); err != nil {
+		return nil, err
+	}
+	if err := tx.Commit(ctx); err != nil {
 		return nil, err
 	}
 	return &stored, nil

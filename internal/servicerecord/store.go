@@ -16,7 +16,13 @@ var (
 	ErrAlreadySuperseded = errors.New("service record already superseded")
 	// ErrVehicleNotFound is returned by Create when the plate has no vehicle.
 	ErrVehicleNotFound = errors.New("vehicle not found")
+	// ErrTooManyAttachments is returned by AddAttachment past the per-record cap.
+	ErrTooManyAttachments = errors.New("too many attachments")
 )
+
+// MaxAttachmentsPerRecord bounds what one record can store: several photos
+// per phase and an invoice, not an unbounded bucket anyone can fill.
+const MaxAttachmentsPerRecord = 20
 
 // LowerMileageError is returned by Create for a mileage below the bike's
 // highest recorded one, unless the input confirms it.

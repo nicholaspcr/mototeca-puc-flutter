@@ -385,3 +385,30 @@ func TestCreateRefusesAMileageBelowTheHighestRecorded(t *testing.T) {
 		t.Fatalf("confirmed Create: %v", err)
 	}
 }
+
+func TestAddAttachmentStopsAtTheCap(t *testing.T) {
+	pool := newTestPool(t)
+	workshopID := seed(t, pool)
+	repo := NewRepository(pool)
+	ctx := context.Background()
+
+	record, err := repo.Create(ctx, CreateInput{
+		WorkshopID: workshopID,
+		Plate:      testPlateIntegration,
+		Operations: []Operation{OperationTires},
+		MileageKm:  1000,
+	})
+	if err != nil {
+		t.Fatalf("Create: %v", err)
+	}
+
+	photo := Attachment{URL: "http://storage/bucket/p.jpg", Kind: "photo"}
+	for i := range MaxAttachmentsPerRecord {
+		if _, err := repo.AddAttachment(ctx, workshopID, record.ID, photo); err != nil {
+			t.Fatalf("attachment %d: %v", i+1, err)
+		}
+	}
+	if _, err := repo.AddAttachment(ctx, workshopID, record.ID, photo); !errors.Is(err, ErrTooManyAttachments) {
+		t.Errorf("err = %v, want ErrTooManyAttachments", err)
+	}
+}

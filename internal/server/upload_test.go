@@ -211,3 +211,16 @@ func assertStatus(t *testing.T, rec *httptest.ResponseRecorder, want int) {
 		t.Fatalf("status = %d, want %d (body %s)", rec.Code, want, rec.Body)
 	}
 }
+
+func TestUploadRefusesPastTheAttachmentCap(t *testing.T) {
+	f := newUploadFixture(t)
+	f.records.attachErr = servicerecord.ErrTooManyAttachments
+	body, contentType := multipartBody(t, "image/png", onePixelPNG, nil)
+
+	rec := f.serve(t, f.token(t, auth.KindWorkshop, uploadWorkshop), body, contentType)
+
+	assertStatus(t, rec, http.StatusBadRequest)
+	if len(f.objects.deleted) != 1 {
+		t.Errorf("deleted = %v, want the refused file removed", f.objects.deleted)
+	}
+}
