@@ -143,6 +143,7 @@ class FakeApi {
       'mototeca.owner.v1.OwnerService/ListMyVehicles' => _json({
         'vehicles': [ownedVehicleJson],
       }),
+      'mototeca.owner.v1.OwnerService/ReleaseVehicle' => _json({}),
       'mototeca.owner.v1.OwnerService/ClaimVehicle' => _json({
         'vehicle': ownedVehicleJson,
       }),

@@ -295,6 +295,24 @@ void main() {
     );
   });
 
+  testWidgets('minhas motos desvincula uma moto vendida', (tester) async {
+    final api = await pumpApp(tester);
+    await signInAsOwner(tester);
+
+    await tapAndSettle(tester, find.byKey(const Key('vehicle-menu-ABC1D23')));
+    await tapAndSettle(tester, find.byKey(const Key('vehicle-release')));
+    expect(find.text('Desvincular moto'), findsOneWidget);
+    await tapAndSettle(
+      tester,
+      find.byKey(const Key('vehicle-release-confirmar')),
+    );
+
+    expect(api.lastBody['mototeca.owner.v1.OwnerService/ReleaseVehicle'], {
+      'plate': 'ABC1D23',
+    });
+    expect(find.text('Moto desvinculada.'), findsOneWidget);
+  });
+
   testWidgets('consulta por placa lista o histórico e abre um serviço', (
     tester,
   ) async {

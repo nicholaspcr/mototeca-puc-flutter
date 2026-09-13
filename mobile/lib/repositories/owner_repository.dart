@@ -41,6 +41,14 @@ class OwnerRepository {
         .toList();
   }
 
+  /// Unlinks a sold bike so its buyer can claim it. The history stays with
+  /// the plate.
+  Future<void> releaseVehicle(String plate) async {
+    await _client.call('$_service/ReleaseVehicle', {
+      'plate': normalizePlate(plate),
+    });
+  }
+
   /// Links an already-registered bike to the signed-in owner, who proves it
   /// is theirs with the end of the chassi — the plate alone is public.
   Future<OwnedVehicle> claimVehicle(String plate, String chassiSuffix) async {

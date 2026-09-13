@@ -47,6 +47,43 @@ class _MyVehiclesScreenState extends State<MyVehiclesScreen> {
     Navigator.pushReplacementNamed(context, Routes.login);
   }
 
+  /// Unlinks the bike after the owner confirms. Nothing in its history
+  /// changes; the buyer claims it with the chassi, as anyone would.
+  Future<void> _release(OwnedVehicle vehicle) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Desvincular moto'),
+        content: Text(
+          '${vehicle.label} (${vehicle.plate}) sai da sua lista. O histórico '
+          'continua com a placa, e o novo dono pode vinculá-la.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            key: const Key('vehicle-release-confirmar'),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Desvincular'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    try {
+      await AppScope.read(context).owners.releaseVehicle(vehicle.plate);
+      if (!mounted) return;
+      showSuccess(context, 'Moto desvinculada.');
+      await _reload();
+    } catch (error) {
+      if (!mounted) return;
+      showApiError(context, error);
+    }
+  }
+
   Future<void> _addVehicle() async {
     final claim = await showDialog<_Claim>(
       context: context,
@@ -290,7 +327,22 @@ class _MyVehiclesScreenState extends State<MyVehiclesScreen> {
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right, color: MtColors.slate500, size: 18),
+            PopupMenuButton<void>(
+              key: Key('vehicle-menu-${vehicle.plate}'),
+              tooltip: 'Opções',
+              icon: const Icon(
+                Icons.more_vert,
+                color: MtColors.slate500,
+                size: 20,
+              ),
+              itemBuilder: (_) => [
+                PopupMenuItem(
+                  key: const Key('vehicle-release'),
+                  onTap: () => _release(vehicle),
+                  child: const Text('Vendi esta moto'),
+                ),
+              ],
+            ),
           ],
         ),
       ),
