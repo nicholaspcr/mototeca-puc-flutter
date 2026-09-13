@@ -45,6 +45,10 @@ class Vehicle {
   String get label => '$make $model';
   String get labelWithYear => '$make $model ($year)';
 
+  String get chassiSuffix => chassi.length < chassiSuffixLength
+      ? chassi
+      : chassi.substring(chassi.length - chassiSuffixLength);
+
   VehicleSummary get summary =>
       VehicleSummary(plate: plate, make: make, model: model, year: year);
 
@@ -57,6 +61,10 @@ class Vehicle {
     year: (json['year'] as num?)?.toInt() ?? 0,
   );
 }
+
+/// How much of the chassi an owner types to prove a bike is theirs; the
+/// backend checks the same length.
+const chassiSuffixLength = 6;
 
 /// Strips the separator so 'abc-1d23' and 'ABC1D23' are the same plate, the
 /// way the backend normalizes it.

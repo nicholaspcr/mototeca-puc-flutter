@@ -56,8 +56,8 @@ class _VehicleRegisterScreenState extends State<VehicleRegisterScreen> {
       );
       if (!mounted) return;
       showSuccess(context, 'Veículo cadastrado.');
-      // The plate, not a flag: callers re-search or claim with it.
-      Navigator.pop(context, created.plate);
+      // The vehicle, not a flag: callers re-search or claim with it.
+      Navigator.pop(context, created);
     } catch (error) {
       if (!mounted) return;
       showApiError(context, error);

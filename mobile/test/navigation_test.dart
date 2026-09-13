@@ -193,6 +193,7 @@ void main() {
 
     await tapAndSettle(tester, find.byKey(const Key('minhas-motos-cadastrar')));
     await enterInField(tester, const Key('adicionar-moto-placa'), 'abc-1d23');
+    await enterInField(tester, const Key('adicionar-moto-chassi'), '000001');
     await tapAndSettle(
       tester,
       find.byKey(const Key('adicionar-moto-continuar')),
@@ -200,7 +201,10 @@ void main() {
 
     expect(find.byType(MyVehiclesScreen), findsOneWidget);
     expect(find.byType(VehicleRegisterScreen), findsNothing);
-    expect(api.calls, contains('mototeca.owner.v1.OwnerService/ClaimVehicle'));
+    expect(api.lastBody['mototeca.owner.v1.OwnerService/ClaimVehicle'], {
+      'plate': 'ABC1D23',
+      'chassiSuffix': '000001',
+    });
     expect(
       api.calls,
       isNot(contains('mototeca.vehicle.v1.VehicleService/CreateVehicle')),
@@ -221,6 +225,7 @@ void main() {
 
     await tapAndSettle(tester, find.byKey(const Key('minhas-motos-cadastrar')));
     await enterInField(tester, const Key('adicionar-moto-placa'), 'ABC1D23');
+    await enterInField(tester, const Key('adicionar-moto-chassi'), '999999');
     await tapAndSettle(
       tester,
       find.byKey(const Key('adicionar-moto-continuar')),
@@ -248,6 +253,11 @@ void main() {
       api.calls.where((c) => c == claim).length,
       2,
       reason: 'claims once, registers, then claims the new bike',
+    );
+    expect(
+      api.lastBody[claim]?['chassiSuffix'],
+      '000001',
+      reason: 'the second claim uses the chassi just registered',
     );
   });
 

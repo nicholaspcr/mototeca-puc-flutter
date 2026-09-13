@@ -41,10 +41,12 @@ class OwnerRepository {
         .toList();
   }
 
-  /// Links an already-registered bike to the signed-in owner.
-  Future<OwnedVehicle> claimVehicle(String plate) async {
+  /// Links an already-registered bike to the signed-in owner, who proves it
+  /// is theirs with the end of the chassi — the plate alone is public.
+  Future<OwnedVehicle> claimVehicle(String plate, String chassiSuffix) async {
     final body = await _client.call('$_service/ClaimVehicle', {
       'plate': normalizePlate(plate),
+      'chassiSuffix': chassiSuffix.trim().toUpperCase(),
     });
     return OwnedVehicle.fromJson(
       body['vehicle'] as Map<String, dynamic>? ?? const {},
