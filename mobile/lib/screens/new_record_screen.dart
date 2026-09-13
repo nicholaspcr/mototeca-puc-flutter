@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../api/api_exception.dart';
 import '../main.dart';
 import '../models/service_operation.dart';
 import '../models/service_record.dart';
@@ -108,8 +109,6 @@ class _NewRecordScreenState extends State<NewRecordScreen> {
       setState(() {
         _vehicle = vehicle;
         _searched = true;
-        // The last known odometer is the natural starting point.
-        if (vehicle != null && _mileage.text.isEmpty) _mileage.text = '';
       });
     } catch (error) {
       if (!mounted) return;
@@ -142,15 +141,30 @@ class _NewRecordScreenState extends State<NewRecordScreen> {
 
     setState(() => _saving = true);
     try {
-      final record = await AppScope.read(context).serviceRecords.create(
-        plate: vehicle.plate,
-        operations: _selectedOps.toList(),
-        mileageKm: mileage,
-        mechanicName: _mechanic.text,
-        costCents: costCents,
-        notes: _notes.text,
-        parts: parts,
-      );
+      final repository = AppScope.read(context).serviceRecords;
+      Future<ServiceRecord> create({bool confirmLowerMileage = false}) =>
+          repository.create(
+            plate: vehicle.plate,
+            operations: _selectedOps.toList(),
+            mileageKm: mileage,
+            mechanicName: _mechanic.text,
+            costCents: costCents,
+            notes: _notes.text,
+            parts: parts,
+            confirmLowerMileage: confirmLowerMileage,
+          );
+
+      ServiceRecord record;
+      try {
+        record = await create();
+      } on ApiException catch (error) {
+        if (error.code != ApiErrorCode.failedPrecondition || !mounted) rethrow;
+        // No spinner behind the question: nothing is saving while it waits.
+        setState(() => _saving = false);
+        if (!await _confirmLowerMileage(error.message) || !mounted) return;
+        setState(() => _saving = true);
+        record = await create(confirmLowerMileage: true);
+      }
       if (!mounted) return;
       // Attachments need the record to exist, so they follow the save. A
       // failed photo must not discard a saved record — the record is the part
@@ -171,6 +185,33 @@ class _NewRecordScreenState extends State<NewRecordScreen> {
     } finally {
       if (mounted) setState(() => _saving = false);
     }
+  }
+
+  /// A lower odometer than before is how a rolled-back bike looks, so the
+  /// mechanic confirms it is real before it enters the history.
+  Future<bool> _confirmLowerMileage(String message) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Quilometragem menor'),
+        content: Text(
+          '${message[0].toUpperCase()}${message.substring(1)}. '
+          'Salve assim só se o painel foi trocado ou zerado.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Corrigir'),
+          ),
+          TextButton(
+            key: const Key('novo-registro-confirmar-km'),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Salvar assim'),
+          ),
+        ],
+      ),
+    );
+    return confirmed ?? false;
   }
 
   /// Returns how many uploads failed.

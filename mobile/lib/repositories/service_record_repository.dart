@@ -35,6 +35,7 @@ class ServiceRecordRepository {
     int? costCents,
     String? notes,
     List<Part> parts = const [],
+    bool confirmLowerMileage = false,
   }) async {
     final body = await _client.call('$_service/CreateServiceRecord', {
       'plate': normalizePlate(plate),
@@ -45,6 +46,7 @@ class ServiceRecordRepository {
       'costCents': ?costCents,
       if (notes != null && notes.trim().isNotEmpty) 'notes': notes.trim(),
       if (parts.isNotEmpty) 'parts': parts.map((p) => p.toJson()).toList(),
+      if (confirmLowerMileage) 'confirmLowerMileage': true,
     });
     return ServiceRecord.fromJson(
       body['record'] as Map<String, dynamic>? ?? const {},

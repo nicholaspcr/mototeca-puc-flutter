@@ -152,6 +152,40 @@ void main() {
     expect(find.byType(DashboardScreen), findsOneWidget);
   });
 
+  testWidgets('quilometragem menor pede confirmação antes de salvar', (
+    tester,
+  ) async {
+    final api = await pumpApp(tester);
+    await signInAsWorkshop(tester);
+    const create =
+        'mototeca.service.v1.ServiceRecordService/CreateServiceRecord';
+    api.failures[create] = (
+      status: 400,
+      code: 'failed_precondition',
+      message: 'quilometragem menor que a última registrada para esta moto (18999 km)',
+    );
+    api.failOnce.add(create);
+
+    await tapAndSettle(
+      tester,
+      find.byKey(const Key('dashboard-criar-registro')),
+    );
+    await tester.enterText(find.byType(TextField).first, 'ABC1D23');
+    await tapAndSettle(tester, find.byKey(const Key('novo-registro-buscar')));
+    await tapAndSettle(tester, find.text('Pneus'));
+    await enterInField(tester, const Key('novo-registro-km'), '1200');
+    await tapAndSettle(tester, find.byKey(const Key('novo-registro-salvar')));
+
+    expect(find.text('Quilometragem menor'), findsOneWidget);
+    await tapAndSettle(
+      tester,
+      find.byKey(const Key('novo-registro-confirmar-km')),
+    );
+
+    expect(find.byType(DashboardScreen), findsOneWidget);
+    expect(api.lastBody[create]?['confirmLowerMileage'], isTrue);
+  });
+
   testWidgets('painel abre o cadastro de veículo', (tester) async {
     await pumpApp(tester);
     await signInAsWorkshop(tester);
