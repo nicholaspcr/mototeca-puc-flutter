@@ -543,6 +543,89 @@ func (x *ClaimVehicleRequest) GetPlate() string {
 	return ""
 }
 
+// Unlinks a bike from the signed-in owner, so its next owner can claim it.
+// The service history is untouched — that is the point of keying it to the
+// plate rather than to a person (ARCHITECTURE.md §3).
+type ReleaseVehicleRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Plate         string                 `protobuf:"bytes,1,opt,name=plate,proto3" json:"plate,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ReleaseVehicleRequest) Reset() {
+	*x = ReleaseVehicleRequest{}
+	mi := &file_mototeca_owner_v1_owner_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ReleaseVehicleRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ReleaseVehicleRequest) ProtoMessage() {}
+
+func (x *ReleaseVehicleRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_mototeca_owner_v1_owner_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ReleaseVehicleRequest.ProtoReflect.Descriptor instead.
+func (*ReleaseVehicleRequest) Descriptor() ([]byte, []int) {
+	return file_mototeca_owner_v1_owner_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *ReleaseVehicleRequest) GetPlate() string {
+	if x != nil {
+		return x.Plate
+	}
+	return ""
+}
+
+type ReleaseVehicleResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ReleaseVehicleResponse) Reset() {
+	*x = ReleaseVehicleResponse{}
+	mi := &file_mototeca_owner_v1_owner_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ReleaseVehicleResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ReleaseVehicleResponse) ProtoMessage() {}
+
+func (x *ReleaseVehicleResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_mototeca_owner_v1_owner_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ReleaseVehicleResponse.ProtoReflect.Descriptor instead.
+func (*ReleaseVehicleResponse) Descriptor() ([]byte, []int) {
+	return file_mototeca_owner_v1_owner_proto_rawDescGZIP(), []int{10}
+}
+
 type ClaimVehicleResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Vehicle       *OwnedVehicle          `protobuf:"bytes,1,opt,name=vehicle,proto3" json:"vehicle,omitempty"`
@@ -552,7 +635,7 @@ type ClaimVehicleResponse struct {
 
 func (x *ClaimVehicleResponse) Reset() {
 	*x = ClaimVehicleResponse{}
-	mi := &file_mototeca_owner_v1_owner_proto_msgTypes[9]
+	mi := &file_mototeca_owner_v1_owner_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -564,7 +647,7 @@ func (x *ClaimVehicleResponse) String() string {
 func (*ClaimVehicleResponse) ProtoMessage() {}
 
 func (x *ClaimVehicleResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_mototeca_owner_v1_owner_proto_msgTypes[9]
+	mi := &file_mototeca_owner_v1_owner_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -577,7 +660,7 @@ func (x *ClaimVehicleResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ClaimVehicleResponse.ProtoReflect.Descriptor instead.
 func (*ClaimVehicleResponse) Descriptor() ([]byte, []int) {
-	return file_mototeca_owner_v1_owner_proto_rawDescGZIP(), []int{9}
+	return file_mototeca_owner_v1_owner_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *ClaimVehicleResponse) GetVehicle() *OwnedVehicle {
@@ -625,14 +708,18 @@ const file_mototeca_owner_v1_owner_proto_rawDesc = "" +
 	"\x16ListMyVehiclesResponse\x12;\n" +
 	"\bvehicles\x18\x01 \x03(\v2\x1f.mototeca.owner.v1.OwnedVehicleR\bvehicles\"+\n" +
 	"\x13ClaimVehicleRequest\x12\x14\n" +
-	"\x05plate\x18\x01 \x01(\tR\x05plate\"Q\n" +
+	"\x05plate\x18\x01 \x01(\tR\x05plate\"-\n" +
+	"\x15ReleaseVehicleRequest\x12\x14\n" +
+	"\x05plate\x18\x01 \x01(\tR\x05plate\"\x18\n" +
+	"\x16ReleaseVehicleResponse\"Q\n" +
 	"\x14ClaimVehicleResponse\x129\n" +
-	"\avehicle\x18\x01 \x01(\v2\x1f.mototeca.owner.v1.OwnedVehicleR\avehicle2\x80\x03\n" +
+	"\avehicle\x18\x01 \x01(\v2\x1f.mototeca.owner.v1.OwnedVehicleR\avehicle2\xe7\x03\n" +
 	"\fOwnerService\x12\\\n" +
 	"\vCreateOwner\x12%.mototeca.owner.v1.CreateOwnerRequest\x1a&.mototeca.owner.v1.CreateOwnerResponse\x12J\n" +
 	"\x05Login\x12\x1f.mototeca.owner.v1.LoginRequest\x1a .mototeca.owner.v1.LoginResponse\x12e\n" +
 	"\x0eListMyVehicles\x12(.mototeca.owner.v1.ListMyVehiclesRequest\x1a).mototeca.owner.v1.ListMyVehiclesResponse\x12_\n" +
-	"\fClaimVehicle\x12&.mototeca.owner.v1.ClaimVehicleRequest\x1a'.mototeca.owner.v1.ClaimVehicleResponseB\xc2\x01\n" +
+	"\fClaimVehicle\x12&.mototeca.owner.v1.ClaimVehicleRequest\x1a'.mototeca.owner.v1.ClaimVehicleResponse\x12e\n" +
+	"\x0eReleaseVehicle\x12(.mototeca.owner.v1.ReleaseVehicleRequest\x1a).mototeca.owner.v1.ReleaseVehicleResponseB\xc2\x01\n" +
 	"\x15com.mototeca.owner.v1B\n" +
 	"OwnerProtoP\x01Z7mototeca-backend/internal/gen/mototeca/owner/v1;ownerv1\xa2\x02\x03MOX\xaa\x02\x11Mototeca.Owner.V1\xca\x02\x11Mototeca\\Owner\\V1\xe2\x02\x1dMototeca\\Owner\\V1\\GPBMetadata\xea\x02\x13Mototeca::Owner::V1b\x06proto3"
 
@@ -648,7 +735,7 @@ func file_mototeca_owner_v1_owner_proto_rawDescGZIP() []byte {
 	return file_mototeca_owner_v1_owner_proto_rawDescData
 }
 
-var file_mototeca_owner_v1_owner_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
+var file_mototeca_owner_v1_owner_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
 var file_mototeca_owner_v1_owner_proto_goTypes = []any{
 	(*Owner)(nil),                  // 0: mototeca.owner.v1.Owner
 	(*CreateOwnerRequest)(nil),     // 1: mototeca.owner.v1.CreateOwnerRequest
@@ -659,29 +746,33 @@ var file_mototeca_owner_v1_owner_proto_goTypes = []any{
 	(*ListMyVehiclesRequest)(nil),  // 6: mototeca.owner.v1.ListMyVehiclesRequest
 	(*ListMyVehiclesResponse)(nil), // 7: mototeca.owner.v1.ListMyVehiclesResponse
 	(*ClaimVehicleRequest)(nil),    // 8: mototeca.owner.v1.ClaimVehicleRequest
-	(*ClaimVehicleResponse)(nil),   // 9: mototeca.owner.v1.ClaimVehicleResponse
-	(*timestamppb.Timestamp)(nil),  // 10: google.protobuf.Timestamp
-	(*v1.VehicleSummary)(nil),      // 11: mototeca.service.v1.VehicleSummary
-	(*v1.ServiceRecord)(nil),       // 12: mototeca.service.v1.ServiceRecord
+	(*ReleaseVehicleRequest)(nil),  // 9: mototeca.owner.v1.ReleaseVehicleRequest
+	(*ReleaseVehicleResponse)(nil), // 10: mototeca.owner.v1.ReleaseVehicleResponse
+	(*ClaimVehicleResponse)(nil),   // 11: mototeca.owner.v1.ClaimVehicleResponse
+	(*timestamppb.Timestamp)(nil),  // 12: google.protobuf.Timestamp
+	(*v1.VehicleSummary)(nil),      // 13: mototeca.service.v1.VehicleSummary
+	(*v1.ServiceRecord)(nil),       // 14: mototeca.service.v1.ServiceRecord
 }
 var file_mototeca_owner_v1_owner_proto_depIdxs = []int32{
-	10, // 0: mototeca.owner.v1.Owner.created_at:type_name -> google.protobuf.Timestamp
+	12, // 0: mototeca.owner.v1.Owner.created_at:type_name -> google.protobuf.Timestamp
 	0,  // 1: mototeca.owner.v1.CreateOwnerResponse.owner:type_name -> mototeca.owner.v1.Owner
 	0,  // 2: mototeca.owner.v1.LoginResponse.owner:type_name -> mototeca.owner.v1.Owner
-	11, // 3: mototeca.owner.v1.OwnedVehicle.vehicle:type_name -> mototeca.service.v1.VehicleSummary
-	12, // 4: mototeca.owner.v1.OwnedVehicle.last_service:type_name -> mototeca.service.v1.ServiceRecord
+	13, // 3: mototeca.owner.v1.OwnedVehicle.vehicle:type_name -> mototeca.service.v1.VehicleSummary
+	14, // 4: mototeca.owner.v1.OwnedVehicle.last_service:type_name -> mototeca.service.v1.ServiceRecord
 	5,  // 5: mototeca.owner.v1.ListMyVehiclesResponse.vehicles:type_name -> mototeca.owner.v1.OwnedVehicle
 	5,  // 6: mototeca.owner.v1.ClaimVehicleResponse.vehicle:type_name -> mototeca.owner.v1.OwnedVehicle
 	1,  // 7: mototeca.owner.v1.OwnerService.CreateOwner:input_type -> mototeca.owner.v1.CreateOwnerRequest
 	3,  // 8: mototeca.owner.v1.OwnerService.Login:input_type -> mototeca.owner.v1.LoginRequest
 	6,  // 9: mototeca.owner.v1.OwnerService.ListMyVehicles:input_type -> mototeca.owner.v1.ListMyVehiclesRequest
 	8,  // 10: mototeca.owner.v1.OwnerService.ClaimVehicle:input_type -> mototeca.owner.v1.ClaimVehicleRequest
-	2,  // 11: mototeca.owner.v1.OwnerService.CreateOwner:output_type -> mototeca.owner.v1.CreateOwnerResponse
-	4,  // 12: mototeca.owner.v1.OwnerService.Login:output_type -> mototeca.owner.v1.LoginResponse
-	7,  // 13: mototeca.owner.v1.OwnerService.ListMyVehicles:output_type -> mototeca.owner.v1.ListMyVehiclesResponse
-	9,  // 14: mototeca.owner.v1.OwnerService.ClaimVehicle:output_type -> mototeca.owner.v1.ClaimVehicleResponse
-	11, // [11:15] is the sub-list for method output_type
-	7,  // [7:11] is the sub-list for method input_type
+	9,  // 11: mototeca.owner.v1.OwnerService.ReleaseVehicle:input_type -> mototeca.owner.v1.ReleaseVehicleRequest
+	2,  // 12: mototeca.owner.v1.OwnerService.CreateOwner:output_type -> mototeca.owner.v1.CreateOwnerResponse
+	4,  // 13: mototeca.owner.v1.OwnerService.Login:output_type -> mototeca.owner.v1.LoginResponse
+	7,  // 14: mototeca.owner.v1.OwnerService.ListMyVehicles:output_type -> mototeca.owner.v1.ListMyVehiclesResponse
+	11, // 15: mototeca.owner.v1.OwnerService.ClaimVehicle:output_type -> mototeca.owner.v1.ClaimVehicleResponse
+	10, // 16: mototeca.owner.v1.OwnerService.ReleaseVehicle:output_type -> mototeca.owner.v1.ReleaseVehicleResponse
+	12, // [12:17] is the sub-list for method output_type
+	7,  // [7:12] is the sub-list for method input_type
 	7,  // [7:7] is the sub-list for extension type_name
 	7,  // [7:7] is the sub-list for extension extendee
 	0,  // [0:7] is the sub-list for field type_name
@@ -699,7 +790,7 @@ func file_mototeca_owner_v1_owner_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_mototeca_owner_v1_owner_proto_rawDesc), len(file_mototeca_owner_v1_owner_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   10,
+			NumMessages:   12,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

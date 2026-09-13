@@ -354,20 +354,22 @@ func (x *VehicleSummary) GetYear() int32 {
 }
 
 type ServiceRecord struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	Vehicle       *VehicleSummary        `protobuf:"bytes,2,opt,name=vehicle,proto3" json:"vehicle,omitempty"`
-	WorkshopName  string                 `protobuf:"bytes,3,opt,name=workshop_name,json=workshopName,proto3" json:"workshop_name,omitempty"`
-	MechanicName  *string                `protobuf:"bytes,4,opt,name=mechanic_name,json=mechanicName,proto3,oneof" json:"mechanic_name,omitempty"`
-	Operations    []ServiceType          `protobuf:"varint,5,rep,packed,name=operations,proto3,enum=mototeca.service.v1.ServiceType" json:"operations,omitempty"`
-	MileageKm     int32                  `protobuf:"varint,6,opt,name=mileage_km,json=mileageKm,proto3" json:"mileage_km,omitempty"`
-	CostCents     *int32                 `protobuf:"varint,7,opt,name=cost_cents,json=costCents,proto3,oneof" json:"cost_cents,omitempty"`
-	Notes         *string                `protobuf:"bytes,8,opt,name=notes,proto3,oneof" json:"notes,omitempty"`
-	Parts         []*Part                `protobuf:"bytes,9,rep,name=parts,proto3" json:"parts,omitempty"`
-	Attachments   []*Attachment          `protobuf:"bytes,10,rep,name=attachments,proto3" json:"attachments,omitempty"`
-	CreatedAt     *timestamppb.Timestamp `protobuf:"bytes,11,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state        protoimpl.MessageState `protogen:"open.v1"`
+	Id           string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Vehicle      *VehicleSummary        `protobuf:"bytes,2,opt,name=vehicle,proto3" json:"vehicle,omitempty"`
+	WorkshopName string                 `protobuf:"bytes,3,opt,name=workshop_name,json=workshopName,proto3" json:"workshop_name,omitempty"`
+	MechanicName *string                `protobuf:"bytes,4,opt,name=mechanic_name,json=mechanicName,proto3,oneof" json:"mechanic_name,omitempty"`
+	Operations   []ServiceType          `protobuf:"varint,5,rep,packed,name=operations,proto3,enum=mototeca.service.v1.ServiceType" json:"operations,omitempty"`
+	MileageKm    int32                  `protobuf:"varint,6,opt,name=mileage_km,json=mileageKm,proto3" json:"mileage_km,omitempty"`
+	CostCents    *int32                 `protobuf:"varint,7,opt,name=cost_cents,json=costCents,proto3,oneof" json:"cost_cents,omitempty"`
+	Notes        *string                `protobuf:"bytes,8,opt,name=notes,proto3,oneof" json:"notes,omitempty"`
+	Parts        []*Part                `protobuf:"bytes,9,rep,name=parts,proto3" json:"parts,omitempty"`
+	Attachments  []*Attachment          `protobuf:"bytes,10,rep,name=attachments,proto3" json:"attachments,omitempty"`
+	CreatedAt    *timestamppb.Timestamp `protobuf:"bytes,11,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	// Set when this record is itself a correction of an earlier one.
+	RevisesRecordId *string `protobuf:"bytes,12,opt,name=revises_record_id,json=revisesRecordId,proto3,oneof" json:"revises_record_id,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
 }
 
 func (x *ServiceRecord) Reset() {
@@ -475,6 +477,13 @@ func (x *ServiceRecord) GetCreatedAt() *timestamppb.Timestamp {
 		return x.CreatedAt
 	}
 	return nil
+}
+
+func (x *ServiceRecord) GetRevisesRecordId() string {
+	if x != nil && x.RevisesRecordId != nil {
+		return *x.RevisesRecordId
+	}
+	return ""
 }
 
 type CreateServiceRecordRequest struct {
@@ -614,6 +623,145 @@ func (x *CreateServiceRecordResponse) GetRecord() *ServiceRecord {
 	return nil
 }
 
+// A correction. The original is never edited: it stays in the table pointing
+// at its replacement, so the history is auditable (ARCHITECTURE.md §3).
+type ReviseServiceRecordRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The record being corrected. Must belong to the calling workshop.
+	RecordId      string        `protobuf:"bytes,1,opt,name=record_id,json=recordId,proto3" json:"record_id,omitempty"`
+	MechanicName  *string       `protobuf:"bytes,2,opt,name=mechanic_name,json=mechanicName,proto3,oneof" json:"mechanic_name,omitempty"`
+	Operations    []ServiceType `protobuf:"varint,3,rep,packed,name=operations,proto3,enum=mototeca.service.v1.ServiceType" json:"operations,omitempty"`
+	MileageKm     int32         `protobuf:"varint,4,opt,name=mileage_km,json=mileageKm,proto3" json:"mileage_km,omitempty"`
+	CostCents     *int32        `protobuf:"varint,5,opt,name=cost_cents,json=costCents,proto3,oneof" json:"cost_cents,omitempty"`
+	Notes         *string       `protobuf:"bytes,6,opt,name=notes,proto3,oneof" json:"notes,omitempty"`
+	Parts         []*Part       `protobuf:"bytes,7,rep,name=parts,proto3" json:"parts,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ReviseServiceRecordRequest) Reset() {
+	*x = ReviseServiceRecordRequest{}
+	mi := &file_mototeca_service_v1_service_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ReviseServiceRecordRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ReviseServiceRecordRequest) ProtoMessage() {}
+
+func (x *ReviseServiceRecordRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_mototeca_service_v1_service_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ReviseServiceRecordRequest.ProtoReflect.Descriptor instead.
+func (*ReviseServiceRecordRequest) Descriptor() ([]byte, []int) {
+	return file_mototeca_service_v1_service_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *ReviseServiceRecordRequest) GetRecordId() string {
+	if x != nil {
+		return x.RecordId
+	}
+	return ""
+}
+
+func (x *ReviseServiceRecordRequest) GetMechanicName() string {
+	if x != nil && x.MechanicName != nil {
+		return *x.MechanicName
+	}
+	return ""
+}
+
+func (x *ReviseServiceRecordRequest) GetOperations() []ServiceType {
+	if x != nil {
+		return x.Operations
+	}
+	return nil
+}
+
+func (x *ReviseServiceRecordRequest) GetMileageKm() int32 {
+	if x != nil {
+		return x.MileageKm
+	}
+	return 0
+}
+
+func (x *ReviseServiceRecordRequest) GetCostCents() int32 {
+	if x != nil && x.CostCents != nil {
+		return *x.CostCents
+	}
+	return 0
+}
+
+func (x *ReviseServiceRecordRequest) GetNotes() string {
+	if x != nil && x.Notes != nil {
+		return *x.Notes
+	}
+	return ""
+}
+
+func (x *ReviseServiceRecordRequest) GetParts() []*Part {
+	if x != nil {
+		return x.Parts
+	}
+	return nil
+}
+
+type ReviseServiceRecordResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Record        *ServiceRecord         `protobuf:"bytes,1,opt,name=record,proto3" json:"record,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ReviseServiceRecordResponse) Reset() {
+	*x = ReviseServiceRecordResponse{}
+	mi := &file_mototeca_service_v1_service_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ReviseServiceRecordResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ReviseServiceRecordResponse) ProtoMessage() {}
+
+func (x *ReviseServiceRecordResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_mototeca_service_v1_service_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ReviseServiceRecordResponse.ProtoReflect.Descriptor instead.
+func (*ReviseServiceRecordResponse) Descriptor() ([]byte, []int) {
+	return file_mototeca_service_v1_service_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *ReviseServiceRecordResponse) GetRecord() *ServiceRecord {
+	if x != nil {
+		return x.Record
+	}
+	return nil
+}
+
 type GetServiceRecordRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -623,7 +771,7 @@ type GetServiceRecordRequest struct {
 
 func (x *GetServiceRecordRequest) Reset() {
 	*x = GetServiceRecordRequest{}
-	mi := &file_mototeca_service_v1_service_proto_msgTypes[6]
+	mi := &file_mototeca_service_v1_service_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -635,7 +783,7 @@ func (x *GetServiceRecordRequest) String() string {
 func (*GetServiceRecordRequest) ProtoMessage() {}
 
 func (x *GetServiceRecordRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_mototeca_service_v1_service_proto_msgTypes[6]
+	mi := &file_mototeca_service_v1_service_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -648,7 +796,7 @@ func (x *GetServiceRecordRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetServiceRecordRequest.ProtoReflect.Descriptor instead.
 func (*GetServiceRecordRequest) Descriptor() ([]byte, []int) {
-	return file_mototeca_service_v1_service_proto_rawDescGZIP(), []int{6}
+	return file_mototeca_service_v1_service_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *GetServiceRecordRequest) GetId() string {
@@ -667,7 +815,7 @@ type GetServiceRecordResponse struct {
 
 func (x *GetServiceRecordResponse) Reset() {
 	*x = GetServiceRecordResponse{}
-	mi := &file_mototeca_service_v1_service_proto_msgTypes[7]
+	mi := &file_mototeca_service_v1_service_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -679,7 +827,7 @@ func (x *GetServiceRecordResponse) String() string {
 func (*GetServiceRecordResponse) ProtoMessage() {}
 
 func (x *GetServiceRecordResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_mototeca_service_v1_service_proto_msgTypes[7]
+	mi := &file_mototeca_service_v1_service_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -692,7 +840,7 @@ func (x *GetServiceRecordResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetServiceRecordResponse.ProtoReflect.Descriptor instead.
 func (*GetServiceRecordResponse) Descriptor() ([]byte, []int) {
-	return file_mototeca_service_v1_service_proto_rawDescGZIP(), []int{7}
+	return file_mototeca_service_v1_service_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *GetServiceRecordResponse) GetRecord() *ServiceRecord {
@@ -714,7 +862,7 @@ type ListServiceRecordsByPlateRequest struct {
 
 func (x *ListServiceRecordsByPlateRequest) Reset() {
 	*x = ListServiceRecordsByPlateRequest{}
-	mi := &file_mototeca_service_v1_service_proto_msgTypes[8]
+	mi := &file_mototeca_service_v1_service_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -726,7 +874,7 @@ func (x *ListServiceRecordsByPlateRequest) String() string {
 func (*ListServiceRecordsByPlateRequest) ProtoMessage() {}
 
 func (x *ListServiceRecordsByPlateRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_mototeca_service_v1_service_proto_msgTypes[8]
+	mi := &file_mototeca_service_v1_service_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -739,7 +887,7 @@ func (x *ListServiceRecordsByPlateRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListServiceRecordsByPlateRequest.ProtoReflect.Descriptor instead.
 func (*ListServiceRecordsByPlateRequest) Descriptor() ([]byte, []int) {
-	return file_mototeca_service_v1_service_proto_rawDescGZIP(), []int{8}
+	return file_mototeca_service_v1_service_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *ListServiceRecordsByPlateRequest) GetPlate() string {
@@ -767,7 +915,7 @@ type ListServiceRecordsByPlateResponse struct {
 
 func (x *ListServiceRecordsByPlateResponse) Reset() {
 	*x = ListServiceRecordsByPlateResponse{}
-	mi := &file_mototeca_service_v1_service_proto_msgTypes[9]
+	mi := &file_mototeca_service_v1_service_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -779,7 +927,7 @@ func (x *ListServiceRecordsByPlateResponse) String() string {
 func (*ListServiceRecordsByPlateResponse) ProtoMessage() {}
 
 func (x *ListServiceRecordsByPlateResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_mototeca_service_v1_service_proto_msgTypes[9]
+	mi := &file_mototeca_service_v1_service_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -792,7 +940,7 @@ func (x *ListServiceRecordsByPlateResponse) ProtoReflect() protoreflect.Message 
 
 // Deprecated: Use ListServiceRecordsByPlateResponse.ProtoReflect.Descriptor instead.
 func (*ListServiceRecordsByPlateResponse) Descriptor() ([]byte, []int) {
-	return file_mototeca_service_v1_service_proto_rawDescGZIP(), []int{9}
+	return file_mototeca_service_v1_service_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *ListServiceRecordsByPlateResponse) GetVehicle() *VehicleSummary {
@@ -818,7 +966,7 @@ type ListWorkshopServiceRecordsRequest struct {
 
 func (x *ListWorkshopServiceRecordsRequest) Reset() {
 	*x = ListWorkshopServiceRecordsRequest{}
-	mi := &file_mototeca_service_v1_service_proto_msgTypes[10]
+	mi := &file_mototeca_service_v1_service_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -830,7 +978,7 @@ func (x *ListWorkshopServiceRecordsRequest) String() string {
 func (*ListWorkshopServiceRecordsRequest) ProtoMessage() {}
 
 func (x *ListWorkshopServiceRecordsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_mototeca_service_v1_service_proto_msgTypes[10]
+	mi := &file_mototeca_service_v1_service_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -843,7 +991,7 @@ func (x *ListWorkshopServiceRecordsRequest) ProtoReflect() protoreflect.Message 
 
 // Deprecated: Use ListWorkshopServiceRecordsRequest.ProtoReflect.Descriptor instead.
 func (*ListWorkshopServiceRecordsRequest) Descriptor() ([]byte, []int) {
-	return file_mototeca_service_v1_service_proto_rawDescGZIP(), []int{10}
+	return file_mototeca_service_v1_service_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *ListWorkshopServiceRecordsRequest) GetLimit() int32 {
@@ -865,7 +1013,7 @@ type ListWorkshopServiceRecordsResponse struct {
 
 func (x *ListWorkshopServiceRecordsResponse) Reset() {
 	*x = ListWorkshopServiceRecordsResponse{}
-	mi := &file_mototeca_service_v1_service_proto_msgTypes[11]
+	mi := &file_mototeca_service_v1_service_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -877,7 +1025,7 @@ func (x *ListWorkshopServiceRecordsResponse) String() string {
 func (*ListWorkshopServiceRecordsResponse) ProtoMessage() {}
 
 func (x *ListWorkshopServiceRecordsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_mototeca_service_v1_service_proto_msgTypes[11]
+	mi := &file_mototeca_service_v1_service_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -890,7 +1038,7 @@ func (x *ListWorkshopServiceRecordsResponse) ProtoReflect() protoreflect.Message
 
 // Deprecated: Use ListWorkshopServiceRecordsResponse.ProtoReflect.Descriptor instead.
 func (*ListWorkshopServiceRecordsResponse) Descriptor() ([]byte, []int) {
-	return file_mototeca_service_v1_service_proto_rawDescGZIP(), []int{11}
+	return file_mototeca_service_v1_service_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *ListWorkshopServiceRecordsResponse) GetRecords() []*ServiceRecord {
@@ -928,7 +1076,7 @@ const file_mototeca_service_v1_service_proto_rawDesc = "" +
 	"\x05plate\x18\x01 \x01(\tR\x05plate\x12\x12\n" +
 	"\x04make\x18\x02 \x01(\tR\x04make\x12\x14\n" +
 	"\x05model\x18\x03 \x01(\tR\x05model\x12\x12\n" +
-	"\x04year\x18\x04 \x01(\x05R\x04year\"\xa7\x04\n" +
+	"\x04year\x18\x04 \x01(\x05R\x04year\"\xee\x04\n" +
 	"\rServiceRecord\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12=\n" +
 	"\avehicle\x18\x02 \x01(\v2#.mototeca.service.v1.VehicleSummaryR\avehicle\x12#\n" +
@@ -946,10 +1094,12 @@ const file_mototeca_service_v1_service_proto_rawDesc = "" +
 	"\vattachments\x18\n" +
 	" \x03(\v2\x1f.mototeca.service.v1.AttachmentR\vattachments\x129\n" +
 	"\n" +
-	"created_at\x18\v \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAtB\x10\n" +
+	"created_at\x18\v \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x12/\n" +
+	"\x11revises_record_id\x18\f \x01(\tH\x03R\x0frevisesRecordId\x88\x01\x01B\x10\n" +
 	"\x0e_mechanic_nameB\r\n" +
 	"\v_cost_centsB\b\n" +
-	"\x06_notes\"\xd8\x02\n" +
+	"\x06_notesB\x14\n" +
+	"\x12_revises_record_id\"\xd8\x02\n" +
 	"\x1aCreateServiceRecordRequest\x12\x14\n" +
 	"\x05plate\x18\x01 \x01(\tR\x05plate\x12(\n" +
 	"\rmechanic_name\x18\x02 \x01(\tH\x00R\fmechanicName\x88\x01\x01\x12@\n" +
@@ -966,6 +1116,23 @@ const file_mototeca_service_v1_service_proto_rawDesc = "" +
 	"\v_cost_centsB\b\n" +
 	"\x06_notes\"Y\n" +
 	"\x1bCreateServiceRecordResponse\x12:\n" +
+	"\x06record\x18\x01 \x01(\v2\".mototeca.service.v1.ServiceRecordR\x06record\"\xdf\x02\n" +
+	"\x1aReviseServiceRecordRequest\x12\x1b\n" +
+	"\trecord_id\x18\x01 \x01(\tR\brecordId\x12(\n" +
+	"\rmechanic_name\x18\x02 \x01(\tH\x00R\fmechanicName\x88\x01\x01\x12@\n" +
+	"\n" +
+	"operations\x18\x03 \x03(\x0e2 .mototeca.service.v1.ServiceTypeR\n" +
+	"operations\x12\x1d\n" +
+	"\n" +
+	"mileage_km\x18\x04 \x01(\x05R\tmileageKm\x12\"\n" +
+	"\n" +
+	"cost_cents\x18\x05 \x01(\x05H\x01R\tcostCents\x88\x01\x01\x12\x19\n" +
+	"\x05notes\x18\x06 \x01(\tH\x02R\x05notes\x88\x01\x01\x12/\n" +
+	"\x05parts\x18\a \x03(\v2\x19.mototeca.service.v1.PartR\x05partsB\x10\n" +
+	"\x0e_mechanic_nameB\r\n" +
+	"\v_cost_centsB\b\n" +
+	"\x06_notes\"Y\n" +
+	"\x1bReviseServiceRecordResponse\x12:\n" +
 	"\x06record\x18\x01 \x01(\v2\".mototeca.service.v1.ServiceRecordR\x06record\")\n" +
 	"\x17GetServiceRecordRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\"V\n" +
@@ -1001,12 +1168,13 @@ const file_mototeca_service_v1_service_proto_rawDesc = "" +
 	"PhotoPhase\x12\x1b\n" +
 	"\x17PHOTO_PHASE_UNSPECIFIED\x10\x00\x12\x16\n" +
 	"\x12PHOTO_PHASE_BEFORE\x10\x01\x12\x15\n" +
-	"\x11PHOTO_PHASE_AFTER\x10\x022\x9e\x04\n" +
+	"\x11PHOTO_PHASE_AFTER\x10\x022\x98\x05\n" +
 	"\x14ServiceRecordService\x12x\n" +
 	"\x13CreateServiceRecord\x12/.mototeca.service.v1.CreateServiceRecordRequest\x1a0.mototeca.service.v1.CreateServiceRecordResponse\x12o\n" +
 	"\x10GetServiceRecord\x12,.mototeca.service.v1.GetServiceRecordRequest\x1a-.mototeca.service.v1.GetServiceRecordResponse\x12\x8a\x01\n" +
 	"\x19ListServiceRecordsByPlate\x125.mototeca.service.v1.ListServiceRecordsByPlateRequest\x1a6.mototeca.service.v1.ListServiceRecordsByPlateResponse\x12\x8d\x01\n" +
-	"\x1aListWorkshopServiceRecords\x126.mototeca.service.v1.ListWorkshopServiceRecordsRequest\x1a7.mototeca.service.v1.ListWorkshopServiceRecordsResponseB\xd2\x01\n" +
+	"\x1aListWorkshopServiceRecords\x126.mototeca.service.v1.ListWorkshopServiceRecordsRequest\x1a7.mototeca.service.v1.ListWorkshopServiceRecordsResponse\x12x\n" +
+	"\x13ReviseServiceRecord\x12/.mototeca.service.v1.ReviseServiceRecordRequest\x1a0.mototeca.service.v1.ReviseServiceRecordResponseB\xd2\x01\n" +
 	"\x17com.mototeca.service.v1B\fServiceProtoP\x01Z;mototeca-backend/internal/gen/mototeca/service/v1;servicev1\xa2\x02\x03MSX\xaa\x02\x13Mototeca.Service.V1\xca\x02\x13Mototeca\\Service\\V1\xe2\x02\x1fMototeca\\Service\\V1\\GPBMetadata\xea\x02\x15Mototeca::Service::V1b\x06proto3"
 
 var (
@@ -1022,7 +1190,7 @@ func file_mototeca_service_v1_service_proto_rawDescGZIP() []byte {
 }
 
 var file_mototeca_service_v1_service_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_mototeca_service_v1_service_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
+var file_mototeca_service_v1_service_proto_msgTypes = make([]protoimpl.MessageInfo, 14)
 var file_mototeca_service_v1_service_proto_goTypes = []any{
 	(ServiceType)(0),                           // 0: mototeca.service.v1.ServiceType
 	(PhotoPhase)(0),                            // 1: mototeca.service.v1.PhotoPhase
@@ -1032,13 +1200,15 @@ var file_mototeca_service_v1_service_proto_goTypes = []any{
 	(*ServiceRecord)(nil),                      // 5: mototeca.service.v1.ServiceRecord
 	(*CreateServiceRecordRequest)(nil),         // 6: mototeca.service.v1.CreateServiceRecordRequest
 	(*CreateServiceRecordResponse)(nil),        // 7: mototeca.service.v1.CreateServiceRecordResponse
-	(*GetServiceRecordRequest)(nil),            // 8: mototeca.service.v1.GetServiceRecordRequest
-	(*GetServiceRecordResponse)(nil),           // 9: mototeca.service.v1.GetServiceRecordResponse
-	(*ListServiceRecordsByPlateRequest)(nil),   // 10: mototeca.service.v1.ListServiceRecordsByPlateRequest
-	(*ListServiceRecordsByPlateResponse)(nil),  // 11: mototeca.service.v1.ListServiceRecordsByPlateResponse
-	(*ListWorkshopServiceRecordsRequest)(nil),  // 12: mototeca.service.v1.ListWorkshopServiceRecordsRequest
-	(*ListWorkshopServiceRecordsResponse)(nil), // 13: mototeca.service.v1.ListWorkshopServiceRecordsResponse
-	(*timestamppb.Timestamp)(nil),              // 14: google.protobuf.Timestamp
+	(*ReviseServiceRecordRequest)(nil),         // 8: mototeca.service.v1.ReviseServiceRecordRequest
+	(*ReviseServiceRecordResponse)(nil),        // 9: mototeca.service.v1.ReviseServiceRecordResponse
+	(*GetServiceRecordRequest)(nil),            // 10: mototeca.service.v1.GetServiceRecordRequest
+	(*GetServiceRecordResponse)(nil),           // 11: mototeca.service.v1.GetServiceRecordResponse
+	(*ListServiceRecordsByPlateRequest)(nil),   // 12: mototeca.service.v1.ListServiceRecordsByPlateRequest
+	(*ListServiceRecordsByPlateResponse)(nil),  // 13: mototeca.service.v1.ListServiceRecordsByPlateResponse
+	(*ListWorkshopServiceRecordsRequest)(nil),  // 14: mototeca.service.v1.ListWorkshopServiceRecordsRequest
+	(*ListWorkshopServiceRecordsResponse)(nil), // 15: mototeca.service.v1.ListWorkshopServiceRecordsResponse
+	(*timestamppb.Timestamp)(nil),              // 16: google.protobuf.Timestamp
 }
 var file_mototeca_service_v1_service_proto_depIdxs = []int32{
 	1,  // 0: mototeca.service.v1.Attachment.phase:type_name -> mototeca.service.v1.PhotoPhase
@@ -1046,27 +1216,32 @@ var file_mototeca_service_v1_service_proto_depIdxs = []int32{
 	0,  // 2: mototeca.service.v1.ServiceRecord.operations:type_name -> mototeca.service.v1.ServiceType
 	2,  // 3: mototeca.service.v1.ServiceRecord.parts:type_name -> mototeca.service.v1.Part
 	3,  // 4: mototeca.service.v1.ServiceRecord.attachments:type_name -> mototeca.service.v1.Attachment
-	14, // 5: mototeca.service.v1.ServiceRecord.created_at:type_name -> google.protobuf.Timestamp
+	16, // 5: mototeca.service.v1.ServiceRecord.created_at:type_name -> google.protobuf.Timestamp
 	0,  // 6: mototeca.service.v1.CreateServiceRecordRequest.operations:type_name -> mototeca.service.v1.ServiceType
 	2,  // 7: mototeca.service.v1.CreateServiceRecordRequest.parts:type_name -> mototeca.service.v1.Part
 	5,  // 8: mototeca.service.v1.CreateServiceRecordResponse.record:type_name -> mototeca.service.v1.ServiceRecord
-	5,  // 9: mototeca.service.v1.GetServiceRecordResponse.record:type_name -> mototeca.service.v1.ServiceRecord
-	4,  // 10: mototeca.service.v1.ListServiceRecordsByPlateResponse.vehicle:type_name -> mototeca.service.v1.VehicleSummary
-	5,  // 11: mototeca.service.v1.ListServiceRecordsByPlateResponse.records:type_name -> mototeca.service.v1.ServiceRecord
-	5,  // 12: mototeca.service.v1.ListWorkshopServiceRecordsResponse.records:type_name -> mototeca.service.v1.ServiceRecord
-	6,  // 13: mototeca.service.v1.ServiceRecordService.CreateServiceRecord:input_type -> mototeca.service.v1.CreateServiceRecordRequest
-	8,  // 14: mototeca.service.v1.ServiceRecordService.GetServiceRecord:input_type -> mototeca.service.v1.GetServiceRecordRequest
-	10, // 15: mototeca.service.v1.ServiceRecordService.ListServiceRecordsByPlate:input_type -> mototeca.service.v1.ListServiceRecordsByPlateRequest
-	12, // 16: mototeca.service.v1.ServiceRecordService.ListWorkshopServiceRecords:input_type -> mototeca.service.v1.ListWorkshopServiceRecordsRequest
-	7,  // 17: mototeca.service.v1.ServiceRecordService.CreateServiceRecord:output_type -> mototeca.service.v1.CreateServiceRecordResponse
-	9,  // 18: mototeca.service.v1.ServiceRecordService.GetServiceRecord:output_type -> mototeca.service.v1.GetServiceRecordResponse
-	11, // 19: mototeca.service.v1.ServiceRecordService.ListServiceRecordsByPlate:output_type -> mototeca.service.v1.ListServiceRecordsByPlateResponse
-	13, // 20: mototeca.service.v1.ServiceRecordService.ListWorkshopServiceRecords:output_type -> mototeca.service.v1.ListWorkshopServiceRecordsResponse
-	17, // [17:21] is the sub-list for method output_type
-	13, // [13:17] is the sub-list for method input_type
-	13, // [13:13] is the sub-list for extension type_name
-	13, // [13:13] is the sub-list for extension extendee
-	0,  // [0:13] is the sub-list for field type_name
+	0,  // 9: mototeca.service.v1.ReviseServiceRecordRequest.operations:type_name -> mototeca.service.v1.ServiceType
+	2,  // 10: mototeca.service.v1.ReviseServiceRecordRequest.parts:type_name -> mototeca.service.v1.Part
+	5,  // 11: mototeca.service.v1.ReviseServiceRecordResponse.record:type_name -> mototeca.service.v1.ServiceRecord
+	5,  // 12: mototeca.service.v1.GetServiceRecordResponse.record:type_name -> mototeca.service.v1.ServiceRecord
+	4,  // 13: mototeca.service.v1.ListServiceRecordsByPlateResponse.vehicle:type_name -> mototeca.service.v1.VehicleSummary
+	5,  // 14: mototeca.service.v1.ListServiceRecordsByPlateResponse.records:type_name -> mototeca.service.v1.ServiceRecord
+	5,  // 15: mototeca.service.v1.ListWorkshopServiceRecordsResponse.records:type_name -> mototeca.service.v1.ServiceRecord
+	6,  // 16: mototeca.service.v1.ServiceRecordService.CreateServiceRecord:input_type -> mototeca.service.v1.CreateServiceRecordRequest
+	10, // 17: mototeca.service.v1.ServiceRecordService.GetServiceRecord:input_type -> mototeca.service.v1.GetServiceRecordRequest
+	12, // 18: mototeca.service.v1.ServiceRecordService.ListServiceRecordsByPlate:input_type -> mototeca.service.v1.ListServiceRecordsByPlateRequest
+	14, // 19: mototeca.service.v1.ServiceRecordService.ListWorkshopServiceRecords:input_type -> mototeca.service.v1.ListWorkshopServiceRecordsRequest
+	8,  // 20: mototeca.service.v1.ServiceRecordService.ReviseServiceRecord:input_type -> mototeca.service.v1.ReviseServiceRecordRequest
+	7,  // 21: mototeca.service.v1.ServiceRecordService.CreateServiceRecord:output_type -> mototeca.service.v1.CreateServiceRecordResponse
+	11, // 22: mototeca.service.v1.ServiceRecordService.GetServiceRecord:output_type -> mototeca.service.v1.GetServiceRecordResponse
+	13, // 23: mototeca.service.v1.ServiceRecordService.ListServiceRecordsByPlate:output_type -> mototeca.service.v1.ListServiceRecordsByPlateResponse
+	15, // 24: mototeca.service.v1.ServiceRecordService.ListWorkshopServiceRecords:output_type -> mototeca.service.v1.ListWorkshopServiceRecordsResponse
+	9,  // 25: mototeca.service.v1.ServiceRecordService.ReviseServiceRecord:output_type -> mototeca.service.v1.ReviseServiceRecordResponse
+	21, // [21:26] is the sub-list for method output_type
+	16, // [16:21] is the sub-list for method input_type
+	16, // [16:16] is the sub-list for extension type_name
+	16, // [16:16] is the sub-list for extension extendee
+	0,  // [0:16] is the sub-list for field type_name
 }
 
 func init() { file_mototeca_service_v1_service_proto_init() }
@@ -1077,13 +1252,14 @@ func file_mototeca_service_v1_service_proto_init() {
 	file_mototeca_service_v1_service_proto_msgTypes[0].OneofWrappers = []any{}
 	file_mototeca_service_v1_service_proto_msgTypes[3].OneofWrappers = []any{}
 	file_mototeca_service_v1_service_proto_msgTypes[4].OneofWrappers = []any{}
+	file_mototeca_service_v1_service_proto_msgTypes[6].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_mototeca_service_v1_service_proto_rawDesc), len(file_mototeca_service_v1_service_proto_rawDesc)),
 			NumEnums:      2,
-			NumMessages:   12,
+			NumMessages:   14,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

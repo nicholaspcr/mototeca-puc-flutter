@@ -23,9 +23,10 @@ const (
 )
 
 type fakeStore struct {
-	byPhone  map[string]*Owner
-	vehicles map[string][]OwnedVehicle
-	claimErr error
+	byPhone    map[string]*Owner
+	vehicles   map[string][]OwnedVehicle
+	claimErr   error
+	releaseErr error
 }
 
 func newFakeStore() *fakeStore {
@@ -56,6 +57,14 @@ func (f *fakeStore) ListVehicles(_ context.Context, ownerID string) ([]OwnedVehi
 	return f.vehicles[ownerID], nil
 }
 
+func (f *fakeStore) Release(_ context.Context, ownerID, plate string) error {
+	if f.releaseErr != nil {
+		return f.releaseErr
+	}
+	f.vehicles[ownerID] = nil
+	return nil
+}
+
 func (f *fakeStore) Claim(_ context.Context, ownerID, plate string) (*OwnedVehicle, error) {
 	if f.claimErr != nil {
 		return nil, f.claimErr
@@ -73,6 +82,9 @@ func (f *fakeStore) Claim(_ context.Context, ownerID, plate string) (*OwnedVehic
 type fakeRecords struct{ record *servicerecord.ServiceRecord }
 
 func (f *fakeRecords) Create(context.Context, servicerecord.CreateInput) (*servicerecord.ServiceRecord, error) {
+	return nil, errors.New("not used")
+}
+func (f *fakeRecords) Revise(context.Context, string, string, servicerecord.CreateInput) (*servicerecord.ServiceRecord, error) {
 	return nil, errors.New("not used")
 }
 func (f *fakeRecords) FindByID(context.Context, string) (*servicerecord.ServiceRecord, error) {
@@ -294,6 +306,32 @@ func TestClaimVehicleErrors(t *testing.T) {
 			connect.NewRequest(&ownerv1.ClaimVehicleRequest{Plate: testPlate}))
 		assertConnectCode(t, err, want)
 	}
+}
+
+func TestReleaseVehicle(t *testing.T) {
+	h := newTestHandler(t, newFakeStore(), &fakeRecords{})
+
+	if _, err := h.ReleaseVehicle(auth.WithOwnerID(context.Background(), testOwnerID),
+		connect.NewRequest(&ownerv1.ReleaseVehicleRequest{Plate: testPlate})); err != nil {
+		t.Fatalf("ReleaseVehicle: %v", err)
+	}
+}
+
+func TestReleaseVehicleRequiresOwnerAuth(t *testing.T) {
+	h := newTestHandler(t, newFakeStore(), &fakeRecords{})
+	_, err := h.ReleaseVehicle(context.Background(),
+		connect.NewRequest(&ownerv1.ReleaseVehicleRequest{Plate: testPlate}))
+	assertConnectCode(t, err, connect.CodeUnauthenticated)
+}
+
+func TestReleaseVehicleRejectsABikeYouDoNotOwn(t *testing.T) {
+	store := newFakeStore()
+	store.releaseErr = ErrVehicleNotFound
+	h := newTestHandler(t, store, &fakeRecords{})
+
+	_, err := h.ReleaseVehicle(auth.WithOwnerID(context.Background(), testOwnerID),
+		connect.NewRequest(&ownerv1.ReleaseVehicleRequest{Plate: testPlate}))
+	assertConnectCode(t, err, connect.CodeNotFound)
 }
 
 func TestReminder(t *testing.T) {

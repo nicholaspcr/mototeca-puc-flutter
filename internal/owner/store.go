@@ -26,6 +26,8 @@ type Store interface {
 	// Claim links a vehicle to an owner. Claiming a bike already linked to
 	// that same owner succeeds, so the action is idempotent.
 	Claim(ctx context.Context, ownerID, plate string) (*OwnedVehicle, error)
+	// Release unlinks a bike the owner holds, leaving its history intact.
+	Release(ctx context.Context, ownerID, plate string) error
 }
 
 var _ Store = (*Repository)(nil)

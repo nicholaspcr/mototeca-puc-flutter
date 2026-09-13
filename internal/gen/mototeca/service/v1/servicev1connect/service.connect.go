@@ -45,6 +45,9 @@ const (
 	// ServiceRecordServiceListWorkshopServiceRecordsProcedure is the fully-qualified name of the
 	// ServiceRecordService's ListWorkshopServiceRecords RPC.
 	ServiceRecordServiceListWorkshopServiceRecordsProcedure = "/mototeca.service.v1.ServiceRecordService/ListWorkshopServiceRecords"
+	// ServiceRecordServiceReviseServiceRecordProcedure is the fully-qualified name of the
+	// ServiceRecordService's ReviseServiceRecord RPC.
+	ServiceRecordServiceReviseServiceRecordProcedure = "/mototeca.service.v1.ServiceRecordService/ReviseServiceRecord"
 )
 
 // ServiceRecordServiceClient is a client for the mototeca.service.v1.ServiceRecordService service.
@@ -57,6 +60,9 @@ type ServiceRecordServiceClient interface {
 	ListServiceRecordsByPlate(context.Context, *connect.Request[v1.ListServiceRecordsByPlateRequest]) (*connect.Response[v1.ListServiceRecordsByPlateResponse], error)
 	// Requires a workshop token; scoped to the caller's own records.
 	ListWorkshopServiceRecords(context.Context, *connect.Request[v1.ListWorkshopServiceRecordsRequest]) (*connect.Response[v1.ListWorkshopServiceRecordsResponse], error)
+	// Requires a workshop token, and only for a record that shop wrote.
+	// Returns FAILED_PRECONDITION if the record was already superseded.
+	ReviseServiceRecord(context.Context, *connect.Request[v1.ReviseServiceRecordRequest]) (*connect.Response[v1.ReviseServiceRecordResponse], error)
 }
 
 // NewServiceRecordServiceClient constructs a client for the
@@ -94,6 +100,12 @@ func NewServiceRecordServiceClient(httpClient connect.HTTPClient, baseURL string
 			connect.WithSchema(serviceRecordServiceMethods.ByName("ListWorkshopServiceRecords")),
 			connect.WithClientOptions(opts...),
 		),
+		reviseServiceRecord: connect.NewClient[v1.ReviseServiceRecordRequest, v1.ReviseServiceRecordResponse](
+			httpClient,
+			baseURL+ServiceRecordServiceReviseServiceRecordProcedure,
+			connect.WithSchema(serviceRecordServiceMethods.ByName("ReviseServiceRecord")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
@@ -103,6 +115,7 @@ type serviceRecordServiceClient struct {
 	getServiceRecord           *connect.Client[v1.GetServiceRecordRequest, v1.GetServiceRecordResponse]
 	listServiceRecordsByPlate  *connect.Client[v1.ListServiceRecordsByPlateRequest, v1.ListServiceRecordsByPlateResponse]
 	listWorkshopServiceRecords *connect.Client[v1.ListWorkshopServiceRecordsRequest, v1.ListWorkshopServiceRecordsResponse]
+	reviseServiceRecord        *connect.Client[v1.ReviseServiceRecordRequest, v1.ReviseServiceRecordResponse]
 }
 
 // CreateServiceRecord calls mototeca.service.v1.ServiceRecordService.CreateServiceRecord.
@@ -127,6 +140,11 @@ func (c *serviceRecordServiceClient) ListWorkshopServiceRecords(ctx context.Cont
 	return c.listWorkshopServiceRecords.CallUnary(ctx, req)
 }
 
+// ReviseServiceRecord calls mototeca.service.v1.ServiceRecordService.ReviseServiceRecord.
+func (c *serviceRecordServiceClient) ReviseServiceRecord(ctx context.Context, req *connect.Request[v1.ReviseServiceRecordRequest]) (*connect.Response[v1.ReviseServiceRecordResponse], error) {
+	return c.reviseServiceRecord.CallUnary(ctx, req)
+}
+
 // ServiceRecordServiceHandler is an implementation of the mototeca.service.v1.ServiceRecordService
 // service.
 type ServiceRecordServiceHandler interface {
@@ -138,6 +156,9 @@ type ServiceRecordServiceHandler interface {
 	ListServiceRecordsByPlate(context.Context, *connect.Request[v1.ListServiceRecordsByPlateRequest]) (*connect.Response[v1.ListServiceRecordsByPlateResponse], error)
 	// Requires a workshop token; scoped to the caller's own records.
 	ListWorkshopServiceRecords(context.Context, *connect.Request[v1.ListWorkshopServiceRecordsRequest]) (*connect.Response[v1.ListWorkshopServiceRecordsResponse], error)
+	// Requires a workshop token, and only for a record that shop wrote.
+	// Returns FAILED_PRECONDITION if the record was already superseded.
+	ReviseServiceRecord(context.Context, *connect.Request[v1.ReviseServiceRecordRequest]) (*connect.Response[v1.ReviseServiceRecordResponse], error)
 }
 
 // NewServiceRecordServiceHandler builds an HTTP handler from the service implementation. It returns
@@ -171,6 +192,12 @@ func NewServiceRecordServiceHandler(svc ServiceRecordServiceHandler, opts ...con
 		connect.WithSchema(serviceRecordServiceMethods.ByName("ListWorkshopServiceRecords")),
 		connect.WithHandlerOptions(opts...),
 	)
+	serviceRecordServiceReviseServiceRecordHandler := connect.NewUnaryHandler(
+		ServiceRecordServiceReviseServiceRecordProcedure,
+		svc.ReviseServiceRecord,
+		connect.WithSchema(serviceRecordServiceMethods.ByName("ReviseServiceRecord")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/mototeca.service.v1.ServiceRecordService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case ServiceRecordServiceCreateServiceRecordProcedure:
@@ -181,6 +208,8 @@ func NewServiceRecordServiceHandler(svc ServiceRecordServiceHandler, opts ...con
 			serviceRecordServiceListServiceRecordsByPlateHandler.ServeHTTP(w, r)
 		case ServiceRecordServiceListWorkshopServiceRecordsProcedure:
 			serviceRecordServiceListWorkshopServiceRecordsHandler.ServeHTTP(w, r)
+		case ServiceRecordServiceReviseServiceRecordProcedure:
+			serviceRecordServiceReviseServiceRecordHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -204,4 +233,8 @@ func (UnimplementedServiceRecordServiceHandler) ListServiceRecordsByPlate(contex
 
 func (UnimplementedServiceRecordServiceHandler) ListWorkshopServiceRecords(context.Context, *connect.Request[v1.ListWorkshopServiceRecordsRequest]) (*connect.Response[v1.ListWorkshopServiceRecordsResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("mototeca.service.v1.ServiceRecordService.ListWorkshopServiceRecords is not implemented"))
+}
+
+func (UnimplementedServiceRecordServiceHandler) ReviseServiceRecord(context.Context, *connect.Request[v1.ReviseServiceRecordRequest]) (*connect.Response[v1.ReviseServiceRecordResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("mototeca.service.v1.ServiceRecordService.ReviseServiceRecord is not implemented"))
 }

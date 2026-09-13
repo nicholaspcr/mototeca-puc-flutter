@@ -74,6 +74,8 @@ type ServiceRecord struct {
 	Parts        []Part         `json:"parts"`
 	Attachments  []Attachment   `json:"attachments"`
 	CreatedAt    time.Time      `json:"createdAt"`
+	// Set when this record corrects an earlier one.
+	RevisesRecordID *string `json:"revisesRecordId"`
 }
 
 type CreateInput struct {
@@ -87,4 +89,7 @@ type CreateInput struct {
 	CostCents    *int
 	Notes        *string
 	Parts        []Part
+	// Set to correct an existing record instead of adding a new one. The
+	// original is superseded, never edited.
+	RevisesRecordID *string
 }

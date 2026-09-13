@@ -65,6 +65,8 @@ message ServiceRecord {
   repeated Part parts = 9;
   repeated Attachment attachments = 10;
   google.protobuf.Timestamp created_at = 11;
+  // Set when this record is itself a correction of an earlier one.
+  optional string revises_record_id = 12;
 }
 
 message CreateServiceRecordRequest {
@@ -79,6 +81,23 @@ message CreateServiceRecordRequest {
 }
 
 message CreateServiceRecordResponse {
+  ServiceRecord record = 1;
+}
+
+// A correction. The original is never edited: it stays in the table pointing
+// at its replacement, so the history is auditable (ARCHITECTURE.md §3).
+message ReviseServiceRecordRequest {
+  // The record being corrected. Must belong to the calling workshop.
+  string record_id = 1;
+  optional string mechanic_name = 2;
+  repeated ServiceType operations = 3;
+  int32 mileage_km = 4;
+  optional int32 cost_cents = 5;
+  optional string notes = 6;
+  repeated Part parts = 7;
+}
+
+message ReviseServiceRecordResponse {
   ServiceRecord record = 1;
 }
 
@@ -123,4 +142,7 @@ service ServiceRecordService {
   rpc ListServiceRecordsByPlate(ListServiceRecordsByPlateRequest) returns (ListServiceRecordsByPlateResponse);
   // Requires a workshop token; scoped to the caller's own records.
   rpc ListWorkshopServiceRecords(ListWorkshopServiceRecordsRequest) returns (ListWorkshopServiceRecordsResponse);
+  // Requires a workshop token, and only for a record that shop wrote.
+  // Returns FAILED_PRECONDITION if the record was already superseded.
+  rpc ReviseServiceRecord(ReviseServiceRecordRequest) returns (ReviseServiceRecordResponse);
 }

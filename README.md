@@ -33,15 +33,26 @@ stubs (ARCHITECTURE.md section 5).
 | `owner.v1.OwnerService/Login` | public | Login (proprietário) |
 | `owner.v1.OwnerService/ListMyVehicles` | **owner token** | Minhas Motos, Lembretes |
 | `owner.v1.OwnerService/ClaimVehicle` | **owner token** | Cadastrar nova moto |
+| `owner.v1.OwnerService/ReleaseVehicle` | **owner token** | venda da moto |
 | `vehicle.v1.VehicleService/CreateVehicle` | public | Cadastrar Veículo |
 | `vehicle.v1.VehicleService/GetVehicleByPlate` | public | Novo Registro (busca) |
 | `service.v1.ServiceRecordService/CreateServiceRecord` | **workshop token** | Novo Registro (salvar) |
 | `service.v1.ServiceRecordService/ListWorkshopServiceRecords` | **workshop token** | Painel da Oficina |
+| `service.v1.ServiceRecordService/ReviseServiceRecord` | **workshop token** | correção de um registro |
 | `service.v1.ServiceRecordService/ListServiceRecordsByPlate` | public | Portal do Proprietário |
 | `service.v1.ServiceRecordService/GetServiceRecord` | public | Detalhe do Serviço |
 
 All procedure names are prefixed with `mototeca.` — e.g.
 `POST /mototeca.workshop.v1.WorkshopService/Login`.
+
+### Corrections are append-only
+
+A record is never edited. `ReviseServiceRecord` writes a new one and points the
+original at it via `superseded_by`, in one transaction; lists then show only
+rows where `superseded_by IS NULL`. The superseded row stays in the table, so
+the trail is auditable — which is the whole basis for trusting history written
+by a shop you've never met. Only the workshop that wrote a record can revise
+it, and only once: the correction is what gets corrected next.
 
 ### Auth
 
@@ -177,11 +188,13 @@ make run                # go run ./cmd/api
 make build              # static binary → bin/api
 make test                # unit tests, no DB (./cmd/... ./internal/...)
 make test-integration    # + DB-backed tests (needs `make db-up` first)
+make test-integration-docker  # the same, run inside the compose network
 make generate             # buf generate — regenerate Go code from proto/
 
 make db-up / db-down / db-logs   # local Postgres container
 make migrate                      # apply every db/migrations/*.sql
 make e2e                           # end-to-end smoke test (needs `docker compose up -d api`)
+make test-integration-docker       # DB-backed tests, from inside the network
 
 cd mobile && flutter test          # API client, contract and navigation tests
 cd mobile && flutter analyze

@@ -44,6 +44,9 @@ const (
 	// OwnerServiceClaimVehicleProcedure is the fully-qualified name of the OwnerService's ClaimVehicle
 	// RPC.
 	OwnerServiceClaimVehicleProcedure = "/mototeca.owner.v1.OwnerService/ClaimVehicle"
+	// OwnerServiceReleaseVehicleProcedure is the fully-qualified name of the OwnerService's
+	// ReleaseVehicle RPC.
+	OwnerServiceReleaseVehicleProcedure = "/mototeca.owner.v1.OwnerService/ReleaseVehicle"
 )
 
 // OwnerServiceClient is a client for the mototeca.owner.v1.OwnerService service.
@@ -57,6 +60,8 @@ type OwnerServiceClient interface {
 	// Links an existing vehicle to the signed-in owner. Returns
 	// FAILED_PRECONDITION when someone else already owns it.
 	ClaimVehicle(context.Context, *connect.Request[v1.ClaimVehicleRequest]) (*connect.Response[v1.ClaimVehicleResponse], error)
+	// Releases a bike on sale. Only the current owner may release it.
+	ReleaseVehicle(context.Context, *connect.Request[v1.ReleaseVehicleRequest]) (*connect.Response[v1.ReleaseVehicleResponse], error)
 }
 
 // NewOwnerServiceClient constructs a client for the mototeca.owner.v1.OwnerService service. By
@@ -94,6 +99,12 @@ func NewOwnerServiceClient(httpClient connect.HTTPClient, baseURL string, opts .
 			connect.WithSchema(ownerServiceMethods.ByName("ClaimVehicle")),
 			connect.WithClientOptions(opts...),
 		),
+		releaseVehicle: connect.NewClient[v1.ReleaseVehicleRequest, v1.ReleaseVehicleResponse](
+			httpClient,
+			baseURL+OwnerServiceReleaseVehicleProcedure,
+			connect.WithSchema(ownerServiceMethods.ByName("ReleaseVehicle")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
@@ -103,6 +114,7 @@ type ownerServiceClient struct {
 	login          *connect.Client[v1.LoginRequest, v1.LoginResponse]
 	listMyVehicles *connect.Client[v1.ListMyVehiclesRequest, v1.ListMyVehiclesResponse]
 	claimVehicle   *connect.Client[v1.ClaimVehicleRequest, v1.ClaimVehicleResponse]
+	releaseVehicle *connect.Client[v1.ReleaseVehicleRequest, v1.ReleaseVehicleResponse]
 }
 
 // CreateOwner calls mototeca.owner.v1.OwnerService.CreateOwner.
@@ -125,6 +137,11 @@ func (c *ownerServiceClient) ClaimVehicle(ctx context.Context, req *connect.Requ
 	return c.claimVehicle.CallUnary(ctx, req)
 }
 
+// ReleaseVehicle calls mototeca.owner.v1.OwnerService.ReleaseVehicle.
+func (c *ownerServiceClient) ReleaseVehicle(ctx context.Context, req *connect.Request[v1.ReleaseVehicleRequest]) (*connect.Response[v1.ReleaseVehicleResponse], error) {
+	return c.releaseVehicle.CallUnary(ctx, req)
+}
+
 // OwnerServiceHandler is an implementation of the mototeca.owner.v1.OwnerService service.
 type OwnerServiceHandler interface {
 	// Returns ALREADY_EXISTS when the phone is already registered.
@@ -136,6 +153,8 @@ type OwnerServiceHandler interface {
 	// Links an existing vehicle to the signed-in owner. Returns
 	// FAILED_PRECONDITION when someone else already owns it.
 	ClaimVehicle(context.Context, *connect.Request[v1.ClaimVehicleRequest]) (*connect.Response[v1.ClaimVehicleResponse], error)
+	// Releases a bike on sale. Only the current owner may release it.
+	ReleaseVehicle(context.Context, *connect.Request[v1.ReleaseVehicleRequest]) (*connect.Response[v1.ReleaseVehicleResponse], error)
 }
 
 // NewOwnerServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -169,6 +188,12 @@ func NewOwnerServiceHandler(svc OwnerServiceHandler, opts ...connect.HandlerOpti
 		connect.WithSchema(ownerServiceMethods.ByName("ClaimVehicle")),
 		connect.WithHandlerOptions(opts...),
 	)
+	ownerServiceReleaseVehicleHandler := connect.NewUnaryHandler(
+		OwnerServiceReleaseVehicleProcedure,
+		svc.ReleaseVehicle,
+		connect.WithSchema(ownerServiceMethods.ByName("ReleaseVehicle")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/mototeca.owner.v1.OwnerService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case OwnerServiceCreateOwnerProcedure:
@@ -179,6 +204,8 @@ func NewOwnerServiceHandler(svc OwnerServiceHandler, opts ...connect.HandlerOpti
 			ownerServiceListMyVehiclesHandler.ServeHTTP(w, r)
 		case OwnerServiceClaimVehicleProcedure:
 			ownerServiceClaimVehicleHandler.ServeHTTP(w, r)
+		case OwnerServiceReleaseVehicleProcedure:
+			ownerServiceReleaseVehicleHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -202,4 +229,8 @@ func (UnimplementedOwnerServiceHandler) ListMyVehicles(context.Context, *connect
 
 func (UnimplementedOwnerServiceHandler) ClaimVehicle(context.Context, *connect.Request[v1.ClaimVehicleRequest]) (*connect.Response[v1.ClaimVehicleResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("mototeca.owner.v1.OwnerService.ClaimVehicle is not implemented"))
+}
+
+func (UnimplementedOwnerServiceHandler) ReleaseVehicle(context.Context, *connect.Request[v1.ReleaseVehicleRequest]) (*connect.Response[v1.ReleaseVehicleResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("mototeca.owner.v1.OwnerService.ReleaseVehicle is not implemented"))
 }

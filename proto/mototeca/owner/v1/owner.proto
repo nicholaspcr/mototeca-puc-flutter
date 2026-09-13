@@ -66,6 +66,15 @@ message ClaimVehicleRequest {
   string plate = 1;
 }
 
+// Unlinks a bike from the signed-in owner, so its next owner can claim it.
+// The service history is untouched — that is the point of keying it to the
+// plate rather than to a person (ARCHITECTURE.md §3).
+message ReleaseVehicleRequest {
+  string plate = 1;
+}
+
+message ReleaseVehicleResponse {}
+
 message ClaimVehicleResponse {
   OwnedVehicle vehicle = 1;
 }
@@ -80,4 +89,6 @@ service OwnerService {
   // Links an existing vehicle to the signed-in owner. Returns
   // FAILED_PRECONDITION when someone else already owns it.
   rpc ClaimVehicle(ClaimVehicleRequest) returns (ClaimVehicleResponse);
+  // Releases a bike on sale. Only the current owner may release it.
+  rpc ReleaseVehicle(ReleaseVehicleRequest) returns (ReleaseVehicleResponse);
 }
