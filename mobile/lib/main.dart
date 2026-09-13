@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'models/service_record.dart';
 import 'screens/about_screen.dart';
 import 'screens/customer_portal_screen.dart';
 import 'screens/dashboard_screen.dart';
@@ -28,6 +29,7 @@ class Routes {
   static const reminders = '/proprietario/lembretes';
   static const customerPortal = '/consulta';
   static const serviceDetail = '/servico';
+  static const reviseRecord = '/registro/corrigir';
   static const about = '/sobre';
 }
 
@@ -116,6 +118,11 @@ class _MototecaAppState extends State<MototecaApp> {
         Routes.newRecord => MaterialPageRoute(
           builder: (_) =>
               NewRecordScreen(initialPlate: settings.arguments as String?),
+          settings: settings,
+        ),
+        Routes.reviseRecord => MaterialPageRoute(
+          builder: (_) =>
+              NewRecordScreen(revising: settings.arguments as ServiceRecord),
           settings: settings,
         ),
         Routes.customerPortal => MaterialPageRoute(

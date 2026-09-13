@@ -101,6 +101,8 @@ class ServiceRecord {
     this.notes,
     this.parts = const [],
     this.attachments = const [],
+    this.revisesRecordId,
+    this.supersededByRecordId,
   });
 
   final String id;
@@ -114,6 +116,12 @@ class ServiceRecord {
   final List<Part> parts;
   final List<Attachment> attachments;
   final DateTime createdAt;
+
+  /// Set when this record corrects an earlier one.
+  final String? revisesRecordId;
+
+  /// Set when a later correction replaced this record.
+  final String? supersededByRecordId;
 
   /// "Troca de óleo e filtro, Pneus" — the one-line summary on list rows.
   String get operationsLabel => operations.map((o) => o.label).join(', ');
@@ -145,6 +153,8 @@ class ServiceRecord {
     // rather than taking the whole history down.
     createdAt:
         DateTime.tryParse(json['createdAt'] as String? ?? '') ?? DateTime.now(),
+    revisesRecordId: json['revisesRecordId'] as String?,
+    supersededByRecordId: json['supersededByRecordId'] as String?,
   );
 
   static List<ServiceRecord> listFromJson(List<dynamic>? raw) =>

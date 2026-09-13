@@ -1,17 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../main.dart';
 import '../models/service_record.dart';
+import '../state/app_scope.dart';
 import '../theme.dart';
 import '../widgets/feedback.dart';
 import '../widgets/mt_widgets.dart';
 
 class ServiceDetailArgs {
-  const ServiceDetailArgs({required this.record});
+  const ServiceDetailArgs({required this.record, this.canRevise = false});
 
   /// The record carries its own vehicle summary, so the detail screen needs
   /// nothing else to render.
   final ServiceRecord record;
+
+  /// True when the workshop that wrote the record is the one looking at it.
+  /// The server enforces this too; the flag only decides whether to offer.
+  final bool canRevise;
 }
 
 /// Detalhe do Serviço — one immutable record with parts, photos and invoice.
@@ -48,10 +54,28 @@ class ServiceDetailScreen extends StatelessWidget {
               ),
             ],
           ),
+          if (record.supersededByRecordId case final correctionId?) ...[
+            const SizedBox(height: 16),
+            _supersededBanner(context, correctionId),
+          ],
           const SizedBox(height: 16),
           MtCard(
             child: Column(
               children: [
+                if (record.revisesRecordId != null) ...[
+                  const Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      'Correção de um registro anterior',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: MtColors.petrol,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                ],
                 Align(
                   alignment: Alignment.centerLeft,
                   child: Wrap(
@@ -127,10 +151,83 @@ class ServiceDetailScreen extends StatelessWidget {
           ],
           const SizedBox(height: 16),
           _photosCard(context, record),
+          if (args.canRevise && record.supersededByRecordId == null) ...[
+            const SizedBox(height: 16),
+            OutlinedButton(
+              key: const Key('detalhe-corrigir'),
+              onPressed: () => _revise(context, record),
+              child: const Text('Corrigir registro'),
+            ),
+          ],
           const SizedBox(height: 16),
           const MtFootnote(
             'Registro imutável: correções geram uma nova revisão, '
             'preservando o histórico original.',
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Replaces this screen with the correction, so going back lands where the
+  /// user started — not on the record that was just superseded. The `true`
+  /// result tells the dashboard its feed changed.
+  Future<void> _revise(BuildContext context, ServiceRecord record) async {
+    final corrected = await Navigator.pushNamed(
+      context,
+      Routes.reviseRecord,
+      arguments: record,
+    );
+    if (corrected is! ServiceRecord || !context.mounted) return;
+    await Navigator.pushReplacementNamed(
+      context,
+      Routes.serviceDetail,
+      arguments: ServiceDetailArgs(
+        record: corrected,
+        canRevise: args.canRevise,
+      ),
+      result: true,
+    );
+  }
+
+  Future<void> _openCorrection(BuildContext context, String id) async {
+    try {
+      final correction = await AppScope.read(context).serviceRecords.byId(id);
+      if (!context.mounted) return;
+      await Navigator.pushReplacementNamed(
+        context,
+        Routes.serviceDetail,
+        arguments: ServiceDetailArgs(
+          record: correction,
+          canRevise: args.canRevise,
+        ),
+      );
+    } catch (error) {
+      if (!context.mounted) return;
+      showApiError(context, error);
+    }
+  }
+
+  Widget _supersededBanner(BuildContext context, String correctionId) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(14, 10, 8, 10),
+      decoration: BoxDecoration(
+        color: MtColors.warning.withValues(alpha: 0.12),
+        border: Border.all(color: MtColors.warning.withValues(alpha: 0.4)),
+        borderRadius: BorderRadius.circular(MtSizes.controlRadius),
+      ),
+      child: Row(
+        children: [
+          const Expanded(
+            child: Text(
+              'Este registro foi corrigido pela oficina.',
+              style: TextStyle(fontSize: 13),
+            ),
+          ),
+          TextButton(
+            key: const Key('detalhe-ver-correcao'),
+            onPressed: () => _openCorrection(context, correctionId),
+            child: const Text('Ver correção'),
           ),
         ],
       ),
