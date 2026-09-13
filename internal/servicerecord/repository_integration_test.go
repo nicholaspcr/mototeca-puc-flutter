@@ -278,9 +278,14 @@ func TestReviseSupersedesTheOriginal(t *testing.T) {
 		t.Fatalf("history = %d record(s) %v, want only the correction", len(records), records)
 	}
 
-	// The original is still there, which is what makes it auditable.
-	if found, err := repo.FindByID(ctx, original.ID); err != nil || found == nil {
-		t.Errorf("original no longer retrievable: %v, %v", found, err)
+	// The original is still there, which is what makes it auditable, and it
+	// points at what replaced it.
+	found, err := repo.FindByID(ctx, original.ID)
+	if err != nil || found == nil {
+		t.Fatalf("original no longer retrievable: %v, %v", found, err)
+	}
+	if found.SupersededByID == nil || *found.SupersededByID != revised.ID {
+		t.Errorf("supersededBy = %v, want %q", found.SupersededByID, revised.ID)
 	}
 
 	count, err := repo.CountByWorkshopSince(ctx, workshopID, original.CreatedAt.Add(-time.Hour))
