@@ -1,3 +1,7 @@
+# Pinned so the network is always mototeca_default, whatever the checkout
+# directory is called; make e2e and the integration targets join it by name.
+name: mototeca
+
 services:
   # The API in a container, reaching Postgres over the compose network. Handy
   # when the Flutter app needs a running backend; `make run` on the host is
