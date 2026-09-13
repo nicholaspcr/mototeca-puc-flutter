@@ -160,16 +160,24 @@ expect not_found "unregistered plate"
 # ---------------------------------------------------------------------------
 section "service records"
 
-RECORD_JSON="{\"plate\":\"abc 1d23\",\"mechanicName\":\"José Carlos\",
-  \"operations\":[\"SERVICE_TYPE_OIL_CHANGE\",\"SERVICE_TYPE_CHAIN_AND_SPROCKET\"],
-  \"mileageKm\":18420,\"costCents\":24500,
-  \"notes\":\"Óleo 10w30 trocado, corrente lubrificada.\",
-  \"parts\":[{\"name\":\"Óleo 10w30\",\"quantity\":1,\"costCents\":6200},
-             {\"name\":\"Kit relação\",\"quantity\":1,\"costCents\":14500}]}"
+record_json() { # <mileage km>
+  printf '%s' "{\"plate\":\"abc 1d23\",\"mechanicName\":\"José Carlos\",
+    \"operations\":[\"SERVICE_TYPE_OIL_CHANGE\",\"SERVICE_TYPE_CHAIN_AND_SPROCKET\"],
+    \"mileageKm\":$1,\"costCents\":24500,
+    \"notes\":\"Óleo 10w30 trocado, corrente lubrificada.\",
+    \"parts\":[{\"name\":\"Óleo 10w30\",\"quantity\":1,\"costCents\":6200},
+               {\"name\":\"Kit relação\",\"quantity\":1,\"costCents\":14500}]}"
+}
 
-rpc mototeca.service.v1.ServiceRecordService/CreateServiceRecord "$RECORD_JSON"
+KM=18420
+rpc mototeca.service.v1.ServiceRecordService/CreateServiceRecord "$(record_json $KM)"
 expect unauthenticated "creating a record without a session"
-rpc mototeca.service.v1.ServiceRecordService/CreateServiceRecord "$RECORD_JSON" "$TOKEN"
+rpc mototeca.service.v1.ServiceRecordService/CreateServiceRecord "$(record_json $KM)" "$TOKEN"
+# A previous run left a higher odometer; ride on from there.
+if [ "$CODE" = failed_precondition ]; then
+  KM=$(( $(printf '%s' "$BODY" | sed -n 's/.*(\([0-9]*\) km).*/\1/p') + 100 ))
+  rpc mototeca.service.v1.ServiceRecordService/CreateServiceRecord "$(record_json $KM)" "$TOKEN"
+fi
 expect ok "workshop creates a record with two operations and parts"
 RECORD_ID=$(printf '%s' "$BODY" | sed -n 's/.*"record":{"id":"\([^"]*\)".*/\1/p')
 
@@ -195,6 +203,24 @@ expect ok "workshop dashboard"
 contains "\"countThisMonth\"" "dashboard carries the month count"
 rpc mototeca.service.v1.ServiceRecordService/ListWorkshopServiceRecords '{}' "not.a.real.token"
 expect unauthenticated "tampered token"
+
+# ---------------------------------------------------------------------------
+section "odometer rollback"
+
+# A bike of its own, so the lower record stays out of the demo history.
+rpc mototeca.vehicle.v1.VehicleService/CreateVehicle \
+  '{"plate":"ABC2D34","chassi":"9C2KC1670GR000002","make":"Yamaha","model":"Factor 150","year":2021}' "$TOKEN"
+expect "ok already_exists" "workshop registers a second bike"
+rpc mototeca.service.v1.ServiceRecordService/CreateServiceRecord \
+  '{"plate":"ABC2D34","operations":["SERVICE_TYPE_BRAKES"],"mileageKm":5000}' "$TOKEN"
+expect ok "record at 5000 km"
+rpc mototeca.service.v1.ServiceRecordService/CreateServiceRecord \
+  '{"plate":"ABC2D34","operations":["SERVICE_TYPE_BRAKES"],"mileageKm":4000}' "$TOKEN"
+expect failed_precondition "a lower mileage is refused"
+contains "5000 km" "the refusal names the highest recorded mileage"
+rpc mototeca.service.v1.ServiceRecordService/CreateServiceRecord \
+  '{"plate":"ABC2D34","operations":["SERVICE_TYPE_BRAKES"],"mileageKm":4000,"confirmLowerMileage":true}' "$TOKEN"
+expect ok "a confirmed lower mileage is saved"
 
 # ---------------------------------------------------------------------------
 section "photo uploads"
@@ -232,7 +258,7 @@ contains "PHOTO_PHASE_BEFORE" "record detail lists the photo"
 # ---------------------------------------------------------------------------
 section "corrections"
 
-REVISION="{\"recordId\":\"$RECORD_ID\",\"operations\":[\"SERVICE_TYPE_TIRES\"],\"mileageKm\":18999,\"notes\":\"Correção: era pneu, não óleo.\"}"
+REVISION="{\"recordId\":\"$RECORD_ID\",\"operations\":[\"SERVICE_TYPE_TIRES\"],\"mileageKm\":$KM,\"notes\":\"Correção: era pneu, não óleo.\"}"
 
 rpc mototeca.service.v1.ServiceRecordService/ReviseServiceRecord "$REVISION"
 expect unauthenticated "revising without a session"
@@ -273,13 +299,19 @@ expect unauthenticated "workshop token on an owner endpoint"
 rpc mototeca.vehicle.v1.VehicleService/CreateVehicle "$VEHICLE" "$OWNER_TOKEN"
 expect already_exists "owner registering a bike a workshop already registered"
 
+CLAIM="{\"plate\":\"$PLATE\",\"chassiSuffix\":\"000001\"}"
+
+rpc mototeca.owner.v1.OwnerService/ClaimVehicle "{\"plate\":\"$PLATE\",\"chassiSuffix\":\"999999\"}" "$OWNER_TOKEN"
+expect permission_denied "claiming with the wrong end of the chassi"
 rpc mototeca.owner.v1.OwnerService/ClaimVehicle "{\"plate\":\"$PLATE\"}" "$OWNER_TOKEN"
+expect invalid_argument "claiming with the plate alone"
+rpc mototeca.owner.v1.OwnerService/ClaimVehicle "$CLAIM" "$OWNER_TOKEN"
 expect ok "owner claims the bike"
-rpc mototeca.owner.v1.OwnerService/ClaimVehicle "{\"plate\":\"$PLATE\"}" "$OWNER_TOKEN"
+rpc mototeca.owner.v1.OwnerService/ClaimVehicle "$CLAIM" "$OWNER_TOKEN"
 expect ok "claiming again is idempotent"
-rpc mototeca.owner.v1.OwnerService/ClaimVehicle "{\"plate\":\"$PLATE\"}" "$OTHER_OWNER_TOKEN"
+rpc mototeca.owner.v1.OwnerService/ClaimVehicle "$CLAIM" "$OTHER_OWNER_TOKEN"
 expect failed_precondition "a second owner cannot take the bike"
-rpc mototeca.owner.v1.OwnerService/ClaimVehicle '{"plate":"ZZZ0Z00"}' "$OWNER_TOKEN"
+rpc mototeca.owner.v1.OwnerService/ClaimVehicle '{"plate":"ZZZ0Z00","chassiSuffix":"000001"}' "$OWNER_TOKEN"
 expect not_found "claiming an unregistered plate"
 
 rpc mototeca.owner.v1.OwnerService/ListMyVehicles '{}' "$OWNER_TOKEN"
@@ -305,7 +337,8 @@ expect resource_exhausted "RPC body over 1 MiB"
 
 limited=''
 for attempt in 1 2 3 4 5 6 7 8; do
-  rpc mototeca.owner.v1.OwnerService/Login "{\"phone\":\"$PHONE\",\"password\":\"errada-errada\"}"
+  # An unregistered phone, so the demo owner's account is not locked.
+  rpc mototeca.owner.v1.OwnerService/Login '{"phone":"31990009999","password":"errada-errada"}'
   if [ "$CODE" = resource_exhausted ]; then
     limited=$attempt
     break
