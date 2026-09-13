@@ -9,6 +9,14 @@ String formatCents(int cents) {
   return 'R\$ $reais,$centavos';
 }
 
+/// dd/mm/yyyy in the device's time zone.
+String formatDate(DateTime moment) {
+  final local = moment.toLocal();
+  final day = local.day.toString().padLeft(2, '0');
+  final month = local.month.toString().padLeft(2, '0');
+  return '$day/$month/${local.year}';
+}
+
 /// Parses what a mechanic types into a money field ("245", "245,50",
 /// "R$ 1.245,50") into integer cents.
 ///
@@ -110,12 +118,7 @@ class ServiceRecord {
   /// "Troca de óleo e filtro, Pneus" — the one-line summary on list rows.
   String get operationsLabel => operations.map((o) => o.label).join(', ');
 
-  String get formattedDate {
-    final local = createdAt.toLocal();
-    final day = local.day.toString().padLeft(2, '0');
-    final month = local.month.toString().padLeft(2, '0');
-    return '$day/$month/${local.year}';
-  }
+  String get formattedDate => formatDate(createdAt);
 
   String get formattedCost => costCents == null ? '—' : formatCents(costCents!);
 
