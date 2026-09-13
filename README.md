@@ -32,7 +32,7 @@ stubs (ARCHITECTURE.md section 5).
 | `owner.v1.OwnerService/CreateOwner` | public | Criar Conta |
 | `owner.v1.OwnerService/Login` | public | Login (proprietário) |
 | `owner.v1.OwnerService/ListMyVehicles` | **owner token** | Minhas Motos, Lembretes |
-| `owner.v1.OwnerService/ClaimVehicle` | **owner token** | Cadastrar nova moto |
+| `owner.v1.OwnerService/ClaimVehicle` | **owner token** + chassi suffix | Cadastrar nova moto |
 | `owner.v1.OwnerService/ReleaseVehicle` | **owner token** | venda da moto |
 | `vehicle.v1.VehicleService/CreateVehicle` | **workshop or owner token** | Cadastrar Veículo |
 | `vehicle.v1.VehicleService/GetVehicleByPlate` | **workshop token** | Novo Registro (busca) |
@@ -67,8 +67,8 @@ storage (MinIO in compose), capped at 8 MiB, with an allowlist of
 jpeg/png/webp/pdf. The type is sniffed from the bytes, never taken from the
 client, so an HTML page labelled `image/png` is refused. The stored name is a
 generated UUID — never the client's filename — so an upload cannot overwrite
-another or smuggle a path. If linking the file to the record fails, the stored
-object is deleted. Success and failure bodies match the Connect shape, so the
+another or smuggle a path. A record holds at most 20 files. If linking the file
+to the record fails, the stored object is deleted. Success and failure bodies match the Connect shape, so the
 client parses them the same way.
 
 The bucket is anonymous-read: the plate lookup is public, so the photos on it
@@ -86,7 +86,25 @@ the trail is auditable — which is the whole basis for trusting history written
 by a shop you've never met. Only the workshop that wrote a record can revise
 it, and only once: the correction is what gets corrected next. Photos and the
 invoice carry over to the correction, and an owner's odometer and reminders
-ignore superseded rows.
+ignore superseded rows. A superseded record reached by id carries
+`supersededByRecordId`, so an old link leads to its correction.
+
+### Odometer rollback
+
+`CreateServiceRecord` refuses a mileage below the bike's highest recorded one
+with `failed_precondition` — a rolled-back odometer is the fraud a shared
+history exists to expose. The app shows the refusal and resends with
+`confirmLowerMileage: true` only after the mechanic confirms a real cause,
+such as a replaced instrument cluster. Corrections are exempt: fixing a typo
+is their purpose.
+
+### Claiming a bike
+
+A plate is public, so it cannot prove ownership. `ClaimVehicle` also takes
+`chassiSuffix`, the last 6 characters of the chassi printed on the registration
+document, checked before anything about the current owner is revealed. It is
+rate-limited per IP. `ReleaseVehicle` unlinks a sold bike for the buyer to
+claim; the history stays with the plate.
 
 ### Auth
 
@@ -103,9 +121,12 @@ never from the request body.
 
 Every login returns the same `unauthenticated` error for an unknown
 CNPJ/phone as for a wrong password, so it can't be used to discover who is
-registered. Every endpoint is rate-limited per client IP; logins, signups and
-the public plate lookup get tighter limits (in-process — a multi-instance
-deployment needs a shared store). RPC bodies are capped at 1 MiB.
+registered. Five failures in a row lock that CNPJ or phone for five minutes,
+whatever address the guesses come from; unregistered identifiers lock the
+same way, so a lock reveals nothing. Every endpoint is also rate-limited per
+client IP, tighter on logins, signups, claims and the public plate lookup
+(in-process — a multi-instance deployment needs a shared store). RPC bodies
+are capped at 1 MiB.
 
 ### Browsers (CORS)
 
@@ -171,7 +192,12 @@ docker compose up -d          # db, migrations, storage, api
 make e2e                       # asserts every endpoint against it
 ```
 
-See [mobile/DEMO.md](mobile/DEMO.md) for running the app in class.
+See [mobile/DEMO.md](mobile/DEMO.md) for running the app in class, and
+[BACKLOG.md](BACKLOG.md) for what is known and not built yet.
+
+GitHub Actions (`.github/workflows/ci.yml`) runs the Go unit and integration
+tests, `flutter analyze` and `flutter test`, and `make e2e` against the compose
+stack on every push to `main` and every pull request.
 
 ## Repo layout
 
