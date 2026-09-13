@@ -34,7 +34,19 @@ type Config struct {
 	// AuthTokenTTL is how long a workshop session stays valid. Tokens are
 	// self-contained and cannot be revoked early, so this is kept short.
 	AuthTokenTTL time.Duration
+	// Storage holds the object-storage settings for service photos. Empty
+	// StorageEndpoint disables uploads rather than failing to start, so the
+	// rest of the API runs without object storage available.
+	StorageEndpoint  string
+	StorageAccessKey string
+	StorageSecretKey string
+	StorageBucket    string
+	StoragePublicURL string
+	StorageUseSSL    bool
 }
+
+// StorageEnabled reports whether photo uploads are configured.
+func (c Config) StorageEnabled() bool { return c.StorageEndpoint != "" }
 
 // Load reads Config from the environment and validates required fields.
 func Load() (Config, error) {
@@ -46,6 +58,13 @@ func Load() (Config, error) {
 		OTelEndpoint: os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT"),
 		AuthSecret:   os.Getenv("AUTH_SECRET"),
 		AuthTokenTTL: defaultAuthTokenTTL,
+
+		StorageEndpoint:  os.Getenv("STORAGE_ENDPOINT"),
+		StorageAccessKey: os.Getenv("STORAGE_ACCESS_KEY"),
+		StorageSecretKey: os.Getenv("STORAGE_SECRET_KEY"),
+		StorageBucket:    os.Getenv("STORAGE_BUCKET"),
+		StoragePublicURL: os.Getenv("STORAGE_PUBLIC_URL"),
+		StorageUseSSL:    os.Getenv("STORAGE_USE_SSL") == "true",
 	}
 
 	if cfg.DatabaseURL == "" {
@@ -68,6 +87,15 @@ func Load() (Config, error) {
 	}
 	if cfg.OTelExporter != "none" && cfg.OTelExporter != "stdout" && cfg.OTelExporter != "otlp" {
 		return Config{}, fmt.Errorf("OTEL_EXPORTER must be \"none\", \"stdout\", or \"otlp\", got %q", cfg.OTelExporter)
+	}
+
+	if cfg.StorageEnabled() {
+		if cfg.StorageAccessKey == "" || cfg.StorageSecretKey == "" || cfg.StorageBucket == "" {
+			return Config{}, fmt.Errorf("STORAGE_ACCESS_KEY, STORAGE_SECRET_KEY and STORAGE_BUCKET are required when STORAGE_ENDPOINT is set")
+		}
+		if cfg.StoragePublicURL == "" {
+			return Config{}, fmt.Errorf("STORAGE_PUBLIC_URL is required when STORAGE_ENDPOINT is set")
+		}
 	}
 
 	return cfg, nil

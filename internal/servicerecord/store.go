@@ -32,6 +32,8 @@ type Store interface {
 	// ListByWorkshop returns the workshop's own records, newest first.
 	ListByWorkshop(ctx context.Context, workshopID string, limit int) ([]ServiceRecord, error)
 	CountByWorkshopSince(ctx context.Context, workshopID string, since time.Time) (int, error)
+	// AddAttachment links a stored file to a record the workshop owns.
+	AddAttachment(ctx context.Context, workshopID, recordID string, a Attachment) (*Attachment, error)
 }
 
 var _ Store = (*Repository)(nil)

@@ -110,6 +110,16 @@ func (f *fakeStore) ListByWorkshop(_ context.Context, _ string, limit int) ([]Se
 	return records, nil
 }
 
+func (f *fakeStore) AddAttachment(_ context.Context, _, recordID string, a Attachment) (*Attachment, error) {
+	record, ok := f.records[recordID]
+	if !ok {
+		return nil, ErrRecordNotFound
+	}
+	a.ID = "attachment-1"
+	record.Attachments = append(record.Attachments, a)
+	return &a, nil
+}
+
 func (f *fakeStore) CountByWorkshopSince(_ context.Context, _ string, _ time.Time) (int, error) {
 	return f.countMonth, nil
 }

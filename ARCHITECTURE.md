@@ -54,7 +54,10 @@ Flutter code lives under `mobile/`; `design/` is the mockup/brand reference and 
 
 - **Go** API at repo root (`go.mod`, `cmd/`, `internal/`), static binary.
 - **Postgres** — relational data, append-only trust ledger. Schema/migrations in `db/migrations`.
-- Object storage (S3-compatible) for photos/attachments.
+- Object storage (S3-compatible) for photos/attachments — MinIO in compose,
+  reached over a multipart route rather than an RPC so bytes are not
+  base64-inflated. Anonymous-read bucket, since the history it hangs off is
+  public; presigned URLs are the hardening step.
 - Stateless API, horizontally scalable.
 - Auth: CNPJ + password for oficinas, phone + password for owners. bcrypt
   digests, HMAC-signed bearer tokens with a 12h expiry and no session table.

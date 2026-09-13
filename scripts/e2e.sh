@@ -154,3 +154,25 @@ call mototeca.service.v1.ServiceRecordService/ReviseServiceRecord \
 echo
 
 printf '\nOWNER FLOW COMPLETE\n'
+
+# --- Fotos ---------------------------------------------------------------------
+
+say "upload a photo onto the latest record"
+LATEST=$(call mototeca.service.v1.ServiceRecordService/ListWorkshopServiceRecords '{"limit":1}' "$TOKEN" \
+  | sed -n 's/.*"records":\[{"id":"\([^"]*\)".*/\1/p')
+# A 1x1 PNG, so the script needs no fixture file on disk.
+printf '\211PNG\r\n\032\n\0\0\0\rIHDR\0\0\0\1\0\0\0\1\10\2\0\0\0\220wS\336\0\0\0\014IDATx\234c\370\17\4\0\11\373\3\375\343\125\362\261\0\0\0\0IEND\256B`\202' > /tmp/px.png
+curl -sS -X POST "$API/v1/service-records/$LATEST/attachments" \
+  -H "Authorization: Bearer $TOKEN" -F "file=@/tmp/px.png;type=image/png" -F "phase=after"
+echo
+
+say "upload without a token is refused"
+curl -sS -X POST "$API/v1/service-records/$LATEST/attachments" -F "file=@/tmp/px.png;type=image/png"
+echo
+
+say "a non-image is refused"
+curl -sS -X POST "$API/v1/service-records/$LATEST/attachments" \
+  -H "Authorization: Bearer $TOKEN" -F "file=@/e2e.sh;type=text/x-shellscript"
+echo
+
+printf '\nPHOTO FLOW COMPLETE\n'

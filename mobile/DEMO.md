@@ -17,7 +17,7 @@ seja, precisam da API no ar. O jeito mais curto é o Docker:
 
 ```bash
 cd mototeca
-docker compose up -d          # sobe Postgres + API em :8080
+docker compose up -d          # sobe Postgres, MinIO e a API em :8080
 make migrate                   # aplica as migrations (só na primeira vez)
 ```
 
@@ -94,8 +94,9 @@ Mostra os dois perfis e a consulta pública, que é o diferencial do produto:
 2. No painel, **Cadastrar veículo** → placa `ABC1D23`, chassi de 17 caracteres,
    marca, modelo, ano.
 3. **Criar Registro** → busca a placa → seleciona duas operações → preenche km,
-   valor e uma peça → **Salvar Registro**. Volta ao painel e o contador do mês
-   sobe.
+   valor e uma peça → toca em **Foto antes** e escolhe uma imagem →
+   **Salvar Registro**. Volta ao painel e o contador do mês sobe.
+   (A foto sobe depois do registro: ela precisa de um registro para se anexar.)
 4. Toca no **registro recente** → Detalhe do Serviço (peças, observações,
    fotos, nota fiscal) → voltar.
 5. **Sair** → **Consultar sem cadastro** → digita `ABC1D23` → **Consultar** →

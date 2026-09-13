@@ -96,6 +96,9 @@ func (f *fakeRecords) ListByPlate(context.Context, string, int) (*servicerecord.
 func (f *fakeRecords) ListByWorkshop(context.Context, string, int) ([]servicerecord.ServiceRecord, error) {
 	return nil, nil
 }
+func (f *fakeRecords) AddAttachment(context.Context, string, string, servicerecord.Attachment) (*servicerecord.Attachment, error) {
+	return nil, errors.New("not used")
+}
 func (f *fakeRecords) CountByWorkshopSince(context.Context, string, time.Time) (int, error) {
 	return 0, nil
 }

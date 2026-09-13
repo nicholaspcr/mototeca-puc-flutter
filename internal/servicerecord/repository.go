@@ -287,6 +287,33 @@ func (r *Repository) write(ctx context.Context, input CreateInput, rev *revision
 	return r.FindByID(ctx, recordID)
 }
 
+// AddAttachment refuses a record the workshop does not own, so one shop cannot
+// staple photos onto another's work.
+func (r *Repository) AddAttachment(ctx context.Context, workshopID, recordID string, a Attachment) (*Attachment, error) {
+	var ownerWorkshop string
+	err := r.pool.QueryRow(ctx,
+		`SELECT workshop_id FROM service_records WHERE id = $1`, recordID).Scan(&ownerWorkshop)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, ErrRecordNotFound
+	}
+	if err != nil {
+		return nil, err
+	}
+	if ownerWorkshop != workshopID {
+		return nil, ErrRecordNotFound
+	}
+
+	var stored Attachment
+	if err := r.pool.QueryRow(ctx,
+		`INSERT INTO attachments (service_record_id, url, kind, phase)
+		 VALUES ($1, $2, $3, $4) RETURNING id, url, kind, phase`,
+		recordID, a.URL, a.Kind, a.Phase,
+	).Scan(&stored.ID, &stored.URL, &stored.Kind, &stored.Phase); err != nil {
+		return nil, err
+	}
+	return &stored, nil
+}
+
 // checkRevisable locks the original so two concurrent corrections cannot both
 // claim it, and refuses one that isn't the caller's or is already superseded.
 func checkRevisable(ctx context.Context, tx pgx.Tx, rev *revision) error {

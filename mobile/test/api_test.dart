@@ -280,6 +280,115 @@ void main() {
     });
   });
 
+  group('attachment upload', () {
+    test('posts multipart with the kind and phase fields', () async {
+      late http.BaseRequest captured;
+      final client = ApiClient(
+        baseUrl: 'http://test',
+        httpClient: MockClient((request) async {
+          captured = request;
+          return http.Response(
+            jsonEncode({
+              'id': 'a1',
+              'url': 'http://storage/photo.png',
+              'kind': 'photo',
+              'phase': 'PHOTO_PHASE_BEFORE',
+            }),
+            200,
+            headers: {'content-type': 'application/json'},
+          );
+        }),
+      )..authToken = 'tok-123';
+
+      final attachment = await ServiceRecordRepository(client).uploadAttachment(
+        recordId: 'r1',
+        bytes: [1, 2, 3],
+        filename: 'foto.png',
+        contentType: 'image/png',
+        phase: 'before',
+      );
+
+      expect(captured.method, 'POST');
+      expect(captured.url.path, '/v1/service-records/r1/attachments');
+      expect(captured.headers['Authorization'], 'Bearer tok-123');
+      expect(captured.headers['content-type'], contains('multipart/form-data'));
+
+      // MockClient flattens multipart into a plain Request, so assert on the
+      // encoded body — which is what the server actually parses anyway.
+      final body = (captured as http.Request).body;
+      expect(body, contains('name="kind"'));
+      expect(body, contains('photo'));
+      expect(body, contains('name="phase"'));
+      expect(body, contains('before'));
+      expect(body, contains('filename="foto.png"'));
+      expect(body, contains('image/png'));
+
+      // The upload route and the RPCs must speak the same phase spelling.
+      expect(attachment.phase, 'PHOTO_PHASE_BEFORE');
+      expect(attachment.isInvoice, isFalse);
+    });
+
+    test('omits phase for an invoice, which has none', () async {
+      late http.BaseRequest captured;
+      final client = ApiClient(
+        baseUrl: 'http://test',
+        httpClient: MockClient((request) async {
+          captured = request;
+          return http.Response(
+            jsonEncode({'id': 'a1', 'url': 'u', 'kind': 'invoice'}),
+            200,
+            headers: {'content-type': 'application/json'},
+          );
+        }),
+      );
+
+      final attachment = await ServiceRecordRepository(client).uploadAttachment(
+        recordId: 'r1',
+        bytes: [1],
+        filename: 'nota.pdf',
+        contentType: 'application/pdf',
+        kind: 'invoice',
+      );
+
+      final body = (captured as http.Request).body;
+      expect(body, contains('name="kind"'));
+      expect(body, contains('invoice'));
+      expect(body, isNot(contains('name="phase"')));
+      expect(attachment.isInvoice, isTrue);
+      expect(attachment.phase, isNull);
+    });
+
+    test('surfaces a rejected file as a typed error', () async {
+      final client = ApiClient(
+        baseUrl: 'http://test',
+        httpClient: MockClient(
+          (_) async => http.Response(
+            jsonEncode({
+              'code': 'invalid_argument',
+              'message': 'tipo não suportado',
+            }),
+            400,
+            headers: {'content-type': 'application/json'},
+          ),
+        ),
+      );
+
+      expect(
+        () => ServiceRecordRepository(client).uploadAttachment(
+          recordId: 'r1',
+          bytes: [1],
+          filename: 'x.exe',
+          contentType: 'application/octet-stream',
+        ),
+        throwsA(
+          isA<ApiException>()
+              .having((e) => e.code, 'code', ApiErrorCode.invalidArgument)
+              .having((e) => e.message, 'message', 'tipo não suportado'),
+        ),
+      );
+    });
+  });
+
   group('WorkshopRepository', () {
     test('strips CNPJ punctuation before sending', () async {
       final recorder = Recorder();
