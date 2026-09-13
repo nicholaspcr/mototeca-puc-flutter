@@ -34,13 +34,22 @@ stubs (ARCHITECTURE.md section 5).
 | `owner.v1.OwnerService/ListMyVehicles` | **owner token** | Minhas Motos, Lembretes |
 | `owner.v1.OwnerService/ClaimVehicle` | **owner token** | Cadastrar nova moto |
 | `owner.v1.OwnerService/ReleaseVehicle` | **owner token** | venda da moto |
-| `vehicle.v1.VehicleService/CreateVehicle` | public | Cadastrar Veículo |
-| `vehicle.v1.VehicleService/GetVehicleByPlate` | public | Novo Registro (busca) |
+| `vehicle.v1.VehicleService/CreateVehicle` | **workshop or owner token** | Cadastrar Veículo |
+| `vehicle.v1.VehicleService/GetVehicleByPlate` | **workshop token** | Novo Registro (busca) |
 | `service.v1.ServiceRecordService/CreateServiceRecord` | **workshop token** | Novo Registro (salvar) |
 | `service.v1.ServiceRecordService/ListWorkshopServiceRecords` | **workshop token** | Painel da Oficina |
 | `service.v1.ServiceRecordService/ReviseServiceRecord` | **workshop token** | correção de um registro |
 | `service.v1.ServiceRecordService/ListServiceRecordsByPlate` | public | Portal do Proprietário |
 | `service.v1.ServiceRecordService/GetServiceRecord` | public | Detalhe do Serviço |
+
+`GetVehicleByPlate` needs a workshop session because it returns the chassi;
+the public lookup is `ListServiceRecordsByPlate`, which never does.
+`CreateVehicle` needs a session so nobody can squat a plate anonymously, and
+answers `already_exists` for a registered plate or chassi — which is how the
+owner app knows to claim the bike instead.
+
+Error messages are written for the app's users, in Portuguese, and shown as
+they arrive.
 
 All procedure names are prefixed with `mototeca.` — e.g.
 `POST /mototeca.workshop.v1.WorkshopService/Login`.
@@ -53,11 +62,14 @@ a third larger and entirely in memory — so photos stream instead. Fields:
 `file` (required), `kind` (`photo` default, or `invoice`), `phase`
 (`before`/`after`, photos only).
 
-Files go to S3-compatible storage (MinIO in compose), capped at 8 MiB, with an
-allowlist of jpeg/png/webp/pdf. The stored name is a generated UUID — never
-the client's filename — so an upload cannot overwrite another or smuggle a
-path. Success and failure bodies match the Connect shape, so the client parses
-them the same way.
+Ownership is checked before the body is read. Files go to S3-compatible
+storage (MinIO in compose), capped at 8 MiB, with an allowlist of
+jpeg/png/webp/pdf. The type is sniffed from the bytes, never taken from the
+client, so an HTML page labelled `image/png` is refused. The stored name is a
+generated UUID — never the client's filename — so an upload cannot overwrite
+another or smuggle a path. If linking the file to the record fails, the stored
+object is deleted. Success and failure bodies match the Connect shape, so the
+client parses them the same way.
 
 The bucket is anonymous-read: the plate lookup is public, so the photos on it
 must be too. Names are unguessable UUIDs, but that is obscurity rather than
@@ -72,7 +84,9 @@ original at it via `superseded_by`, in one transaction; lists then show only
 rows where `superseded_by IS NULL`. The superseded row stays in the table, so
 the trail is auditable — which is the whole basis for trusting history written
 by a shop you've never met. Only the workshop that wrote a record can revise
-it, and only once: the correction is what gets corrected next.
+it, and only once: the correction is what gets corrected next. Photos and the
+invoice carry over to the correction, and an owner's odometer and reminders
+ignore superseded rows.
 
 ### Auth
 
@@ -89,9 +103,17 @@ never from the request body.
 
 Every login returns the same `unauthenticated` error for an unknown
 CNPJ/phone as for a wrong password, so it can't be used to discover who is
-registered. Both logins, both signups and the public plate lookup are
-rate-limited per caller address (in-process — a multi-instance deployment needs
-a shared store).
+registered. Every endpoint is rate-limited per client IP; logins, signups and
+the public plate lookup get tighter limits (in-process — a multi-instance
+deployment needs a shared store). RPC bodies are capped at 1 MiB.
+
+### Browsers (CORS)
+
+The Flutter web build calls the API from another origin. With
+`CORS_ALLOWED_ORIGINS` unset only `localhost` origins are allowed, which covers
+`flutter run -d chrome`; set it to a comma-separated list in production.
+Sessions travel in the `Authorization` header, never in cookies, so a foreign
+page has no credentials to ride.
 
 ## Calling the API (Flutter side)
 
@@ -100,20 +122,23 @@ Every RPC is a `POST` to `/<package>.<Service>/<Method>` with
 `package:http` + `dart:convert` is enough.
 
 ```bash
-curl -s http://localhost:8080/mototeca.vehicle.v1.VehicleService/CreateVehicle \
+TOKEN=$(curl -s http://localhost:8080/mototeca.workshop.v1.WorkshopService/Login \
   -H "Content-Type: application/json" \
+  -d '{"cnpj":"11222333000181","password":"senha-forte-123"}' | jq -r .token)
+
+curl -s http://localhost:8080/mototeca.vehicle.v1.VehicleService/CreateVehicle \
+  -H "Content-Type: application/json" -H "Authorization: Bearer $TOKEN" \
   -d '{"plate":"ABC1D23","chassi":"9BWZZZ377VT004251","make":"Honda","model":"CG 160","year":2022}'
 # -> {"vehicle":{"id":"...","plate":"ABC1D23","chassi":"9BWZZZ377VT004251","make":"Honda","model":"CG 160","year":2022,"createdAt":"2026-08-30T12:00:00Z"}}
 
-curl -s http://localhost:8080/mototeca.vehicle.v1.VehicleService/GetVehicleByPlate \
+curl -s http://localhost:8080/mototeca.service.v1.ServiceRecordService/ListServiceRecordsByPlate \
   -H "Content-Type: application/json" \
   -d '{"plate":"ABC1D23"}'
 ```
 
 Two things to know when mirroring these shapes in Dart models:
 - Protobuf JSON uses **camelCase** field names, not the `snake_case` seen in
-  `.proto` (`current_owner_id` → `currentOwnerId`, `created_at` →
-  `createdAt`).
+  `.proto` (`mileage_km` → `mileageKm`, `created_at` → `createdAt`).
 - Errors come back as a plain JSON body — `{"code":"invalid_argument","message":"..."}`
   — with a matching non-2xx HTTP status. No envelope/wrapper to unwrap.
 
@@ -129,7 +154,7 @@ Two things to know when mirroring these shapes in Dart models:
 # 1. Database
 cp .env.example .env        # defaults already match docker-compose.yml
 make db-up                   # starts Postgres, waits until ready
-make migrate                 # applies every db/migrations/*.sql in order
+make migrate                 # applies pending db/migrations/*.sql
 
 # 2. Backend — starts API on :8080
 export AUTH_SECRET="$(openssl rand -base64 48)"   # or set it in .env
@@ -142,8 +167,8 @@ cd mobile && flutter run -d chrome
 Everything in one place instead, API included:
 
 ```bash
-docker compose up -d          # db + api
-make e2e                       # smoke-tests every endpoint against it
+docker compose up -d          # db, migrations, storage, api
+make e2e                       # asserts every endpoint against it
 ```
 
 See [mobile/DEMO.md](mobile/DEMO.md) for running the app in class.
@@ -166,8 +191,9 @@ internal/
   storage/             S3-compatible object storage for photos
   gen/                 generated Go protobuf/Connect code — do not edit
 proto/mototeca/…/*.proto   API contracts, source of truth for gen/
-db/migrations/       plain SQL migrations, applied in order
-scripts/e2e.sh       end-to-end smoke test of every endpoint (see `make e2e`)
+db/migrations/       plain SQL migrations, tracked in schema_migrations
+scripts/migrate.sh   applies pending migrations (`make migrate`, compose `migrate` service)
+scripts/e2e.sh       asserts the response of every endpoint (see `make e2e`)
 mobile/              the Flutter app
 design/              screen mockups + brand tokens — not app code, the reference the UI was built from
 ```
@@ -179,6 +205,7 @@ lib/api/           ApiClient (Connect-over-JSON) + typed ApiException
 lib/models/        Dart mirrors of the proto messages, hand-written
 lib/repositories/  one per service — where procedure names live
 lib/state/         AppScope/AppState — the session and the repositories
+lib/reports/       the plate history PDF, built on the device
 lib/screens/       one file per screen, matching design/NAVIGATION.md
 test/fixtures/     JSON captured from the real API, used by contract_test.dart
 ```
@@ -213,9 +240,8 @@ make test-integration-docker  # the same, run inside the compose network
 make generate             # buf generate — regenerate Go code from proto/
 
 make db-up / db-down / db-logs   # local Postgres container
-make migrate                      # apply every db/migrations/*.sql
-make e2e                           # end-to-end smoke test (needs `docker compose up -d api`)
-make test-integration-docker       # DB-backed tests, from inside the network
+make migrate                      # apply pending db/migrations/*.sql
+make e2e                           # assert every endpoint (needs `docker compose up -d`)
 
 cd mobile && flutter test          # API client, contract and navigation tests
 cd mobile && flutter analyze
@@ -234,6 +260,7 @@ Backend env vars (`.env`, see `.env.example`):
 | `STORAGE_BUCKET` | — | required when storage is enabled |
 | `STORAGE_PUBLIC_URL` | — | how clients reach the bucket (differs from the internal endpoint) |
 | `STORAGE_USE_SSL` | `false` | `true` for an https endpoint |
+| `CORS_ALLOWED_ORIGINS` | — | comma-separated browser origins; empty allows `localhost` only, `*` any |
 | `PORT` | `8080` | |
 | `LOG_FORMAT` | `text` | `text` or `json` |
 | `OTEL_EXPORTER` | `none` | `none`, `stdout`, or `otlp` |
