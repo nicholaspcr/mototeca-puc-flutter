@@ -5,6 +5,7 @@ import (
 	"errors"
 	"log/slog"
 	"time"
+	_ "time/tzdata" // the runtime image ships no zoneinfo
 
 	"connectrpc.com/connect"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -188,8 +189,7 @@ func (h *Handler) ListWorkshopServiceRecords(ctx context.Context, req *connect.R
 		return nil, connect.NewError(connect.CodeInternal, errors.New("falha ao carregar os registros"))
 	}
 
-	now := time.Now()
-	startOfMonth := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, now.Location())
+	startOfMonth := startOfMonth(time.Now())
 	count, err := h.repo.CountByWorkshopSince(ctx, workshopID, startOfMonth)
 	if err != nil {
 		h.logger.ErrorContext(ctx, "counting workshop records this month failed", "err", err)
@@ -200,6 +200,23 @@ func (h *Handler) ListWorkshopServiceRecords(ctx context.Context, req *connect.R
 		Records:        recordsToProto(records),
 		CountThisMonth: int32(count),
 	}), nil
+}
+
+// workshopZone is where "this month" is counted. The server runs in UTC, which
+// would move the last evening of each month into the next one.
+var workshopZone = mustLoadLocation("America/Sao_Paulo")
+
+func mustLoadLocation(name string) *time.Location {
+	location, err := time.LoadLocation(name)
+	if err != nil {
+		panic(err)
+	}
+	return location
+}
+
+func startOfMonth(now time.Time) time.Time {
+	local := now.In(workshopZone)
+	return time.Date(local.Year(), local.Month(), 1, 0, 0, 0, 0, workshopZone)
 }
 
 // clampLimit applies the default and the ceiling a client cannot exceed.
