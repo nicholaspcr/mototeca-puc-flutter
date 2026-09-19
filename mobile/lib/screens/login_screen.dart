@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../demo/demo_backend.dart';
+import '../demo/demo_client.dart';
 import '../main.dart';
 import '../state/app_scope.dart';
 import '../theme.dart';
@@ -120,6 +122,15 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                 ),
+                if (demoMode) ...[
+                  const SizedBox(height: 4),
+                  const MtFootnote(
+                    'Modo demonstração: dados de exemplo no próprio aparelho, '
+                    'sem servidor. Oficina $demoCNPJ · proprietário $demoPhone '
+                    '· senha $demoPassword.',
+                    align: TextAlign.center,
+                  ),
+                ],
                 TextButton(
                   key: const Key('login-sobre'),
                   onPressed: () => Navigator.pushNamed(context, Routes.about),

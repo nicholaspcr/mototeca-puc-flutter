@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
 
 import '../api/api_client.dart';
+import '../demo/demo_client.dart';
 import '../models/owner.dart';
 import '../models/workshop.dart';
 import '../repositories/owner_repository.dart';
@@ -14,7 +15,7 @@ import '../repositories/workshop_repository.dart';
 /// has one piece of shared state, and a dependency would cost more than it
 /// saves. A session is a workshop or an owner, never both.
 class AppState extends ChangeNotifier {
-  AppState({ApiClient? client}) : _client = client ?? ApiClient() {
+  AppState({ApiClient? client}) : _client = client ?? createApiClient() {
     _client.onUnauthenticated = _expireSession;
     workshops = WorkshopRepository(_client);
     owners = OwnerRepository(_client);

@@ -6,8 +6,14 @@ for the product/domain context, data model, and infra rationale. This file is
 the "get running" doc.
 
 This repo holds the **Go backend API** (repo root) and the **Flutter app**
-(`mobile/`). Every screen runs against the real API — there is no sample data
-left in the app. `design/` holds the screen mockups the UI was built from.
+(`mobile/`). `design/` holds the screen mockups the UI was built from.
+
+The app runs either way: by default it serves itself from an in-app demo
+backend (`mobile/lib/demo/`) with sample data and no network at all, which is
+what the classroom demo uses; passing `--dart-define=MOTOTECA_API_URL=<url>`
+points the same screens at the Go API instead. The demo backend answers the
+same procedures with the same JSON and the same refusals, so no screen,
+repository or error path changes between the two.
 
 ## Stack
 
@@ -231,6 +237,7 @@ lib/api/           ApiClient (Connect-over-JSON) + typed ApiException
 lib/models/        Dart mirrors of the proto messages, hand-written
 lib/repositories/  one per service — where procedure names live
 lib/state/         AppScope/AppState — the session and the repositories
+lib/demo/          in-app backend for the demo build (no server, no database)
 lib/reports/       the plate history PDF, built on the device
 lib/screens/       one file per screen, matching design/NAVIGATION.md
 test/fixtures/     JSON captured from the real API, used by contract_test.dart
@@ -269,7 +276,8 @@ make db-up / db-down / db-logs   # local Postgres container
 make migrate                      # apply pending db/migrations/*.sql
 make e2e                           # assert every endpoint (needs `docker compose up -d`)
 
-cd mobile && flutter test          # API client, contract and navigation tests
+cd mobile && flutter test          # API client, contract, navigation and demo flows
+cd mobile && flutter run -d chrome  # demo data, no backend needed
 cd mobile && flutter analyze
 ```
 
