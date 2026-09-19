@@ -125,8 +125,8 @@ class _LoginScreenState extends State<LoginScreen> {
                 if (demoMode) ...[
                   const SizedBox(height: 4),
                   const MtFootnote(
-                    'Modo demonstração: dados de exemplo no próprio aparelho, '
-                    'sem servidor. Oficina $demoCNPJ · proprietário $demoPhone '
+                    'Modo demonstração: toque em Entrar com os campos vazios. '
+                    'Para digitar: oficina $demoCNPJ · proprietário $demoPhone '
                     '· senha $demoPassword.',
                     align: TextAlign.center,
                   ),

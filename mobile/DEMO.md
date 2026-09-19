@@ -58,9 +58,13 @@ ficar ✓, e então:
 flutter run -d <id-do-aparelho>   # celular em modo desenvolvedor, via USB
 ```
 
-## Credenciais da demonstração
+## Entrar
 
-Aparecem no rodapé da tela de Login, então não precisa decorar:
+**Deixe os campos em branco e toque em Entrar** — vale para os dois perfis
+(oficina e proprietário). O modo demonstração entra na conta de exemplo.
+
+Se quiser digitar (ou mostrar o erro de senha), as credenciais também aparecem
+no rodapé da tela de Login:
 
 | | |
 |---|---|
@@ -72,8 +76,8 @@ Aparecem no rodapé da tela de Login, então não precisa decorar:
 
 Mostra os dois perfis e a consulta pública, que é o diferencial do produto:
 
-1. **Entrar como oficina** (CNPJ e senha acima) → Painel da Oficina, com os
-   serviços já registrados e o contador do mês.
+1. **Entrar como oficina** — campos vazios, toque em **Entrar** → Painel da
+   Oficina, com os serviços já registrados e o contador do mês.
    (Ou **Cadastre sua oficina** para mostrar o cadastro: CNPJ válido, nome e
    senha de 8+ caracteres.)
 2. **Criar Registro** → busca a placa `ABC1D23` → seleciona duas operações →
@@ -87,9 +91,10 @@ Mostra os dois perfis e a consulta pública, que é o diferencial do produto:
 4. **Sair** → **Consultar sem cadastro** → digita `ABC1D23` → **Consultar** →
    o histórico aparece sem login, com serviços de **duas oficinas diferentes**.
    É o argumento central do produto. **Baixar PDF** gera o histórico em PDF.
-5. **Sair** → "Sou proprietário" → entra com o celular acima → **Minhas Motos**
-   já traz a Yamaha Factor com quilometragem, serviços e o aviso de troca de
-   óleo. (Ou **Cadastre-se** para mostrar o cadastro do proprietário.)
+5. **Sair** → "Sou proprietário" → **Entrar** (campos vazios) → **Minhas
+   Motos** já traz a Yamaha Factor com quilometragem, serviços e o aviso de
+   troca de óleo. (Ou **Cadastre-se** para mostrar o cadastro do
+   proprietário.)
 6. **+ Cadastrar nova moto** → placa `ABC1D23` e final do chassi `000001` (os
    6 últimos caracteres, que estão no documento da moto) → **Continuar** → a
    moto entra na lista com todo o histórico das oficinas.
@@ -103,9 +108,9 @@ Mostra os dois perfis e a consulta pública, que é o diferencial do produto:
 São as mesmas respostas que o backend dá — o modo demonstração aplica as
 mesmas regras:
 
-- Senha errada no login → *"CNPJ ou senha inválidos"* (a mesma mensagem para
-  CNPJ inexistente, de propósito: não dá para descobrir quais oficinas
-  existem).
+- Senha errada no login (digitando um CNPJ e uma senha qualquer) → *"CNPJ ou
+  senha inválidos"* (a mesma mensagem para CNPJ inexistente, de propósito: não
+  dá para descobrir quais oficinas existem).
 - Salvar um registro sem escolher operação → *"selecione ao menos uma
   operação"*.
 - Lançar um registro com quilometragem menor que a última → o app pergunta se

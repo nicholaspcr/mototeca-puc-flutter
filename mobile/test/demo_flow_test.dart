@@ -54,6 +54,18 @@ void main() {
     expect(find.textContaining(demoPlate), findsWidgets);
   });
 
+  // On stage "Entrar" should be one tap, with nothing typed.
+  testWidgets('entrar com os campos vazios abre cada perfil', (tester) async {
+    await pumpDemoApp(tester);
+    await tapAndSettle(tester, find.byKey(const Key('login-entrar')));
+    expect(find.byType(DashboardScreen), findsOneWidget);
+
+    await tapAndSettle(tester, find.text('Sair'));
+    await tapAndSettle(tester, find.byKey(const Key('role-proprietario')));
+    await tapAndSettle(tester, find.byKey(const Key('login-entrar')));
+    expect(find.byType(MyVehiclesScreen), findsOneWidget);
+  });
+
   testWidgets('oficina lança um registro que aparece no painel', (
     tester,
   ) async {
