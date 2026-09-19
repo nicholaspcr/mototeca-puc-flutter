@@ -152,6 +152,14 @@ class DemoBackend {
   }
 
   Map<String, dynamic> _workshopLogin(Map<String, dynamic> request) {
+    // Empty fields sign in as the demo shop: on stage, "Entrar" should be one
+    // tap. Typed-but-wrong credentials still fail, so the refusal is
+    // demonstrable.
+    if (_blankCredentials(request['cnpj'], request['password'])) {
+      final demo = _workshops.first;
+      return {'workshop': _workshopJson(demo), 'token': 'demo-w-${demo['id']}'};
+    }
+
     final cnpj = _digits(request['cnpj'] as String? ?? '');
     final workshop = _workshops.where((w) => w['cnpj'] == cnpj).firstOrNull;
     if (workshop == null || workshop['password'] != request['password']) {
@@ -192,6 +200,11 @@ class DemoBackend {
   }
 
   Map<String, dynamic> _ownerLogin(Map<String, dynamic> request) {
+    if (_blankCredentials(request['phone'], request['password'])) {
+      final demo = _owners.first;
+      return {'owner': _ownerJson(demo), 'token': 'demo-o-${demo['id']}'};
+    }
+
     final phone = _digits(request['phone'] as String? ?? '');
     final owner = _owners.where((o) => o['phone'] == phone).firstOrNull;
     if (owner == null || owner['password'] != request['password']) {
@@ -714,6 +727,10 @@ class DemoBackend {
     return digits[12] == check(12, [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]) &&
         digits[13] == check(13, [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]);
   }
+
+  bool _blankCredentials(Object? account, Object? password) =>
+      (account as String? ?? '').trim().isEmpty &&
+      (password as String? ?? '').trim().isEmpty;
 
   String _digits(String raw) => raw.replaceAll(RegExp(r'\D'), '');
 
