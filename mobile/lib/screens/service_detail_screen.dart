@@ -7,6 +7,7 @@ import '../state/app_scope.dart';
 import '../theme.dart';
 import '../widgets/feedback.dart';
 import '../widgets/mt_widgets.dart';
+import '../widgets/photo_image.dart';
 
 class ServiceDetailArgs {
   const ServiceDetailArgs({required this.record, this.canRevise = false});
@@ -235,6 +236,15 @@ class ServiceDetailScreen extends StatelessWidget {
   }
 
   Future<void> _openInvoice(BuildContext context, Attachment invoice) async {
+    // A demo upload only exists in memory, so it is shown, not opened.
+    if (isDemoPhoto(invoice.url)) {
+      await showDialog<void>(
+        context: context,
+        builder: (_) => _Gallery(label: 'Nota fiscal', attachments: [invoice]),
+      );
+      return;
+    }
+
     final opened = await launchUrl(
       Uri.parse(invoice.url),
       mode: LaunchMode.externalApplication,
@@ -458,8 +468,8 @@ class _NetworkPhoto extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Image.network(
-      url,
+    return Image(
+      image: photoImage(url),
       fit: fit,
       width: double.infinity,
       height: double.infinity,
