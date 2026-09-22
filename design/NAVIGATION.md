@@ -15,6 +15,7 @@ Mapa de telas e rotas do app Flutter. As telas são os artboards em `design/` (3
 | `/proprietario/lembretes` | Lembretes | `Reminders.dc.html` | proprietário |
 | `/consulta` | Portal do Proprietário | `CustomerPortal.dc.html` | público |
 | `/servico/:id` | Detalhe do Serviço | `ServiceDetail.dc.html` | público (via histórico) |
+| `/registro/corrigir` | Corrigir Registro | `ReviseRecord.dc.html` | oficina (dono do registro) |
 | `/sobre` | Sobre o App | `About.dc.html` | público |
 
 ## Fluxos
