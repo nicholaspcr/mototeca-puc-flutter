@@ -1,24 +1,125 @@
 {
   "artboards": [
-    { "file": "Main.dc.html", "x": 0, "y": 0, "w": 393, "h": 852, "is_interactive": true },
-    { "file": "WorkshopRegister.dc.html", "x": 490, "y": 0, "w": 393, "h": 852, "is_interactive": false },
-
-    { "file": "Dashboard.dc.html", "x": 0, "y": 1020, "w": 393, "h": 852, "is_interactive": true },
-    { "file": "NewRecord.dc.html", "x": 490, "y": 1020, "w": 393, "h": 852, "is_interactive": true },
-    { "file": "VehicleRegister.dc.html", "x": 980, "y": 1020, "w": 393, "h": 852, "is_interactive": true },
-
-    { "file": "MyVehicles.dc.html", "x": 0, "y": 2040, "w": 393, "h": 852, "is_interactive": false },
-    { "file": "CustomerPortal.dc.html", "x": 490, "y": 2040, "w": 393, "h": 852, "is_interactive": true },
-    { "file": "ServiceDetail.dc.html", "x": 980, "y": 2040, "w": 393, "h": 852, "is_interactive": false },
-    { "file": "Reminders.dc.html", "x": 1470, "y": 2040, "w": 393, "h": 852, "is_interactive": false },
-
-    { "file": "About.dc.html", "x": 0, "y": 3060, "w": 393, "h": 852, "is_interactive": false }
+    {
+      "file": "Main.dc.html",
+      "x": 0,
+      "y": 0,
+      "w": 393,
+      "h": 852,
+      "is_interactive": true
+    },
+    {
+      "file": "WorkshopRegister.dc.html",
+      "x": 490,
+      "y": 0,
+      "w": 393,
+      "h": 852,
+      "is_interactive": false
+    },
+    {
+      "file": "Dashboard.dc.html",
+      "x": 0,
+      "y": 1020,
+      "w": 393,
+      "h": 852,
+      "is_interactive": true
+    },
+    {
+      "file": "NewRecord.dc.html",
+      "x": 490,
+      "y": 1020,
+      "w": 393,
+      "h": 852,
+      "is_interactive": true
+    },
+    {
+      "file": "VehicleRegister.dc.html",
+      "x": 980,
+      "y": 1020,
+      "w": 393,
+      "h": 852,
+      "is_interactive": true
+    },
+    {
+      "file": "MyVehicles.dc.html",
+      "x": 0,
+      "y": 2040,
+      "w": 393,
+      "h": 852,
+      "is_interactive": false
+    },
+    {
+      "file": "CustomerPortal.dc.html",
+      "x": 490,
+      "y": 2040,
+      "w": 393,
+      "h": 852,
+      "is_interactive": true
+    },
+    {
+      "file": "ServiceDetail.dc.html",
+      "x": 980,
+      "y": 2040,
+      "w": 393,
+      "h": 852,
+      "is_interactive": false
+    },
+    {
+      "file": "Reminders.dc.html",
+      "x": 1470,
+      "y": 2040,
+      "w": 393,
+      "h": 852,
+      "is_interactive": false
+    },
+    {
+      "file": "About.dc.html",
+      "x": 0,
+      "y": 3060,
+      "w": 393,
+      "h": 852,
+      "is_interactive": false
+    },
+    {
+      "file": "ReviseRecord.dc.html",
+      "x": 1470,
+      "y": 1020,
+      "w": 393,
+      "h": 852,
+      "is_interactive": false
+    }
   ],
   "annotations": [
-    { "id": "note-entrada", "x": 0, "y": -70, "w": 880, "text": "Entrada — login e cadastro da oficina" },
-    { "id": "note-oficina", "x": 0, "y": 950, "w": 1370, "text": "Fluxo da oficina (mecânico) — painel, novo registro, cadastro de veículo" },
-    { "id": "note-proprietario", "x": 0, "y": 1970, "w": 1860, "text": "Fluxo do proprietário — minhas motos, histórico por placa, detalhe do serviço, lembretes" },
-    { "id": "note-comum", "x": 0, "y": 2990, "w": 390, "text": "Comum aos dois perfis" }
+    {
+      "id": "note-entrada",
+      "x": 0,
+      "y": -70,
+      "w": 880,
+      "text": "Entrada — login e cadastro da oficina"
+    },
+    {
+      "id": "note-oficina",
+      "x": 0,
+      "y": 950,
+      "w": 1860,
+      "text": "Fluxo da oficina (mecânico) — painel, novo registro, cadastro de veículo, correção de um registro"
+    },
+    {
+      "id": "note-proprietario",
+      "x": 0,
+      "y": 1970,
+      "w": 1860,
+      "text": "Fluxo do proprietário — minhas motos, histórico por placa, detalhe do serviço, lembretes"
+    },
+    {
+      "id": "note-comum",
+      "x": 0,
+      "y": 2990,
+      "w": 390,
+      "text": "Comum aos dois perfis"
+    }
   ],
-  "launch": { "view": "canvas" }
+  "launch": {
+    "view": "canvas"
+  }
 }

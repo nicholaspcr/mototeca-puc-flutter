@@ -34,7 +34,17 @@
       <span style="font-size:13px;color:#64748B;">Honda CG 160 Start (2022)</span>
     </div>
 
+    <sc-if value="{{ sdSuperseded }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;align-items:center;gap:8px;padding:10px 8px 10px 14px;border-radius:8px;background:rgba(234,179,8,.12);border:1px solid rgba(234,179,8,.4);">
+        <span style="flex:1;font-size:13px;line-height:1.4;">Este registro foi corrigido pela oficina.</span>
+        <button style="height:36px;padding:0 12px;border-radius:8px;font-size:13px;font-weight:600;border:none;background:none;color:#B84F20;cursor:pointer;">Ver correção</button>
+      </div>
+    </sc-if>
+
     <div style="border:1px solid #E2E8F0;background:white;border-radius:10px;box-shadow:0 1px 2px 0 rgb(0 0 0 / .05);padding:16px;">
+      <sc-if value="{{ sdIsCorrection }}" hint-placeholder-val="{{ false }}">
+        <div style="font-size:12px;font-weight:600;color:#1B4965;margin-bottom:8px;">Correção de um registro anterior</div>
+      </sc-if>
       <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;">
         <span style="border-radius:9999px;padding:4px 12px;font-size:12px;font-weight:600;background:#F1F5F9;color:#1B4965;">Troca de óleo e filtro</span>
         <span style="border-radius:9999px;padding:4px 12px;font-size:12px;font-weight:600;background:#F1F5F9;color:#1B4965;">Corrente, relação e coroa</span>
@@ -102,11 +112,30 @@
       </div>
     </div>
 
+    <sc-if value="{{ sdCanRevise }}" hint-placeholder-val="{{ true }}">
+      <button style="height:44px;border-radius:8px;font-size:14px;font-weight:500;border:1px solid #E2E8F0;background:white;cursor:pointer;width:100%;">Corrigir registro</button>
+    </sc-if>
+
     <p style="margin:0;font-size:12px;color:#64748B;line-height:1.5;">Registro imutável: correções geram uma nova revisão, preservando o histórico original.</p>
 
   </main>
 </div>
 
 </x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  // Two states of the same screen: the current record a shop may still
+  // correct, and the one a correction replaced.
+  state = { superseded: false };
+
+  renderVals() {
+    return {
+      sdSuperseded: this.state.superseded,
+      sdIsCorrection: false,
+      sdCanRevise: !this.state.superseded,
+    };
+  }
+}
+</script>
 </body>
 </html>
