@@ -15,6 +15,9 @@ Live canvas: https://claude.ai/code/artifact/d6cc8a70-1503-4f85-ac17-220bb3a631c
 4. **Customer Portal** (`CustomerPortal.dc.html`) — no-login plate lookup, full cross-workshop service history.
 5. **Cadastro de Veículo** (`VehicleRegister.dc.html`) — register a vehicle (placa, chassi, marca, modelo, ano — matches `CreateVehicleRequest` in `proto/`).
 6. **Sobre o App** (`About.dc.html`) — static: logo, description, feature list, credits.
+7. **Corrigir Registro** (`ReviseRecord.dc.html`) — a correction is a new record that supersedes the original, which stays in the history pointing at it.
+
+Three states worth capturing live inside the screens above, driven by their own logic in `render.mjs`: the lower-mileage confirmation (New Record), the "Adicionar moto" dialog with the chassi check (Minhas Motos) and the superseded-record banner (Detalhe do Serviço).
 
 All mock data is hardcoded (3 sample vehicles). No real API calls, no cross-screen routing.
 
@@ -33,7 +36,8 @@ All mock data is hardcoded (3 sample vehicles). No real API calls, no cross-scre
 Full palette + usage rules: `Mototeca Brand.dc.html`. Fonts: Inter (UI text), JetBrains Mono (plates, IDs, money). Radius 8–10px, border `#E2E8F0`, tap targets ≥44px, form inputs 16px (avoids mobile auto-zoom).
 
 ## Files
-- `Main.dc.html`, `Dashboard.dc.html`, `NewRecord.dc.html`, `CustomerPortal.dc.html`, `VehicleRegister.dc.html`, `About.dc.html` — the 6 screens.
+- `Main.dc.html`, `WorkshopRegister.dc.html`, `Dashboard.dc.html`, `NewRecord.dc.html`, `VehicleRegister.dc.html`, `MyVehicles.dc.html`, `CustomerPortal.dc.html`, `ServiceDetail.dc.html`, `Reminders.dc.html`, `About.dc.html`, `ReviseRecord.dc.html` — the 11 screens.
+- `render.mjs` — renders every artboard (and the states above) to `exports/` (full height) and `exports-viewport/` (phone height), which is where the tp-2 report's images come from.
 - `canvas.json` — layout for the published canvas.
 - `Mototeca Brand.dc.html` — palette + logo reference.
 - `support.js`, `image-slot.js` — mockup runtime/component support files.

@@ -17,7 +17,7 @@
 </style>
 </helmet>
 
-<div style="width:393px;height:852px;overflow-y:auto;background:#F7FAFC;box-sizing:border-box;">
+<div style="position:relative;width:393px;height:852px;overflow-y:auto;background:#F7FAFC;box-sizing:border-box;">
 
   <header style="position:sticky;top:0;z-index:5;background:#EAF3FA;border-bottom:1px solid #CFE4F2;">
     <div style="padding:14px 20px;display:flex;align-items:center;gap:10px;">
@@ -103,21 +103,38 @@
           <label style="font-size:13px;font-weight:500;">Fotos (antes/depois)</label>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px;">
             <div style="height:120px;">
-              <x-import component-from-global-scope="image-slot" from="./image-slot.js" id="photo-before" placeholder="Foto antes" hint-size="100%,120px"></x-import>
+              <x-import component-from-global-scope="image-slot" from="./image-slot.js" id="photo-before" placeholder="Fotos antes" hint-size="100%,120px"></x-import>
             </div>
             <div style="height:120px;">
-              <x-import component-from-global-scope="image-slot" from="./image-slot.js" id="photo-after" placeholder="Foto depois" hint-size="100%,120px"></x-import>
+              <x-import component-from-global-scope="image-slot" from="./image-slot.js" id="photo-after" placeholder="Fotos depois" hint-size="100%,120px"></x-import>
             </div>
           </div>
+          <div style="height:110px;margin-top:10px;">
+            <x-import component-from-global-scope="image-slot" from="./image-slot.js" id="photo-invoice" placeholder="Foto da nota fiscal" hint-size="100%,110px"></x-import>
+          </div>
+          <p style="margin:6px 0 0;font-size:11px;color:#64748B;line-height:1.5;">Cada etapa aceita até 5 fotos. Os arquivos sobem depois que o registro é salvo.</p>
         </div>
       </div>
 
       <div style="display:flex;flex-direction:column;gap:10px;">
-        <button style="height:48px;border-radius:8px;font-size:15px;font-weight:600;border:1px solid transparent;background:#1B4965;color:#F8FAFC;cursor:pointer;">Salvar Registro</button>
+        <button onclick="{{ trySave }}" style="height:48px;border-radius:8px;font-size:15px;font-weight:600;border:1px solid transparent;background:#1B4965;color:#F8FAFC;cursor:pointer;">Salvar Registro</button>
         <button style="height:44px;border-radius:8px;font-size:14px;font-weight:500;border:1px solid #E2E8F0;background:white;cursor:pointer;">Cancelar</button>
       </div>
     </sc-if>
   </main>
+
+  <sc-if value="{{ nrLowerKm }}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute;inset:0;z-index:10;background:rgba(15,23,42,.35);display:flex;align-items:center;justify-content:center;padding:24px;box-sizing:border-box;">
+      <div style="width:100%;background:white;border-radius:14px;padding:20px;box-shadow:0 10px 30px rgb(0 0 0 / .18);">
+        <div style="font-size:17px;font-weight:600;">Quilometragem menor</div>
+        <p style="margin:10px 0 0;font-size:13px;line-height:1.5;color:#0F172A;">Quilometragem menor que a última registrada para esta moto (18.420 km). Salve assim só se o painel foi trocado ou zerado.</p>
+        <div style="margin-top:18px;display:flex;justify-content:flex-end;gap:8px;">
+          <button onclick="{{ dismissLowerKm }}" style="height:40px;padding:0 14px;border-radius:8px;font-size:14px;font-weight:500;border:none;background:none;color:#64748B;cursor:pointer;">Corrigir</button>
+          <button onclick="{{ dismissLowerKm }}" style="height:40px;padding:0 14px;border-radius:8px;font-size:14px;font-weight:600;border:none;background:none;color:#B84F20;cursor:pointer;">Salvar assim</button>
+        </div>
+      </div>
+    </div>
+  </sc-if>
 </div>
 
 </x-dc>
@@ -139,6 +156,7 @@ class Component extends DCLogic {
     nrPlateQuery: '', nrVehicle: null, nrSearched: false,
     nrOps: [], nrKm: '', nrCost: '', nrNotes: '',
     nrParts: [{ name: '', qty: 1, cost: '' }],
+    nrLowerKm: false,
   };
 
   setNrPlateQuery = (e) => this.setState({ nrPlateQuery: e.target.value });
@@ -152,6 +170,13 @@ class Component extends DCLogic {
     this.setState({ nrOps: has ? this.state.nrOps.filter(o => o !== op) : [...this.state.nrOps, op] });
   };
   setNrKm = (e) => this.setState({ nrKm: e.target.value });
+  // Refused by the backend unless the mechanic confirms: a lower odometer is
+  // the fraud this history exists to expose.
+  trySave = () => {
+    const last = this.state.nrVehicle ? this.state.nrVehicle.km : 0;
+    this.setState({ nrLowerKm: Number(this.state.nrKm) < last });
+  };
+  dismissLowerKm = () => this.setState({ nrLowerKm: false });
   setNrCost = (e) => this.setState({ nrCost: e.target.value });
   setNrNotes = (e) => this.setState({ nrNotes: e.target.value });
   addPart = () => this.setState({ nrParts: [...this.state.nrParts, { name: '', qty: 1, cost: '' }] });
@@ -194,6 +219,7 @@ class Component extends DCLogic {
       nrCost: s.nrCost, setNrCost: this.setNrCost,
       nrNotes: s.nrNotes, setNrNotes: this.setNrNotes,
       nrParts, addPart: this.addPart,
+      nrLowerKm: s.nrLowerKm, trySave: this.trySave, dismissLowerKm: this.dismissLowerKm,
     };
   }
 }

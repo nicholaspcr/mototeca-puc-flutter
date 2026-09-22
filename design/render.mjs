@@ -34,15 +34,29 @@ const SCREENS = [
             c.setState({ nrOps: ['Troca de óleo e filtro'], nrCost: '245.00',
                          nrParts: [{ name: 'Óleo 10w30', qty: 1, cost: '62.00' }] });`,
   },
+  {
+    file: 'NewRecord.dc.html', name: '04b-km-menor',
+    setup: `c.setState({ nrPlateQuery: 'ABC1D23' }); c.nrSearch();
+            c.setState({ nrOps: ['Pneus'], nrKm: '9000' }); c.trySave();`,
+  },
   { file: 'VehicleRegister.dc.html', name: '05-cadastro-veiculo' },
   { file: 'MyVehicles.dc.html', name: '06-minhas-motos' },
+  {
+    file: 'MyVehicles.dc.html', name: '06b-adicionar-moto',
+    setup: `c.setState({ showDialog: true });`,
+  },
   {
     file: 'CustomerPortal.dc.html', name: '07-portal-proprietario',
     setup: `c.setState({ custPlateQuery: 'ABC1D23' }); c.custSearch();`,
   },
   { file: 'ServiceDetail.dc.html', name: '08-detalhe-servico' },
+  {
+    file: 'ServiceDetail.dc.html', name: '08b-detalhe-corrigido',
+    setup: `c.setState({ superseded: true });`,
+  },
   { file: 'Reminders.dc.html', name: '09-lembretes' },
   { file: 'About.dc.html', name: '10-sobre' },
+  { file: 'ReviseRecord.dc.html', name: '11-corrigir-registro' },
 ];
 
 // Minimal stand-in for the design-canvas runtime: resolves {{ dotted.paths }},
