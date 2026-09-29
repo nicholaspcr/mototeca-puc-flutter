@@ -8,27 +8,42 @@ import '../repositories/owner_repository.dart';
 import '../repositories/service_record_repository.dart';
 import '../repositories/vehicle_repository.dart';
 import '../repositories/workshop_repository.dart';
+import '../storage/garage_store.dart';
+import '../storage/local_store.dart';
+import '../storage/outbox_store.dart';
 
-/// Holds the signed-in account and the repositories the screens call.
+/// Holds the signed-in account, the repositories the screens call and the two
+/// stores that work before any account exists.
 ///
 /// A plain [ChangeNotifier] rather than a state-management package: the app
 /// has one piece of shared state, and a dependency would cost more than it
 /// saves. A session is a workshop or an owner, never both.
 class AppState extends ChangeNotifier {
-  AppState({ApiClient? client}) : _client = client ?? createApiClient() {
+  AppState({ApiClient? client, LocalStore? store})
+    : _client = client ?? createApiClient(),
+      _store = store ?? createLocalStore() {
     _client.onUnauthenticated = _expireSession;
     workshops = WorkshopRepository(_client);
     owners = OwnerRepository(_client);
     vehicles = VehicleRepository(_client);
     serviceRecords = ServiceRecordRepository(_client);
+    garage = LocalGarage(_store);
+    outbox = Outbox(_store);
   }
 
   final ApiClient _client;
+  final LocalStore _store;
 
   late final WorkshopRepository workshops;
   late final OwnerRepository owners;
   late final VehicleRepository vehicles;
   late final ServiceRecordRepository serviceRecords;
+
+  /// The rider's bikes on this device, used by the Motociclista app.
+  late final LocalGarage garage;
+
+  /// Records waiting to be published, used by the Oficina app.
+  late final Outbox outbox;
 
   Workshop? _workshop;
   Owner? _owner;
@@ -80,6 +95,8 @@ class AppState extends ChangeNotifier {
 
   @override
   void dispose() {
+    garage.dispose();
+    outbox.dispose();
     _client.close();
     super.dispose();
   }
