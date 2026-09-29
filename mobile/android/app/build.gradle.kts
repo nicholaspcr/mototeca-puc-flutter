@@ -15,7 +15,6 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId = "br.edu.puc.mototeca"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
@@ -27,6 +26,24 @@ android {
         // flag during build.
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+    }
+
+    // One codebase, two installable apps:
+    //   flutter run --flavor rider -t lib/main_rider.dart
+    //   flutter run --flavor shop  -t lib/main_shop.dart
+    flavorDimensions += "app"
+
+    productFlavors {
+        create("rider") {
+            dimension = "app"
+            applicationIdSuffix = ".motociclista"
+            resValue("string", "app_name", "Mototeca Motociclista")
+        }
+        create("shop") {
+            dimension = "app"
+            applicationIdSuffix = ".oficina"
+            resValue("string", "app_name", "Mototeca Oficina")
+        }
     }
 
     buildTypes {
