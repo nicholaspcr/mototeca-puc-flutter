@@ -35,6 +35,23 @@ the git history.
   shown in the public history; decide whether that is necessary or should be
   reduced to the workshop.
 
+## Two apps, offline-first home
+
+The split is built (`ARCHITECTURE.md` §5, `design/NAVIGATION.md`). What is left:
+
+- **Photos in the queue.** A queued draft stores file paths, not bytes, so a
+  photo the system cleans up before the shop signs in is lost, and on the web
+  build there are no paths at all. Copy picked files into the app directory.
+- **Quick quote.** The offline calculator drawn on the workshop home (peças +
+  mão de obra) does not exist yet.
+- **Local maintenance notes.** The rider home offers "Anotar uma manutenção";
+  `LocalBike.note` holds one line and no screen writes it.
+- **Merge on sign-in.** The rider's local bikes are kept but not uploaded: the
+  garage shows the server's list once signed in, and matching a local bike to
+  a claimed one still has to be built.
+- **iOS flavors.** The Android side has `rider`/`shop` product flavors; iOS has
+  no project at all yet (see Engineering below).
+
 ## Product
 
 - **Reminders beyond oil.** One fixed 3,000 km oil interval for every bike.
@@ -46,8 +63,6 @@ the git history.
   before saving, and saved photos cannot be removed from a record (only a
   correction adds to them).
 - **QR code lookup** for the public history, as ARCHITECTURE.md describes.
-- **Offline drafts.** A dropped connection loses a half-filled Novo Registro.
-  Persist the draft locally and retry uploads (ARCHITECTURE.md §9).
 - **Mechanic roles.** `mechanics.role` exists in the schema and is unused.
 
 ## Engineering

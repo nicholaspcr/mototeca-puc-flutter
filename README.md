@@ -5,8 +5,9 @@ look up a bike's full history by plate. See [ARCHITECTURE.md](ARCHITECTURE.md)
 for the product/domain context, data model, and infra rationale. This file is
 the "get running" doc.
 
-This repo holds the **Go backend API** (repo root) and the **Flutter app**
-(`mobile/`). `design/` holds the screen mockups the UI was built from.
+This repo holds the **Go backend API** (repo root) and the **two Flutter apps**
+(`mobile/`): Mototeca Motociclista and Mototeca Oficina, built from one
+codebase. `design/` holds the screen mockups the UI was built from.
 
 The app runs either way: by default it serves itself from an in-app demo
 backend (`mobile/lib/demo/`) with sample data and no network at all, which is
@@ -20,7 +21,7 @@ repository or error path changes between the two.
 | | |
 |---|---|
 | Backend | Go, [Connect-RPC](https://connectrpc.com) over HTTP, Postgres ([pgx](https://github.com/jackc/pgx)) |
-| Mobile client | Flutter (`mobile/`) — `package:http` + `dart:convert`, no generated Dart stubs |
+| Mobile client | Flutter (`mobile/`) — two apps, one codebase; `package:http` + `dart:convert`, no generated Dart stubs |
 | API contract | Protobuf (`proto/`) → generated Go server code via [buf](https://buf.build) |
 | Observability | `log/slog` structured logs, OpenTelemetry tracing (RPC spans → pgx query spans) |
 
@@ -45,7 +46,7 @@ stubs (ARCHITECTURE.md section 5).
 | `service.v1.ServiceRecordService/CreateServiceRecord` | **workshop token** | Novo Registro (salvar) |
 | `service.v1.ServiceRecordService/ListWorkshopServiceRecords` | **workshop token** | Painel da Oficina |
 | `service.v1.ServiceRecordService/ReviseServiceRecord` | **workshop token** | correção de um registro |
-| `service.v1.ServiceRecordService/ListServiceRecordsByPlate` | public | Portal do Proprietário |
+| `service.v1.ServiceRecordService/ListServiceRecordsByPlate` | public | Consultar Placa |
 | `service.v1.ServiceRecordService/GetServiceRecord` | public | Detalhe do Serviço |
 
 `GetVehicleByPlate` needs a workshop session because it returns the chassi;
@@ -187,8 +188,8 @@ make migrate                 # applies pending db/migrations/*.sql
 export AUTH_SECRET="$(openssl rand -base64 48)"   # or set it in .env
 make run
 
-# 3. Flutter app (separate terminal)
-cd mobile && flutter run -d chrome
+# 3. Flutter app (separate terminal) — pick which of the two apps
+cd mobile && flutter run -d chrome -t lib/main_shop.dart
 ```
 
 Everything in one place instead, API included:
@@ -226,20 +227,28 @@ proto/mototeca/…/*.proto   API contracts, source of truth for gen/
 db/migrations/       plain SQL migrations, tracked in schema_migrations
 scripts/migrate.sh   applies pending migrations (`make migrate`, compose `migrate` service)
 scripts/e2e.sh       asserts the response of every endpoint (see `make e2e`)
-mobile/              the Flutter app
+mobile/              the two Flutter apps
 design/              screen mockups + brand tokens — not app code, the reference the UI was built from
 ```
 
-### The Flutter app
+### The Flutter apps
+
+Neither app opens on a login: `/` is a home screen listing what works with no
+account, and signing in is a route pushed on top of it.
 
 ```
+lib/main_rider.dart, lib/main_shop.dart   the two entry points
+lib/app/           MaterialApp, flavor, and one route table per app
+lib/rider/         screens only the Motociclista app builds
+lib/shop/          screens only the Oficina app builds
+lib/shared/        screens both build (plate lookup, detail, vehicle, about)
+lib/storage/       garage and outbox held on the device, before any account
 lib/api/           ApiClient (Connect-over-JSON) + typed ApiException
 lib/models/        Dart mirrors of the proto messages, hand-written
 lib/repositories/  one per service — where procedure names live
-lib/state/         AppScope/AppState — the session and the repositories
+lib/state/         AppScope/AppState — the session, repositories and stores
 lib/demo/          in-app backend for the demo build (no server, no database)
 lib/reports/       the plate history PDF, built on the device
-lib/screens/       one file per screen, matching design/NAVIGATION.md
 test/fixtures/     JSON captured from the real API, used by contract_test.dart
 ```
 
