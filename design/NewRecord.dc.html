@@ -25,6 +25,11 @@
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1B4965" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
       </button>
       <span style="font-size:16px;font-weight:700;letter-spacing:-0.025em;">Novo Registro</span>
+      <span style="margin-left:auto;border-radius:9999px;padding:3px 9px;background:#B84F20;color:#F8FAFC;font-size:11px;font-weight:600;">Oficina</span>
+    </div>
+    <div style="padding:0 20px 12px;display:flex;align-items:center;gap:7px;">
+      <span style="width:7px;height:7px;border-radius:50%;background:#22C55E;"></span>
+      <span style="font-size:12px;color:#1B4965;font-weight:500;">Salva no aparelho · envia quando houver sinal e conta</span>
     </div>
   </header>
 
@@ -117,8 +122,9 @@
       </div>
 
       <div style="display:flex;flex-direction:column;gap:10px;">
-        <button onclick="{{ trySave }}" style="height:48px;border-radius:8px;font-size:15px;font-weight:600;border:1px solid transparent;background:#1B4965;color:#F8FAFC;cursor:pointer;">Salvar Registro</button>
+        <button onclick="{{ trySave }}" style="height:48px;border-radius:8px;font-size:15px;font-weight:600;border:1px solid transparent;background:#1B4965;color:#F8FAFC;cursor:pointer;">Salvar na fila de envio</button>
         <button style="height:44px;border-radius:8px;font-size:14px;font-weight:500;border:1px solid #E2E8F0;background:white;cursor:pointer;">Cancelar</button>
+        <p style="margin:0;text-align:center;font-size:11px;color:#64748B;line-height:1.5;">O registro fica neste aparelho até a oficina entrar. Só então ele entra no histórico público da moto.</p>
       </div>
     </sc-if>
   </main>

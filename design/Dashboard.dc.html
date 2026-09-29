@@ -29,6 +29,7 @@
           <line x1="32" y1="32" x2="12" y2="19" stroke="#B84F20" stroke-width="6" stroke-linecap="round"></line>
         </svg>
         <span style="font-size:18px;font-weight:700;letter-spacing:-0.025em;">Mototeca</span>
+        <span style="flex:none;border-radius:9999px;padding:3px 9px;background:#B84F20;color:#F8FAFC;font-size:11px;font-weight:600;">Oficina</span>
       </div>
       <button style="height:36px;padding:0 14px;border-radius:8px;font-size:13px;font-weight:500;border:1px solid #E2E8F0;background:white;cursor:pointer;">Sair</button>
     </div>
@@ -49,6 +50,14 @@
         <input value="{{ dashPlateQuery }}" oninput="{{ setDashPlateQuery }}" placeholder="ABC1D23" style="text-transform:uppercase;flex:1;height:44px;border-radius:8px;border:1px solid #E2E8F0;padding:0 12px;font-size:16px;font-family:'JetBrains Mono',monospace;outline:none;box-sizing:border-box;min-width:0;">
         <button style="height:44px;padding:0 18px;border-radius:8px;font-size:14px;font-weight:500;border:1px solid #E2E8F0;background:white;cursor:pointer;white-space:nowrap;">Buscar</button>
       </div>
+    </div>
+
+    <div style="border:1px solid #E2E8F0;background:white;border-radius:10px;box-shadow:0 1px 2px 0 rgb(0 0 0 / .05);padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;">
+      <div style="min-width:0;">
+        <div style="font-size:14px;font-weight:600;">Fila de envio</div>
+        <div style="font-size:12px;color:#64748B;margin-top:2px;">{{ outboxLabel }}</div>
+      </div>
+      <span style="{{ outboxPillStyle }}">{{ outboxPillLabel }}</span>
     </div>
 
     <div style="border:1px solid transparent;background:#1B4965;border-radius:10px;box-shadow:0 1px 2px 0 rgb(0 0 0 / .05);padding:18px;display:flex;flex-direction:column;gap:4px;">
@@ -94,12 +103,21 @@ class Component extends DCLogic {
   setDashPlateQuery = (e) => this.setState({ dashPlateQuery: e.target.value });
 
   renderVals() {
+    const pending = 0;
     const recentRecords = OFICINA_RECORDS.map((r) => ({ ...r, opsLabel: r.ops.join(', ') }));
     return {
       shopName: 'Oficina do Zé',
       monthCount: OFICINA_RECORDS.length,
       dashPlateQuery: this.state.dashPlateQuery, setDashPlateQuery: this.setDashPlateQuery,
       recentRecords,
+      // The panel is the signed-in view, so the queue is normally empty — it is
+      // shown anyway, because the offline home writes into it.
+      outboxLabel: pending ? `${pending} registros aguardando envio` : 'Tudo enviado',
+      outboxPillStyle: 'flex:none;border-radius:9999px;padding:3px 10px;font-size:11px;font-weight:600;'
+        + (pending
+          ? 'background:rgba(234,179,8,.16);color:#854D0E;'
+          : 'background:rgba(34,197,94,.14);color:#166534;'),
+      outboxPillLabel: pending ? `${pending} na fila` : 'Em dia',
     };
   }
 }

@@ -20,25 +20,23 @@
 <div style="position:relative;width:393px;height:852px;overflow-y:auto;background:#F7FAFC;box-sizing:border-box;">
 
   <header style="position:sticky;top:0;z-index:5;background:#EAF3FA;border-bottom:1px solid #CFE4F2;">
-    <div style="padding:14px 20px;display:flex;align-items:center;justify-content:space-between;">
-      <div style="display:flex;align-items:center;gap:8px;">
-        <svg width="22" height="22" viewBox="0 0 64 64" fill="none">
-          <circle cx="32" cy="32" r="26" stroke="#1B4965" stroke-width="6"></circle>
-          <circle cx="32" cy="32" r="6" fill="#B84F20"></circle>
-          <line x1="32" y1="32" x2="52" y2="19" stroke="#B84F20" stroke-width="6" stroke-linecap="round"></line>
-          <line x1="32" y1="32" x2="12" y2="19" stroke="#B84F20" stroke-width="6" stroke-linecap="round"></line>
-        </svg>
-        <span style="font-size:18px;font-weight:700;letter-spacing:-0.025em;">Mototeca</span>
-      </div>
-      <button style="height:36px;padding:0 14px;border-radius:8px;font-size:13px;font-weight:500;border:1px solid #E2E8F0;background:white;cursor:pointer;">Sair</button>
+    <div style="padding:14px 20px;display:flex;align-items:center;gap:10px;">
+      <button style="flex:none;width:32px;height:32px;border-radius:8px;border:1px solid #CFE4F2;background:white;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1B4965" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <span style="font-size:16px;font-weight:700;letter-spacing:-0.025em;">Minha Garagem</span>
+      <span style="margin-left:auto;border-radius:9999px;padding:3px 9px;background:#1B4965;color:#F8FAFC;font-size:11px;font-weight:600;">Motociclista</span>
     </div>
-    <div style="padding:0 20px 12px;font-size:13px;color:#1B4965;font-weight:500;">Olá, Marcos Vinícius</div>
+    <div style="padding:0 20px 12px;display:flex;align-items:center;gap:7px;">
+      <span style="width:7px;height:7px;border-radius:50%;background:{{ syncDot }};"></span>
+      <span style="font-size:12px;color:#1B4965;font-weight:500;">{{ syncLine }}</span>
+    </div>
   </header>
 
   <main style="padding:20px 20px 32px;display:flex;flex-direction:column;gap:16px;">
 
     <div style="display:flex;align-items:center;justify-content:space-between;">
-      <h2 style="margin:0;font-size:16px;font-weight:600;">Minhas Motos</h2>
+      <h2 style="margin:0;font-size:16px;font-weight:600;">Motos cadastradas</h2>
       <span style="font-size:12px;color:#64748B;">2 veículos</span>
     </div>
 
@@ -49,6 +47,7 @@
           <span style="font-size:14px;font-weight:600;">Honda CG 160 Start</span>
         </div>
         <div style="font-size:12px;color:#64748B;margin-top:4px;">2022 · Vermelha · 18.420 km</div>
+        <div style="margin-top:8px;"><span style="{{ storageStyle }}">{{ storageLabel }}</span></div>
         <div style="margin-top:8px;display:inline-flex;align-items:center;gap:6px;border-radius:9999px;padding:3px 10px;background:rgba(234,179,8,.14);">
           <span style="width:6px;height:6px;border-radius:50%;background:#EAB308;"></span>
           <span style="font-size:11px;font-weight:600;color:#854D0E;">Troca de óleo em 580 km</span>
@@ -66,6 +65,7 @@
           <span style="font-size:14px;font-weight:600;">Yamaha Fazer 250</span>
         </div>
         <div style="font-size:12px;color:#64748B;margin-top:4px;">2021 · Preta · 32.180 km</div>
+        <div style="margin-top:8px;"><span style="{{ storageStyle }}">{{ storageLabel }}</span></div>
         <div style="margin-top:8px;display:inline-flex;align-items:center;gap:6px;border-radius:9999px;padding:3px 10px;background:rgba(34,197,94,.14);">
           <span style="width:6px;height:6px;border-radius:50%;background:#22C55E;"></span>
           <span style="font-size:11px;font-weight:600;color:#166534;">Em dia</span>
@@ -76,7 +76,15 @@
       </button>
     </div>
 
-    <button onclick="{{ openDialog }}" style="height:48px;border-radius:8px;font-size:15px;font-weight:600;border:1px solid transparent;background:#1B4965;color:#F8FAFC;cursor:pointer;">+ Cadastrar nova moto</button>
+    <button onclick="{{ openDialog }}" style="height:48px;border-radius:8px;font-size:15px;font-weight:600;border:1px solid transparent;background:#1B4965;color:#F8FAFC;cursor:pointer;">+ Adicionar moto</button>
+
+    <sc-if value="{{ signedOut }}" hint-placeholder-val="{{ true }}">
+      <div style="border:1px solid #E2E8F0;background:white;border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:10px;">
+        <div style="font-size:14px;font-weight:600;">Entrar para sincronizar</div>
+        <div style="font-size:13px;color:#64748B;line-height:1.5;">Esta garagem existe só neste aparelho. Com uma conta ela é guardada no servidor e passa a mostrar os serviços que as oficinas registraram.</div>
+        <button onclick="{{ signIn }}" style="height:44px;border-radius:8px;font-size:14px;font-weight:600;border:1px solid #1B4965;background:white;color:#1B4965;cursor:pointer;">Entrar</button>
+      </div>
+    </sc-if>
 
     <div style="border:1px solid #CFE4F2;background:#EAF3FA;border-radius:10px;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;">
       <div>
@@ -114,6 +122,10 @@
           <span style="font-size:11px;color:#64748B;line-height:1.4;">Os 6 últimos caracteres, no documento da moto (CRLV). Provam que ela é sua.</span>
         </div>
 
+        <div style="margin-top:14px;border:1px solid #E2E8F0;background:#F8FAFC;border-radius:8px;padding:12px;">
+          <span style="font-size:11px;color:#64748B;line-height:1.5;">Sem conta, a moto fica salva neste aparelho. Reivindicar a propriedade — e receber os registros das oficinas — exige entrar.</span>
+        </div>
+
         <button onclick="{{ closeAll }}" style="margin-top:20px;width:100%;height:48px;border-radius:8px;font-size:15px;font-weight:600;border:1px solid transparent;background:#1B4965;color:#F8FAFC;cursor:pointer;">Continuar</button>
         <button onclick="{{ closeAll }}" style="margin-top:8px;width:100%;height:44px;border-radius:8px;font-size:14px;font-weight:500;border:none;background:none;color:#64748B;cursor:pointer;">Cancelar</button>
       </div>
@@ -124,19 +136,33 @@
 </x-dc>
 <script type="text/x-dc" data-dc-script>
 class Component extends DCLogic {
-  state = { showDialog: false, showMenu: false };
+  // The garage works signed out: the bikes live on the phone until an account
+  // exists. Signing in is what turns them into claimed, server-side vehicles.
+  state = { showDialog: false, showMenu: false, signedIn: false };
 
   openDialog = () => this.setState({ showDialog: true, showMenu: false });
   openMenu = () => this.setState({ showMenu: true, showDialog: false });
   closeAll = () => this.setState({ showDialog: false, showMenu: false });
+  signIn = () => this.setState({ signedIn: true });
 
   renderVals() {
+    const signedIn = this.state.signedIn;
+    const storage = signedIn
+      ? { bg: 'rgba(27,73,101,.12)', fg: '#1B4965', text: 'Sincronizada' }
+      : { bg: '#F1F5F9', fg: '#64748B', text: 'Só neste aparelho' };
     return {
       showDialog: this.state.showDialog,
       showMenu: this.state.showMenu,
       openDialog: this.openDialog,
       openMenu: this.openMenu,
       closeAll: this.closeAll,
+      signIn: this.signIn,
+      signedOut: !signedIn,
+      syncDot: signedIn ? '#22C55E' : '#94A3B8',
+      syncLine: signedIn ? 'Sincronizada com a conta de Marcos Vinícius' : 'Sem conta · salva neste aparelho',
+      storageStyle: 'display:inline-flex;align-items:center;border-radius:9999px;padding:3px 10px;'
+        + 'background:' + storage.bg + ';color:' + storage.fg + ';font-size:11px;font-weight:600;',
+      storageLabel: storage.text,
     };
   }
 }
