@@ -18,107 +18,141 @@
 </helmet>
 
 <div style="width:393px;height:852px;overflow-y:auto;background:#F7FAFC;box-sizing:border-box;">
-  <div style="min-height:100%;display:flex;flex-direction:column;justify-content:center;padding:32px 20px;box-sizing:border-box;">
-    <div style="display:flex;flex-direction:column;gap:24px;">
 
-      <div style="text-align:center;">
-        <div style="display:inline-flex;align-items:center;gap:9px;">
-          <svg width="30" height="30" viewBox="0 0 64 64" fill="none">
-            <circle cx="32" cy="32" r="26" stroke="#1B4965" stroke-width="5"></circle>
-            <circle cx="32" cy="32" r="5" fill="#B84F20"></circle>
-            <line x1="32" y1="32" x2="52" y2="19" stroke="#B84F20" stroke-width="5" stroke-linecap="round"></line>
-            <line x1="32" y1="32" x2="12" y2="19" stroke="#B84F20" stroke-width="5" stroke-linecap="round"></line>
-          </svg>
-          <h1 style="margin:0;font-size:26px;font-weight:700;letter-spacing:-0.025em;">Mototeca</h1>
-        </div>
-        <p style="margin:6px 0 0;color:#64748B;font-size:14px;">Histórico de manutenção de motos</p>
+  <header style="position:sticky;top:0;z-index:5;background:#EAF3FA;border-bottom:1px solid #CFE4F2;">
+    <div style="padding:14px 20px;display:flex;align-items:center;justify-content:space-between;gap:10px;">
+      <div style="display:flex;align-items:center;gap:8px;min-width:0;">
+        <svg width="22" height="22" viewBox="0 0 64 64" fill="none">
+          <circle cx="32" cy="32" r="26" stroke="#1B4965" stroke-width="6"></circle>
+          <circle cx="32" cy="32" r="6" fill="#B84F20"></circle>
+          <line x1="32" y1="32" x2="52" y2="19" stroke="#B84F20" stroke-width="6" stroke-linecap="round"></line>
+          <line x1="32" y1="32" x2="12" y2="19" stroke="#B84F20" stroke-width="6" stroke-linecap="round"></line>
+        </svg>
+        <span style="font-size:18px;font-weight:700;letter-spacing:-0.025em;">Mototeca</span>
+        <span style="flex:none;border-radius:9999px;padding:3px 9px;background:#1B4965;color:#F8FAFC;font-size:11px;font-weight:600;">Motociclista</span>
       </div>
-
-      <div style="display:flex;border-radius:8px;border:1px solid #E2E8F0;overflow:hidden;">
-        <button onclick="{{ setRoleOficina }}" style="{{ roleTabStyleOficina }}">Sou da oficina</button>
-        <button onclick="{{ setRoleProprietario }}" style="{{ roleTabStyleProprietario }}">Sou proprietário</button>
-      </div>
-
-      <div style="border:1px solid #E2E8F0;background:white;border-radius:10px;box-shadow:0 1px 2px 0 rgb(0 0 0 / .05);">
-        <div style="padding:22px 20px 0;display:flex;flex-direction:column;gap:6px;">
-          <div style="font-size:22px;font-weight:600;letter-spacing:-0.025em;line-height:1;">Entrar</div>
-          <sc-if value="{{ isRoleOficina }}" hint-placeholder-val="{{ true }}">
-            <div style="font-size:14px;color:#64748B;">Acesse o painel da sua oficina</div>
-          </sc-if>
-          <sc-if value="{{ isRoleProprietario }}">
-            <div style="font-size:14px;color:#64748B;">Acesse o histórico das suas motos</div>
-          </sc-if>
-        </div>
-        <div style="padding:16px 20px 20px;">
-          <form onsubmit="{{ submitLogin }}" style="display:flex;flex-direction:column;gap:14px;">
-            <sc-if value="{{ isRoleOficina }}" hint-placeholder-val="{{ true }}">
-              <div style="display:flex;flex-direction:column;gap:7px;">
-                <label style="font-size:14px;font-weight:500;line-height:1;">CNPJ da oficina</label>
-                <input value="{{ loginCnpj }}" oninput="{{ setLoginCnpj }}" placeholder="00.000.000/0001-00" style="display:flex;height:44px;width:100%;border-radius:8px;border:1px solid #E2E8F0;background:white;padding:0 12px;font-size:16px;font-family:inherit;color:inherit;outline:none;box-sizing:border-box;">
-              </div>
-              <div style="display:flex;flex-direction:column;gap:7px;">
-                <label style="font-size:14px;font-weight:500;line-height:1;">Senha</label>
-                <input type="password" value="{{ loginPass }}" oninput="{{ setLoginPass }}" placeholder="Sua senha" style="display:flex;height:44px;width:100%;border-radius:8px;border:1px solid #E2E8F0;background:white;padding:0 12px;font-size:16px;font-family:inherit;color:inherit;outline:none;box-sizing:border-box;">
-              </div>
-            </sc-if>
-            <sc-if value="{{ isRoleProprietario }}">
-              <div style="display:flex;flex-direction:column;gap:7px;">
-                <label style="font-size:14px;font-weight:500;line-height:1;">Celular</label>
-                <input value="{{ loginPhone }}" oninput="{{ setLoginPhone }}" placeholder="(31) 90000-0000" style="display:flex;height:44px;width:100%;border-radius:8px;border:1px solid #E2E8F0;background:white;padding:0 12px;font-size:16px;font-family:inherit;color:inherit;outline:none;box-sizing:border-box;">
-              </div>
-              <div style="display:flex;flex-direction:column;gap:7px;">
-                <label style="font-size:14px;font-weight:500;line-height:1;">Código recebido por WhatsApp</label>
-                <input value="{{ loginOtp }}" oninput="{{ setLoginOtp }}" placeholder="000000" style="display:flex;height:44px;width:100%;border-radius:8px;border:1px solid #E2E8F0;background:white;padding:0 12px;font-size:16px;font-family:inherit;color:inherit;outline:none;box-sizing:border-box;">
-              </div>
-            </sc-if>
-            <button type="submit" style="width:100%;height:48px;border-radius:8px;font-size:15px;font-weight:600;border:1px solid transparent;background:#1B4965;color:#F8FAFC;cursor:pointer;margin-top:2px;">Entrar</button>
-            <p style="text-align:center;font-size:14px;color:#64748B;margin:0;">
-              Não tem conta? <a href="#" style="text-underline-offset:4px;">Cadastre sua oficina</a>
-            </p>
-          </form>
-        </div>
-      </div>
-
-      <p style="text-align:center;font-size:12px;color:#64748B;margin:0;padding:0 8px;">
-        Consultar o histórico de uma moto não exige cadastro — use o Portal do Proprietário.
-      </p>
+      <button onclick="{{ goLogin }}" style="flex:none;height:36px;padding:0 14px;border-radius:8px;font-size:13px;font-weight:600;border:1px solid #1B4965;background:white;color:#1B4965;cursor:pointer;">Entrar</button>
     </div>
-  </div>
+    <div style="padding:0 20px 12px;display:flex;align-items:center;gap:7px;">
+      <span style="width:7px;height:7px;border-radius:50%;background:#22C55E;"></span>
+      <span style="font-size:12px;color:#1B4965;font-weight:500;">Sem conta · suas motos ficam salvas neste aparelho</span>
+    </div>
+  </header>
+
+  <main style="padding:20px 20px 28px;display:flex;flex-direction:column;gap:16px;">
+
+    <div>
+      <h1 style="margin:0;font-size:20px;font-weight:700;letter-spacing:-0.025em;">O que dá para fazer agora</h1>
+      <p style="margin:6px 0 0;font-size:13px;color:#64748B;line-height:1.5;">Sem cadastro e sem esperar conexão. Entrar é opcional e só serve para sincronizar.</p>
+    </div>
+
+    <sc-for list="{{ features }}" as="item" hint-placeholder-count="4">
+      <button onclick="{{ item.open }}" style="{{ item.cardStyle }}">
+        <span style="{{ item.iconStyle }}">{{ item.icon }}</span>
+        <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;">
+          <span style="font-size:15px;font-weight:600;line-height:1.2;">{{ item.title }}</span>
+          <span style="font-size:12px;color:#64748B;line-height:1.45;">{{ item.subtitle }}</span>
+          <span style="{{ item.badgeStyle }}">{{ item.badge }}</span>
+        </span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94A3B8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex:none;margin-top:4px;"><path d="M9 18l6-6-6-6"/></svg>
+      </button>
+    </sc-for>
+
+    <div style="border:1px solid transparent;background:#1B4965;border-radius:10px;box-shadow:0 1px 2px 0 rgb(0 0 0 / .05);padding:18px;display:flex;flex-direction:column;gap:12px;">
+      <div>
+        <div style="font-size:16px;font-weight:600;color:#F8FAFC;">Entrar deixa a Mototeca completa</div>
+        <div style="font-size:13px;color:#CFE4F2;margin-top:4px;line-height:1.45;">A conta liga este aparelho ao histórico que as oficinas escrevem.</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="display:flex;gap:9px;align-items:flex-start;">
+          <span style="width:6px;height:6px;border-radius:50%;background:#B84F20;margin-top:6px;flex:none;"></span>
+          <span style="font-size:13px;color:#F8FAFC;line-height:1.45;">Reivindicar a moto como sua</span>
+        </div>
+        <div style="display:flex;gap:9px;align-items:flex-start;">
+          <span style="width:6px;height:6px;border-radius:50%;background:#B84F20;margin-top:6px;flex:none;"></span>
+          <span style="font-size:13px;color:#F8FAFC;line-height:1.45;">Ver os serviços registrados pelas oficinas</span>
+        </div>
+        <div style="display:flex;gap:9px;align-items:flex-start;">
+          <span style="width:6px;height:6px;border-radius:50%;background:#B84F20;margin-top:6px;flex:none;"></span>
+          <span style="font-size:13px;color:#F8FAFC;line-height:1.45;">Guardar no servidor o que já está neste aparelho</span>
+        </div>
+      </div>
+      <button onclick="{{ goLogin }}" style="height:46px;border-radius:8px;font-size:14px;font-weight:600;border:1px solid transparent;background:#F8FAFC;color:#1B4965;cursor:pointer;">Entrar ou criar conta</button>
+    </div>
+
+    <p style="text-align:center;font-size:12px;color:#64748B;margin:0;line-height:1.5;">
+      É oficina? Use o app <strong style="color:#0F172A;font-weight:600;">Mototeca Oficina</strong> para registrar serviços.<br>
+      <a href="#" style="text-underline-offset:4px;">Sobre o app</a>
+    </p>
+
+  </main>
 </div>
 
 </x-dc>
 <script type="text/x-dc" data-dc-script>
+// The home screen of the rider app. Everything listed here runs against data
+// already on the phone, so the first screen is never a login wall.
+var LOCAL_GARAGE = LOCAL_GARAGE || [
+  { plate: 'ABC1D23', label: 'Honda CG 160 Start', km: 18420, nextOilKm: 580 },
+  { plate: 'RIO4F56', label: 'Honda PCX 160', km: 9040, nextOilKm: 2100 },
+];
+
 class Component extends DCLogic {
-  state = {
-    loginRole: 'oficina',
-    loginCnpj: '', loginPass: '', loginPhone: '', loginOtp: '',
-  };
+  open = (screen) => () => this.setState({ lastOpened: screen });
+  goLogin = () => this.setState({ lastOpened: 'entrar' });
 
-  setRole = (r) => () => this.setState({ loginRole: r });
-  setLoginCnpj = (e) => this.setState({ loginCnpj: e.target.value });
-  setLoginPass = (e) => this.setState({ loginPass: e.target.value });
-  setLoginPhone = (e) => this.setState({ loginPhone: e.target.value });
-  setLoginOtp = (e) => this.setState({ loginOtp: e.target.value });
-  submitLogin = (e) => { e.preventDefault(); };
+  cardStyle = 'width:100%;text-align:left;border:1px solid #E2E8F0;background:white;border-radius:10px;'
+    + 'box-shadow:0 1px 2px 0 rgb(0 0 0 / .05);padding:14px;display:flex;gap:12px;align-items:flex-start;'
+    + 'cursor:pointer;font-family:inherit;color:inherit;';
+  iconStyle = 'flex:none;width:38px;height:38px;border-radius:9px;background:#EAF3FA;display:flex;'
+    + 'align-items:center;justify-content:center;font-size:19px;line-height:1;';
 
-  roleTabBase = { flex: 1, height: 44, fontSize: 14, fontWeight: 500, border: 'none', cursor: 'pointer' };
+  // Offline is the default state of this app, so it is the quiet badge and the
+  // exception — needing the network — is the one that gets a warning colour.
+  badge(offline) {
+    const tone = offline
+      ? { bg: 'rgba(34,197,94,.14)', fg: '#166534', text: 'Funciona offline' }
+      : { bg: 'rgba(234,179,8,.16)', fg: '#854D0E', text: 'Precisa de internet' };
+    return {
+      style: `margin-top:5px;align-self:flex-start;border-radius:9999px;padding:3px 9px;`
+        + `background:${tone.bg};color:${tone.fg};font-size:11px;font-weight:600;`,
+      text: tone.text,
+    };
+  }
 
   renderVals() {
-    const s = this.state;
-    const roleTabStyle = (role) => {
-      const active = s.loginRole === role;
-      return { ...this.roleTabBase, background: active ? '#1B4965' : 'white', color: active ? '#F8FAFC' : '#0F172A' };
-    };
-    return {
-      isRoleOficina: s.loginRole === 'oficina', isRoleProprietario: s.loginRole === 'proprietario',
-      setRoleOficina: this.setRole('oficina'), setRoleProprietario: this.setRole('proprietario'),
-      roleTabStyleOficina: roleTabStyle('oficina'), roleTabStyleProprietario: roleTabStyle('proprietario'),
-      loginCnpj: s.loginCnpj, setLoginCnpj: this.setLoginCnpj,
-      loginPass: s.loginPass, setLoginPass: this.setLoginPass,
-      loginPhone: s.loginPhone, setLoginPhone: this.setLoginPhone,
-      loginOtp: s.loginOtp, setLoginOtp: this.setLoginOtp,
-      submitLogin: this.submitLogin,
-    };
+    const bikes = LOCAL_GARAGE;
+    const soonest = bikes.slice().sort((a, b) => a.nextOilKm - b.nextOilKm)[0];
+    const rows = [
+      {
+        icon: '🏍️', title: 'Minha garagem', offline: true,
+        subtitle: `${bikes.length} motos salvas neste aparelho · ${bikes[0].label}`,
+      },
+      {
+        icon: '🔔', title: 'Lembretes de manutenção', offline: true,
+        subtitle: `Troca de óleo da ${soonest.label} em ${soonest.nextOilKm} km`,
+      },
+      {
+        icon: '📝', title: 'Anotar uma manutenção', offline: true,
+        subtitle: 'Óleo, pneus, gastos — fica no aparelho até você entrar',
+      },
+      {
+        icon: '🔎', title: 'Consultar placa', offline: false,
+        subtitle: 'Histórico público de qualquer moto, sem cadastro',
+      },
+    ];
+    const features = rows.map((row) => {
+      const badge = this.badge(row.offline);
+      return {
+        ...row,
+        cardStyle: this.cardStyle,
+        iconStyle: this.iconStyle,
+        badge: badge.text,
+        badgeStyle: badge.style,
+        open: this.open(row.title),
+      };
+    });
+    return { features, goLogin: this.goLogin };
   }
 }
 </script>

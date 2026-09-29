@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  html, body { margin: 0; font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif; background: #F7FAFC; color: #0F172A; font-feature-settings: "rlig" 1, "calt" 1; -webkit-font-smoothing: antialiased; }
+  ::placeholder { color: #64748B; opacity: 1; }
+  a { color: #B84F20; } a:hover { color: #92400E; }
+</style>
+</helmet>
+
+<div style="width:393px;height:852px;overflow-y:auto;background:#F7FAFC;box-sizing:border-box;">
+
+  <header style="position:sticky;top:0;z-index:5;background:#EAF3FA;border-bottom:1px solid #CFE4F2;">
+    <div style="padding:14px 20px;display:flex;align-items:center;gap:10px;">
+      <button onclick="{{ goBack }}" style="width:32px;height:32px;border-radius:8px;border:1px solid #CFE4F2;background:white;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1B4965" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <span style="font-size:16px;font-weight:700;letter-spacing:-0.025em;">Entrar</span>
+      <span style="margin-left:auto;border-radius:9999px;padding:3px 9px;background:#B84F20;color:#F8FAFC;font-size:11px;font-weight:600;">Oficina</span>
+    </div>
+  </header>
+
+  <main style="padding:24px 20px 32px;display:flex;flex-direction:column;gap:18px;">
+
+    <div>
+      <h1 style="margin:0;font-size:22px;font-weight:700;letter-spacing:-0.025em;">Conta da oficina</h1>
+      <p style="margin:6px 0 0;font-size:13px;color:#64748B;line-height:1.5;">Cada registro publicado leva o CNPJ que o assinou. É isso que dá valor ao histórico.</p>
+    </div>
+
+    <div style="border:1px solid #E2E8F0;background:white;border-radius:10px;box-shadow:0 1px 2px 0 rgb(0 0 0 / .05);padding:20px;">
+      <form onsubmit="{{ submit }}" style="display:flex;flex-direction:column;gap:14px;">
+        <div style="display:flex;flex-direction:column;gap:7px;">
+          <label style="font-size:14px;font-weight:500;line-height:1;">CNPJ da oficina</label>
+          <input value="{{ cnpj }}" oninput="{{ setCnpj }}" placeholder="00.000.000/0001-00" style="height:44px;width:100%;border-radius:8px;border:1px solid #E2E8F0;background:white;padding:0 12px;font-size:16px;font-family:'JetBrains Mono',monospace;color:inherit;outline:none;box-sizing:border-box;">
+        </div>
+        <div style="display:flex;flex-direction:column;gap:7px;">
+          <label style="font-size:14px;font-weight:500;line-height:1;">Senha</label>
+          <input type="password" value="{{ password }}" oninput="{{ setPassword }}" placeholder="Sua senha" style="height:44px;width:100%;border-radius:8px;border:1px solid #E2E8F0;background:white;padding:0 12px;font-size:16px;font-family:inherit;color:inherit;outline:none;box-sizing:border-box;">
+        </div>
+        <button type="submit" style="width:100%;height:48px;border-radius:8px;font-size:15px;font-weight:600;border:1px solid transparent;background:#1B4965;color:#F8FAFC;cursor:pointer;margin-top:2px;">Entrar</button>
+        <p style="text-align:center;font-size:14px;color:#64748B;margin:0;">
+          Não tem conta? <a href="#" style="text-underline-offset:4px;">Cadastre sua oficina</a>
+        </p>
+      </form>
+    </div>
+
+    <div style="border:1px solid #CFE4F2;background:#EAF3FA;border-radius:10px;padding:16px;display:flex;align-items:flex-start;gap:10px;">
+      <span style="flex:none;width:30px;height:30px;border-radius:8px;background:white;display:flex;align-items:center;justify-content:center;font-size:15px;line-height:1;">📤</span>
+      <div style="font-size:13px;color:#1B4965;line-height:1.5;">Ao entrar, os <strong style="font-weight:600;">{{ pendingCount }} registros</strong> que estão na fila deste aparelho são enviados em segundo plano.</div>
+    </div>
+
+    <button onclick="{{ goBack }}" style="height:44px;border-radius:8px;font-size:14px;font-weight:500;border:1px solid #E2E8F0;background:white;color:#0F172A;cursor:pointer;">Voltar e continuar offline</button>
+
+  </main>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+// Reached from the workshop home's "Entrar"; filling a record never passes here.
+class Component extends DCLogic {
+  state = { cnpj: '', password: '' };
+
+  setCnpj = (e) => this.setState({ cnpj: e.target.value });
+  setPassword = (e) => this.setState({ password: e.target.value });
+  goBack = () => {};
+  submit = (e) => { e.preventDefault(); };
+
+  renderVals() {
+    return {
+      cnpj: this.state.cnpj, setCnpj: this.setCnpj,
+      password: this.state.password, setPassword: this.setPassword,
+      pendingCount: 3,
+      submit: this.submit, goBack: this.goBack,
+    };
+  }
+}
+</script>
+</body>
+</html>
