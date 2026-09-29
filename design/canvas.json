@@ -1,122 +1,46 @@
 {
   "artboards": [
-    {
-      "file": "Main.dc.html",
-      "x": 0,
-      "y": 0,
-      "w": 393,
-      "h": 852,
-      "is_interactive": true
-    },
-    {
-      "file": "WorkshopRegister.dc.html",
-      "x": 490,
-      "y": 0,
-      "w": 393,
-      "h": 852,
-      "is_interactive": false
-    },
-    {
-      "file": "Dashboard.dc.html",
-      "x": 0,
-      "y": 1020,
-      "w": 393,
-      "h": 852,
-      "is_interactive": true
-    },
-    {
-      "file": "NewRecord.dc.html",
-      "x": 490,
-      "y": 1020,
-      "w": 393,
-      "h": 852,
-      "is_interactive": true
-    },
-    {
-      "file": "VehicleRegister.dc.html",
-      "x": 980,
-      "y": 1020,
-      "w": 393,
-      "h": 852,
-      "is_interactive": true
-    },
-    {
-      "file": "MyVehicles.dc.html",
-      "x": 0,
-      "y": 2040,
-      "w": 393,
-      "h": 852,
-      "is_interactive": false
-    },
-    {
-      "file": "CustomerPortal.dc.html",
-      "x": 490,
-      "y": 2040,
-      "w": 393,
-      "h": 852,
-      "is_interactive": true
-    },
-    {
-      "file": "ServiceDetail.dc.html",
-      "x": 980,
-      "y": 2040,
-      "w": 393,
-      "h": 852,
-      "is_interactive": false
-    },
-    {
-      "file": "Reminders.dc.html",
-      "x": 1470,
-      "y": 2040,
-      "w": 393,
-      "h": 852,
-      "is_interactive": false
-    },
-    {
-      "file": "About.dc.html",
-      "x": 0,
-      "y": 3060,
-      "w": 393,
-      "h": 852,
-      "is_interactive": false
-    },
-    {
-      "file": "ReviseRecord.dc.html",
-      "x": 1470,
-      "y": 1020,
-      "w": 393,
-      "h": 852,
-      "is_interactive": false
-    }
+    { "file": "Main.dc.html", "title": "Início — Motociclista", "x": 0, "y": 0, "w": 393, "h": 852, "is_interactive": true },
+    { "file": "OwnerLogin.dc.html", "title": "Entrar — Motociclista", "x": 490, "y": 0, "w": 393, "h": 852, "is_interactive": true },
+    { "file": "MyVehicles.dc.html", "title": "Minha Garagem", "x": 980, "y": 0, "w": 393, "h": 852, "is_interactive": true },
+    { "file": "Reminders.dc.html", "title": "Lembretes", "x": 1470, "y": 0, "w": 393, "h": 852, "is_interactive": false },
+
+    { "file": "CustomerPortal.dc.html", "title": "Consultar Placa", "x": 0, "y": 1020, "w": 393, "h": 852, "is_interactive": true },
+    { "file": "ServiceDetail.dc.html", "title": "Detalhe do Serviço", "x": 490, "y": 1020, "w": 393, "h": 852, "is_interactive": false },
+    { "file": "VehicleRegister.dc.html", "title": "Cadastrar Veículo", "x": 980, "y": 1020, "w": 393, "h": 852, "is_interactive": true },
+
+    { "file": "ShopHome.dc.html", "title": "Início — Oficina", "x": 0, "y": 2040, "w": 393, "h": 852, "is_interactive": true },
+    { "file": "ShopLogin.dc.html", "title": "Entrar — Oficina", "x": 490, "y": 2040, "w": 393, "h": 852, "is_interactive": true },
+    { "file": "WorkshopRegister.dc.html", "title": "Cadastrar Oficina", "x": 980, "y": 2040, "w": 393, "h": 852, "is_interactive": false },
+    { "file": "Dashboard.dc.html", "title": "Painel da Oficina", "x": 1470, "y": 2040, "w": 393, "h": 852, "is_interactive": true },
+
+    { "file": "NewRecord.dc.html", "title": "Novo Registro", "x": 0, "y": 3060, "w": 393, "h": 852, "is_interactive": true },
+    { "file": "Outbox.dc.html", "title": "Fila de Envio", "x": 490, "y": 3060, "w": 393, "h": 852, "is_interactive": true },
+    { "file": "ReviseRecord.dc.html", "title": "Corrigir Registro", "x": 980, "y": 3060, "w": 393, "h": 852, "is_interactive": false },
+
+    { "file": "About.dc.html", "title": "Sobre o App", "x": 0, "y": 4080, "w": 393, "h": 852, "is_interactive": false }
   ],
   "annotations": [
     {
-      "id": "note-entrada",
+      "id": "note-motociclista",
       "x": 0,
       "y": -70,
-      "w": 880,
-      "text": "Entrada — login e cadastro da oficina"
+      "w": 1860,
+      "text": "App Motociclista — abre no Início, não no login. Garagem, lembretes e consulta de placa funcionam sem conta; Entrar só sincroniza."
     },
     {
       "id": "note-oficina",
       "x": 0,
-      "y": 950,
-      "w": 1860,
-      "text": "Fluxo da oficina (mecânico) — painel, novo registro, cadastro de veículo, correção de um registro"
-    },
-    {
-      "id": "note-proprietario",
-      "x": 0,
       "y": 1970,
       "w": 1860,
-      "text": "Fluxo do proprietário — minhas motos, histórico por placa, detalhe do serviço, lembretes"
+      "text": "App Oficina — abre no Início. O registro é preenchido offline e espera na fila; a conta da oficina é exigida só para publicar no histórico."
     },
     {
       "id": "note-comum",
       "x": 0,
-      "y": 2990,
+      "y": 4010,
       "w": 390,
-      "text": "Comum aos dois perfis"
+      "text": "Comum aos dois apps"
     }
   ],
   "launch": {

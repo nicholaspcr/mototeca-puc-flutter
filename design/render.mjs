@@ -25,38 +25,59 @@ function argVal(flag) {
 // Screens in flow order, with optional setup that drives the artboard's own logic
 // into the state worth capturing (instead of a blank initial state).
 const SCREENS = [
-  { file: 'Main.dc.html', name: '01-login' },
-  { file: 'WorkshopRegister.dc.html', name: '02-cadastro-oficina' },
-  { file: 'Dashboard.dc.html', name: '03-painel-oficina' },
+  // App Motociclista — the home screen comes first because it is the app's root.
+  { file: 'Main.dc.html', name: '01-inicio-motociclista' },
+  { file: 'OwnerLogin.dc.html', name: '02-entrar-motociclista' },
   {
-    file: 'NewRecord.dc.html', name: '04-novo-registro',
+    file: 'OwnerLogin.dc.html', name: '02b-entrar-codigo',
+    setup: `c.setState({ phone: '(31) 90000-0000', codeSent: true });`,
+  },
+  { file: 'MyVehicles.dc.html', name: '03-minha-garagem' },
+  {
+    file: 'MyVehicles.dc.html', name: '03b-adicionar-moto',
+    setup: `c.setState({ showDialog: true });`,
+  },
+  {
+    file: 'MyVehicles.dc.html', name: '03c-garagem-sincronizada',
+    setup: `c.setState({ signedIn: true });`,
+  },
+  { file: 'Reminders.dc.html', name: '04-lembretes' },
+  {
+    file: 'CustomerPortal.dc.html', name: '05-consultar-placa',
+    setup: `c.setState({ custPlateQuery: 'ABC1D23' }); c.custSearch();`,
+  },
+  { file: 'ServiceDetail.dc.html', name: '06-detalhe-servico' },
+  {
+    file: 'ServiceDetail.dc.html', name: '06b-detalhe-corrigido',
+    setup: `c.setState({ superseded: true });`,
+  },
+  { file: 'VehicleRegister.dc.html', name: '07-cadastrar-veiculo' },
+
+  // App Oficina.
+  { file: 'ShopHome.dc.html', name: '08-inicio-oficina' },
+  { file: 'ShopLogin.dc.html', name: '09-entrar-oficina' },
+  { file: 'WorkshopRegister.dc.html', name: '10-cadastro-oficina' },
+  { file: 'Dashboard.dc.html', name: '11-painel-oficina' },
+  {
+    file: 'NewRecord.dc.html', name: '12-novo-registro',
     setup: `c.setState({ nrPlateQuery: 'ABC1D23' }); c.nrSearch();
             c.setState({ nrOps: ['Troca de óleo e filtro'], nrCost: '245.00',
                          nrParts: [{ name: 'Óleo 10w30', qty: 1, cost: '62.00' }] });`,
   },
   {
-    file: 'NewRecord.dc.html', name: '04b-km-menor',
+    file: 'NewRecord.dc.html', name: '12b-km-menor',
     setup: `c.setState({ nrPlateQuery: 'ABC1D23' }); c.nrSearch();
             c.setState({ nrOps: ['Pneus'], nrKm: '9000' }); c.trySave();`,
   },
-  { file: 'VehicleRegister.dc.html', name: '05-cadastro-veiculo' },
-  { file: 'MyVehicles.dc.html', name: '06-minhas-motos' },
+  { file: 'Outbox.dc.html', name: '13-fila-envio' },
   {
-    file: 'MyVehicles.dc.html', name: '06b-adicionar-moto',
-    setup: `c.setState({ showDialog: true });`,
+    file: 'Outbox.dc.html', name: '13b-fila-enviando',
+    setup: `c.setState({ signedIn: true });`,
   },
-  {
-    file: 'CustomerPortal.dc.html', name: '07-portal-proprietario',
-    setup: `c.setState({ custPlateQuery: 'ABC1D23' }); c.custSearch();`,
-  },
-  { file: 'ServiceDetail.dc.html', name: '08-detalhe-servico' },
-  {
-    file: 'ServiceDetail.dc.html', name: '08b-detalhe-corrigido',
-    setup: `c.setState({ superseded: true });`,
-  },
-  { file: 'Reminders.dc.html', name: '09-lembretes' },
-  { file: 'About.dc.html', name: '10-sobre' },
-  { file: 'ReviseRecord.dc.html', name: '11-corrigir-registro' },
+  { file: 'ReviseRecord.dc.html', name: '14-corrigir-registro' },
+
+  // Comum aos dois apps.
+  { file: 'About.dc.html', name: '15-sobre' },
 ];
 
 // Minimal stand-in for the design-canvas runtime: resolves {{ dotted.paths }},
