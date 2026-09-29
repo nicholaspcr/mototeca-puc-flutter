@@ -29,24 +29,30 @@
           <line x1="32" y1="32" x2="12" y2="19" stroke="#B84F20" stroke-width="6" stroke-linecap="round"></line>
         </svg>
         <span style="font-size:18px;font-weight:700;letter-spacing:-0.025em;">Mototeca</span>
-        <span style="flex:none;border-radius:9999px;padding:3px 9px;background:#1B4965;color:#F8FAFC;font-size:11px;font-weight:600;">Motociclista</span>
+        <span style="flex:none;border-radius:9999px;padding:3px 9px;background:#B84F20;color:#F8FAFC;font-size:11px;font-weight:600;">Oficina</span>
       </div>
       <button onclick="{{ goLogin }}" style="flex:none;height:36px;padding:0 14px;border-radius:8px;font-size:13px;font-weight:600;border:1px solid #1B4965;background:white;color:#1B4965;cursor:pointer;">Entrar</button>
     </div>
     <div style="padding:0 20px 12px;display:flex;align-items:center;gap:7px;">
       <span style="width:7px;height:7px;border-radius:50%;background:#22C55E;"></span>
-      <span style="font-size:12px;color:#1B4965;font-weight:500;">Sem conta · suas motos ficam salvas neste aparelho</span>
+      <span style="font-size:12px;color:#1B4965;font-weight:500;">Sem conta · {{ pendingCount }} registros salvos no aparelho</span>
     </div>
   </header>
 
   <main style="padding:20px 20px 28px;display:flex;flex-direction:column;gap:16px;">
 
-    <div>
-      <h1 style="margin:0;font-size:20px;font-weight:700;letter-spacing:-0.025em;">O que dá para fazer agora</h1>
-      <p style="margin:6px 0 0;font-size:13px;color:#64748B;line-height:1.5;">Sem cadastro e sem esperar conexão. Entrar é opcional e só serve para sincronizar.</p>
+    <div style="border:1px solid transparent;background:#1B4965;border-radius:10px;box-shadow:0 1px 2px 0 rgb(0 0 0 / .05);padding:18px;display:flex;flex-direction:column;gap:4px;">
+      <div style="font-size:17px;font-weight:600;color:#F8FAFC;">Novo Registro</div>
+      <div style="font-size:13px;color:#CFE4F2;margin-bottom:10px;line-height:1.45;">Preencha ao lado da moto, no box. O envio espera o sinal.</div>
+      <button onclick="{{ goNewRecord }}" style="height:46px;border-radius:8px;font-size:14px;font-weight:600;border:1px solid transparent;background:#F8FAFC;color:#1B4965;cursor:pointer;">Começar registro</button>
     </div>
 
-    <sc-for list="{{ features }}" as="item" hint-placeholder-count="4">
+    <div>
+      <h1 style="margin:0;font-size:20px;font-weight:700;letter-spacing:-0.025em;">Também funciona sem entrar</h1>
+      <p style="margin:6px 0 0;font-size:13px;color:#64748B;line-height:1.5;">A conta da oficina só é exigida para publicar o registro no histórico da moto.</p>
+    </div>
+
+    <sc-for list="{{ features }}" as="item" hint-placeholder-count="3">
       <button onclick="{{ item.open }}" style="{{ item.cardStyle }}">
         <span style="{{ item.iconStyle }}">{{ item.icon }}</span>
         <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;">
@@ -58,30 +64,17 @@
       </button>
     </sc-for>
 
-    <div style="border:1px solid transparent;background:#1B4965;border-radius:10px;box-shadow:0 1px 2px 0 rgb(0 0 0 / .05);padding:18px;display:flex;flex-direction:column;gap:12px;">
-      <div>
-        <div style="font-size:16px;font-weight:600;color:#F8FAFC;">Entrar deixa a Mototeca completa</div>
-        <div style="font-size:13px;color:#CFE4F2;margin-top:4px;line-height:1.45;">A conta liga este aparelho ao histórico que as oficinas escrevem.</div>
-      </div>
-      <div style="display:flex;flex-direction:column;gap:8px;">
-        <div style="display:flex;gap:9px;align-items:flex-start;">
-          <span style="width:6px;height:6px;border-radius:50%;background:#B84F20;margin-top:6px;flex:none;"></span>
-          <span style="font-size:13px;color:#F8FAFC;line-height:1.45;">Reivindicar a moto como sua</span>
-        </div>
-        <div style="display:flex;gap:9px;align-items:flex-start;">
-          <span style="width:6px;height:6px;border-radius:50%;background:#B84F20;margin-top:6px;flex:none;"></span>
-          <span style="font-size:13px;color:#F8FAFC;line-height:1.45;">Ver os serviços registrados pelas oficinas</span>
-        </div>
-        <div style="display:flex;gap:9px;align-items:flex-start;">
-          <span style="width:6px;height:6px;border-radius:50%;background:#B84F20;margin-top:6px;flex:none;"></span>
-          <span style="font-size:13px;color:#F8FAFC;line-height:1.45;">Guardar no servidor o que já está neste aparelho</span>
-        </div>
-      </div>
-      <button onclick="{{ goLogin }}" style="height:46px;border-radius:8px;font-size:14px;font-weight:600;border:1px solid transparent;background:#F8FAFC;color:#1B4965;cursor:pointer;">Entrar ou criar conta</button>
+    <div style="border:1px solid #CFE4F2;background:#EAF3FA;border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:10px;">
+      <div style="font-size:15px;font-weight:600;color:#1B4965;">Entrar para publicar</div>
+      <div style="font-size:13px;color:#1B4965;line-height:1.5;">Um registro só entra no histórico público assinado pelo CNPJ da oficina. Entre uma vez e a fila sobe sozinha.</div>
+      <button onclick="{{ goLogin }}" style="height:44px;border-radius:8px;font-size:14px;font-weight:600;border:1px solid transparent;background:#1B4965;color:#F8FAFC;cursor:pointer;">Entrar com CNPJ</button>
+      <p style="text-align:center;font-size:13px;color:#1B4965;margin:0;">
+        Primeira vez? <a href="#" style="text-underline-offset:4px;">Cadastre sua oficina</a>
+      </p>
     </div>
 
     <p style="text-align:center;font-size:12px;color:#64748B;margin:0;line-height:1.5;">
-      É oficina? Use o app <strong style="color:#0F172A;font-weight:600;">Mototeca Oficina</strong> para registrar serviços.<br>
+      É dono da moto? Use o app <strong style="color:#0F172A;font-weight:600;">Mototeca Motociclista</strong>.<br>
       <a href="#" style="text-underline-offset:4px;">Sobre o app</a>
     </p>
 
@@ -90,16 +83,18 @@
 
 </x-dc>
 <script type="text/x-dc" data-dc-script>
-// The home screen of the rider app. Everything listed here runs against data
-// already on the phone, so the first screen is never a login wall.
-var LOCAL_GARAGE = LOCAL_GARAGE || [
-  { plate: 'ABC1D23', label: 'Honda CG 160 Start', km: 18420, nextOilKm: 580 },
-  { plate: 'RIO4F56', label: 'Honda PCX 160', km: 9040, nextOilKm: 2100 },
+// The home screen of the workshop app. A mechanic in a box with no signal can
+// still fill a record; only publishing it needs the account and the network.
+var OUTBOX = OUTBOX || [
+  { plate: 'ABC1D23', ops: 'Troca de óleo e filtro', savedAt: 'hoje, 14:32' },
+  { plate: 'BRA2E19', ops: 'Pneus, suspensão', savedAt: 'hoje, 11:05' },
+  { plate: 'RIO4F56', ops: 'Revisão programada', savedAt: 'ontem, 17:48' },
 ];
 
 class Component extends DCLogic {
   open = (screen) => () => this.setState({ lastOpened: screen });
   goLogin = () => this.setState({ lastOpened: 'entrar' });
+  goNewRecord = () => this.setState({ lastOpened: 'novo-registro' });
 
   cardStyle = 'width:100%;text-align:left;border:1px solid #E2E8F0;background:white;border-radius:10px;'
     + 'box-shadow:0 1px 2px 0 rgb(0 0 0 / .05);padding:14px;display:flex;gap:12px;align-items:flex-start;'
@@ -107,8 +102,6 @@ class Component extends DCLogic {
   iconStyle = 'flex:none;width:38px;height:38px;border-radius:9px;background:#EAF3FA;display:flex;'
     + 'align-items:center;justify-content:center;font-size:19px;line-height:1;';
 
-  // Offline is the default state of this app, so it is the quiet badge and the
-  // exception — needing the network — is the one that gets a warning colour.
   badge(offline) {
     const tone = offline
       ? { bg: 'rgba(34,197,94,.14)', fg: '#166534', text: 'Funciona offline' }
@@ -121,24 +114,18 @@ class Component extends DCLogic {
   }
 
   renderVals() {
-    const bikes = LOCAL_GARAGE;
-    const soonest = bikes.slice().sort((a, b) => a.nextOilKm - b.nextOilKm)[0];
     const rows = [
       {
-        icon: '🏍️', title: 'Minha garagem', offline: true,
-        subtitle: `${bikes.length} motos salvas neste aparelho · ${bikes[0].label}`,
+        icon: '📤', title: 'Fila de envio', offline: true,
+        subtitle: `${OUTBOX.length} registros aguardando · mais antigo de ${OUTBOX[OUTBOX.length - 1].savedAt}`,
       },
       {
-        icon: '🔔', title: 'Lembretes de manutenção', offline: true,
-        subtitle: `Troca de óleo da ${soonest.label} em ${soonest.nextOilKm} km`,
-      },
-      {
-        icon: '📝', title: 'Anotar uma manutenção', offline: true,
-        subtitle: 'Óleo, pneus, gastos — fica no aparelho até você entrar',
+        icon: '🧮', title: 'Orçamento rápido', offline: true,
+        subtitle: 'Some peças e mão de obra antes de fechar o serviço',
       },
       {
         icon: '🔎', title: 'Consultar placa', offline: false,
-        subtitle: 'Histórico público de qualquer moto, sem cadastro',
+        subtitle: 'Veja o que outras oficinas já fizeram na moto',
       },
     ];
     const features = rows.map((row) => {
@@ -152,7 +139,12 @@ class Component extends DCLogic {
         open: this.open(row.title),
       };
     });
-    return { features, goLogin: this.goLogin };
+    return {
+      features,
+      pendingCount: OUTBOX.length,
+      goLogin: this.goLogin,
+      goNewRecord: this.goNewRecord,
+    };
   }
 }
 </script>
