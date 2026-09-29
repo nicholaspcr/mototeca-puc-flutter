@@ -17,7 +17,7 @@ class AboutScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Sobre o App')),
+      appBar: const MtAppBar(title: 'Sobre o App', badge: MtBadge.shared()),
       body: ListView(
         padding: const EdgeInsets.symmetric(
           horizontal: MtSizes.screenPadding,

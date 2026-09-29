@@ -1,27 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:printing/printing.dart';
 
-import '../main.dart';
+import '../app/routes.dart';
 import '../reports/history_pdf.dart';
 import '../repositories/service_record_repository.dart';
 import '../state/app_scope.dart';
 import '../theme.dart';
 import '../widgets/feedback.dart';
 import '../widgets/mt_widgets.dart';
-import 'service_detail_screen.dart';
+import '../shared/service_detail_screen.dart';
 
-/// Portal do Proprietário — public plate lookup, no account required.
-class CustomerPortalScreen extends StatefulWidget {
-  const CustomerPortalScreen({super.key, this.initialPlate});
+/// Consultar Placa — public plate lookup, no account required.
+class PlateLookupScreen extends StatefulWidget {
+  const PlateLookupScreen({super.key, this.initialPlate});
 
   /// Pre-filled when a mechanic arrives from the dashboard search box.
   final String? initialPlate;
 
   @override
-  State<CustomerPortalScreen> createState() => _CustomerPortalScreenState();
+  State<PlateLookupScreen> createState() => _PlateLookupScreenState();
 }
 
-class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
+class _PlateLookupScreenState extends State<PlateLookupScreen> {
   late final _plate = TextEditingController(text: widget.initialPlate ?? '');
 
   PlateHistory? _history;
@@ -81,37 +81,10 @@ class _CustomerPortalScreenState extends State<CustomerPortalScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        toolbarHeight: 84,
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Row(
-              children: const [
-                MtLogo(size: 24),
-                SizedBox(width: 9),
-                Text(
-                  'Mototeca',
-                  style: TextStyle(
-                    fontSize: 19,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: -0.5,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 4),
-            const Text(
-              'Consulte o histórico de qualquer moto pela placa',
-              style: TextStyle(
-                fontSize: 13,
-                color: MtColors.slate500,
-                height: 1.4,
-              ),
-            ),
-          ],
-        ),
+      appBar: const MtAppBar(
+        title: 'Consultar Placa',
+        badge: MtBadge.shared(),
+        status: 'Histórico público — não exige cadastro',
       ),
       body: ListView(
         padding: const EdgeInsets.all(MtSizes.screenPadding),

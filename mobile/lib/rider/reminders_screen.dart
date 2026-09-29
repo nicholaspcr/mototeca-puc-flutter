@@ -41,7 +41,7 @@ class _RemindersScreenState extends State<RemindersScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Lembretes')),
+      appBar: const MtAppBar(title: 'Lembretes'),
       body: FutureBuilder<List<OwnedVehicle>>(
         future: _vehicles,
         builder: (context, snapshot) {

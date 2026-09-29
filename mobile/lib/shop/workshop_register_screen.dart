@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../main.dart';
+import '../app/routes.dart';
 import '../state/app_scope.dart';
 import '../theme.dart';
 import '../widgets/feedback.dart';
@@ -57,7 +57,7 @@ class _WorkshopRegisterScreenState extends State<WorkshopRegisterScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Cadastrar Oficina')),
+      appBar: const MtAppBar(title: 'Cadastrar Oficina'),
       body: ListView(
         padding: const EdgeInsets.all(MtSizes.screenPadding),
         children: [

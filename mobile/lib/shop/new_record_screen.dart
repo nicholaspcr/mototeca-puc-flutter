@@ -4,10 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../api/api_exception.dart';
-import '../main.dart';
+import '../app/routes.dart';
 import '../models/service_operation.dart';
 import '../models/service_record.dart';
 import '../models/vehicle.dart';
+import '../storage/outbox_store.dart';
 import '../state/app_scope.dart';
 import '../theme.dart';
 import '../widgets/feedback.dart';
@@ -106,6 +107,9 @@ class _NewRecordScreenState extends State<NewRecordScreen> {
   ];
   late final _selectedOps = {...?widget.revising?.operations};
 
+  /// Typed by hand when there is no session to look the plate up with.
+  late final _vehicleLabel = TextEditingController();
+
   final _picker = ImagePicker();
   final _photos = <String, List<_PickedPhoto>>{'before': [], 'after': []};
   _PickedPhoto? _invoice;
@@ -128,6 +132,7 @@ class _NewRecordScreenState extends State<NewRecordScreen> {
   @override
   void dispose() {
     _plate.dispose();
+    _vehicleLabel.dispose();
     _mechanic.dispose();
     _mileage.dispose();
     _cost.dispose();
@@ -138,8 +143,19 @@ class _NewRecordScreenState extends State<NewRecordScreen> {
     super.dispose();
   }
 
+  /// Signed out there is no session to look a plate up with, so the record is
+  /// written against what the mechanic types and queued (design/Outbox).
+  bool get _offline => AppScope.read(context).workshop == null;
+
+  bool get _formReady =>
+      _vehicle != null || (_offline && _plate.text.trim().isNotEmpty);
+
   Future<void> _search() async {
     if (_plate.text.trim().isEmpty) return;
+    if (_offline) {
+      setState(() => _searched = true);
+      return;
+    }
 
     setState(() => _searching = true);
     try {
@@ -159,8 +175,7 @@ class _NewRecordScreenState extends State<NewRecordScreen> {
   }
 
   Future<void> _save() async {
-    final vehicle = _vehicle;
-    if (vehicle == null) return;
+    if (!_formReady) return;
 
     if (_selectedOps.isEmpty) {
       showApiError(context, 'Selecione ao menos uma operação.');
@@ -189,10 +204,12 @@ class _NewRecordScreenState extends State<NewRecordScreen> {
     );
     final original = widget.revising;
 
+    if (_offline) return _queue(draft);
+
     setState(() => _saving = true);
     try {
       final record = original == null
-          ? await _create(vehicle.plate, draft)
+          ? await _create(_vehicle!.plate, draft)
           : await _revise(original, draft);
       if (record == null || !mounted) return;
 
@@ -217,6 +234,35 @@ class _NewRecordScreenState extends State<NewRecordScreen> {
     } finally {
       if (mounted) setState(() => _saving = false);
     }
+  }
+
+  /// Queues the record on the device; nothing is sent until the shop signs in.
+  Future<void> _queue(_Draft draft) async {
+    final state = AppScope.read(context);
+    await state.outbox.add(
+      OutboxDraft(
+        id: DateTime.now().microsecondsSinceEpoch.toString(),
+        plate: normalizePlate(_plate.text),
+        vehicleLabel: _vehicleLabel.text.trim().isEmpty
+            ? 'Moto não identificada'
+            : _vehicleLabel.text.trim(),
+        operations: draft.operations,
+        mileageKm: draft.mileageKm,
+        savedAt: DateTime.now(),
+        mechanicName: draft.mechanicName.trim(),
+        costCents: draft.costCents,
+        notes: draft.notes.trim(),
+        parts: draft.parts,
+        photoPaths: [
+          for (final photos in _photos.values)
+            for (final photo in photos) photo.name,
+        ],
+        invoicePath: _invoice?.name,
+      ),
+    );
+    if (!mounted) return;
+    showSuccess(context, 'Registro salvo na fila de envio.');
+    Navigator.pop(context, true);
   }
 
   /// Returns null when the mechanic declines to save a lower mileage.
@@ -367,16 +413,17 @@ class _NewRecordScreenState extends State<NewRecordScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          widget.revising == null ? 'Novo Registro' : 'Corrigir Registro',
-        ),
+      appBar: MtAppBar(
+        title: widget.revising == null ? 'Novo Registro' : 'Corrigir Registro',
+        status: _offline
+            ? 'Salva no aparelho · envia quando houver conta'
+            : 'Publicado no histórico da moto ao salvar',
       ),
       body: ListView(
         padding: const EdgeInsets.all(MtSizes.screenPadding),
         children: [
           _vehicleCard(),
-          if (_vehicle != null) ...[
+          if (_formReady) ...[
             const SizedBox(height: 16),
             _operationsCard(),
             const SizedBox(height: 16),
@@ -394,11 +441,7 @@ class _NewRecordScreenState extends State<NewRecordScreen> {
                         color: Colors.white,
                       ),
                     )
-                  : Text(
-                      widget.revising == null
-                          ? 'Salvar Registro'
-                          : 'Salvar Correção',
-                    ),
+                  : Text(_saveLabel),
             ),
             const SizedBox(height: 10),
             OutlinedButton(
@@ -409,6 +452,11 @@ class _NewRecordScreenState extends State<NewRecordScreen> {
         ],
       ),
     );
+  }
+
+  String get _saveLabel {
+    if (widget.revising != null) return 'Salvar Correção';
+    return _offline ? 'Salvar na fila de envio' : 'Salvar Registro';
   }
 
   Widget _vehicleCard() {
@@ -433,6 +481,9 @@ class _NewRecordScreenState extends State<NewRecordScreen> {
                       fontSize: 15,
                     ),
                     decoration: const InputDecoration(hintText: 'ABC1D23'),
+                    // Offline the plate alone opens the form, so typing it
+                    // has to rebuild.
+                    onChanged: _offline ? (_) => setState(() {}) : null,
                     onSubmitted: (_) => _search(),
                   ),
                 ),
@@ -441,7 +492,7 @@ class _NewRecordScreenState extends State<NewRecordScreen> {
                   width: 96,
                   child: OutlinedButton(
                     key: const Key('novo-registro-buscar'),
-                    onPressed: _searching ? null : _search,
+                    onPressed: _searching || _offline ? null : _search,
                     child: _searching
                         ? const SizedBox(
                             height: 16,
@@ -453,7 +504,20 @@ class _NewRecordScreenState extends State<NewRecordScreen> {
                 ),
               ],
             ),
-          if (_searched && _vehicle == null) ...[
+          if (_offline) ...[
+            const SizedBox(height: 14),
+            MtField(
+              key: const Key('novo-registro-modelo'),
+              label: 'Marca e modelo',
+              hint: 'Honda CG 160 Start',
+              helper:
+                  'Sem conta o app não consulta a placa. O registro vai para '
+                  'a fila com o que você digitar.',
+              controller: _vehicleLabel,
+              textCapitalization: TextCapitalization.words,
+            ),
+          ],
+          if (!_offline && _searched && _vehicle == null) ...[
             const SizedBox(height: 14),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
