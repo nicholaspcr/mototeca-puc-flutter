@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../main.dart';
+import '../app/routes.dart';
 import '../models/service_record.dart';
 import '../state/app_scope.dart';
 import '../theme.dart';
@@ -33,7 +33,10 @@ class ServiceDetailScreen extends StatelessWidget {
     final vehicle = record.vehicle;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Detalhe do Serviço')),
+      appBar: const MtAppBar(
+        title: 'Detalhe do Serviço',
+        badge: MtBadge.shared(),
+      ),
       body: ListView(
         padding: const EdgeInsets.all(MtSizes.screenPadding),
         children: [

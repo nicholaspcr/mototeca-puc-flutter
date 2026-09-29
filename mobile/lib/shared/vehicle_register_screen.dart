@@ -69,7 +69,10 @@ class _VehicleRegisterScreenState extends State<VehicleRegisterScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Cadastrar Veículo')),
+      appBar: const MtAppBar(
+        title: 'Cadastrar Veículo',
+        badge: MtBadge.shared(),
+      ),
       body: ListView(
         padding: const EdgeInsets.all(MtSizes.screenPadding),
         children: [

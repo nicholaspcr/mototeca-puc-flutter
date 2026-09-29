@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 
-import '../main.dart';
+import '../app/routes.dart';
 import '../models/service_record.dart';
 import '../repositories/service_record_repository.dart';
 import '../state/app_scope.dart';
 import '../theme.dart';
 import '../widgets/feedback.dart';
 import '../widgets/mt_widgets.dart';
-import 'service_detail_screen.dart';
+import '../shared/service_detail_screen.dart';
 
 /// Painel da Oficina — the mechanic's home (design/Dashboard.dc.html).
 class DashboardScreen extends StatefulWidget {
@@ -50,11 +50,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
-  void _signOut() {
-    AppScope.read(context).signOut();
-    Navigator.pushReplacementNamed(context, Routes.login);
-  }
-
   Future<void> _openNewRecord({String? plate}) async {
     final created = await Navigator.pushNamed(
       context,
@@ -68,7 +63,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   /// public lookup the owner portal uses.
   void _openHistory() {
     if (_plate.text.trim().isEmpty) return;
-    Navigator.pushNamed(context, Routes.customerPortal, arguments: _plate.text);
+    Navigator.pushNamed(context, Routes.plateLookup, arguments: _plate.text);
   }
 
   @override
@@ -76,9 +71,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final workshop = AppScope.of(context).workshop;
 
     return Scaffold(
-      appBar: MtHomeHeader(
-        subtitle: 'Bem-vindo, ${workshop?.name ?? 'oficina'}',
-        onSignOut: _signOut,
+      appBar: MtAppBar(
+        title: 'Painel da Oficina',
+        status: 'Bem-vindo, ${workshop?.name ?? 'oficina'}',
       ),
       body: RefreshIndicator(
         onRefresh: _reload,
@@ -92,6 +87,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 _monthBanner(snapshot, feed),
                 const SizedBox(height: 20),
                 _searchCard(),
+                const SizedBox(height: 20),
+                _outboxCard(),
                 const SizedBox(height: 20),
                 _newRecordCard(),
                 const SizedBox(height: 20),
@@ -190,6 +187,60 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  /// The queue is normally empty here — the home screen is where records are
+  /// written offline — but it is the panel's job to say when it is not.
+  Widget _outboxCard() {
+    final outbox = AppScope.of(context).outbox;
+    final pending = outbox.length;
+    return InkWell(
+      key: const Key('dashboard-fila'),
+      onTap: () => Navigator.pushNamed(context, Routes.outbox),
+      borderRadius: BorderRadius.circular(MtSizes.cardRadius),
+      child: MtCard(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Fila de envio',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    pending == 0
+                        ? 'Tudo enviado'
+                        : '$pending registro(s) aguardando envio',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: MtColors.slate500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            pending == 0
+                ? const MtBadge(
+                    label: 'Em dia',
+                    background: Color(0x2422C55E),
+                    foreground: MtColors.successText,
+                  )
+                : MtBadge(
+                    label: '$pending na fila',
+                    background: const Color(0x29EAB308),
+                    foreground: MtColors.warningText,
+                  ),
+          ],
+        ),
       ),
     );
   }

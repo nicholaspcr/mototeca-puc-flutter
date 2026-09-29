@@ -80,7 +80,7 @@ class ServiceRecordRepository {
   }
 
   /// Returns null when no vehicle is registered under the plate — the empty
-  /// state the Portal do Proprietário shows, not an error.
+  /// state Consultar Placa shows, not an error.
   Future<PlateHistory?> historyByPlate(String plate) async {
     try {
       final body = await _client.call('$_service/ListServiceRecordsByPlate', {

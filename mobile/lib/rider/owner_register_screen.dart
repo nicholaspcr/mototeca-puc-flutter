@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../main.dart';
+import '../app/routes.dart';
 import '../state/app_scope.dart';
 import '../theme.dart';
 import '../widgets/feedback.dart';
@@ -41,7 +41,7 @@ class _OwnerRegisterScreenState extends State<OwnerRegisterScreen> {
       );
       if (!mounted) return;
       state.signInAsOwner(session);
-      Navigator.pushReplacementNamed(context, Routes.myVehicles);
+      Navigator.pushReplacementNamed(context, Routes.garage);
     } catch (error) {
       if (!mounted) return;
       showApiError(context, error);
@@ -53,7 +53,7 @@ class _OwnerRegisterScreenState extends State<OwnerRegisterScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Criar Conta')),
+      appBar: const MtAppBar(title: 'Criar Conta'),
       body: ListView(
         padding: const EdgeInsets.all(MtSizes.screenPadding),
         children: [
