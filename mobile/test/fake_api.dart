@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:mototeca/api/api_client.dart';
 import 'package:mototeca/state/app_scope.dart';
+import 'package:mototeca/storage/local_store.dart';
 
 /// An in-memory stand-in for the Go API, so widget tests exercise the real
 /// screens, repositories and JSON parsing without a server.
@@ -154,9 +155,13 @@ class FakeApi {
     };
   });
 
+  /// The device storage behind this state, so a test can seed or read it.
+  final store = MemoryLocalStore();
+
   /// An AppState wired to this fake, ready to hand to MototecaApp.
-  AppState get state => AppState(
+  late final AppState state = AppState(
     client: ApiClient(baseUrl: 'http://fake', httpClient: client),
+    store: store,
   );
 
   static http.Response _json(Map<String, dynamic> body, [int status = 200]) =>
