@@ -44,11 +44,31 @@ separates a photo from an invoice. Money is integer cents everywhere.
 
 ## 5. Mobile Client: Flutter
 
-Course requirement, not an open choice: one Flutter app (Android-first) for both personas, role/login screen routes into the mechanic or owner flow — mirrors `design/Mototeca App.dc.html`.
+Flutter (Android-first) is a course requirement, not an open choice. What is a
+choice: **two apps instead of one**, Mototeca Motociclista and Mototeca Oficina,
+each with its own root. The first design put a role toggle and a login form at
+`/`, which made the login the product's front door and forced every user to
+declare a persona before seeing anything. The two profiles share the history but
+not the rhythm — a rider opens the app a few times a year, a workshop dozens of
+times a day — so they get separate binaries built from the same `mobile/`
+codebase and the same API.
+
+Neither app opens on a login. The root of each is a home screen listing what
+already works with no account: the rider's garage, reminders and local
+maintenance notes; the workshop's service record and its outbox. Signing in is
+an action inside the app — it syncs the rider's garage and publishes the
+workshop's queue — never a gate in front of it. Plate lookup and service detail
+need the network but no account, in both apps.
+
+Screens and routes: `design/NAVIGATION.md`. Both apps are built from `mobile/`:
+`lib/main_rider.dart` and `lib/main_shop.dart`, with `lib/rider/`, `lib/shop/`
+and `lib/shared/` holding the screens and `lib/storage/` the device-held
+garage and outbox. On Android they are two flavors with distinct application
+IDs, so both install side by side.
 
 Talks to the Go API over plain HTTP+JSON: Connect-RPC already accepts `Content-Type: application/json` on the same endpoints it serves gRPC/gRPC-Web on, so `package:http` + `dart:convert` is enough — no codegen, no separate REST layer. Trade-off: RPC-shaped URLs (`POST /<Service>/<Method>`) and hand-written Dart models. See the README's "Calling the API" section for exact shapes.
 
-Flutter code lives under `mobile/`; `design/` is the mockup/brand reference and `design/NAVIGATION.md` is the screen/route map. Every screen calls the API — the app carries no sample data.
+Flutter code lives under `mobile/`; `design/` is the mockup/brand reference and `design/NAVIGATION.md` is the screen/route map. Screens that need the server call the API — the app carries no sample data outside the demo backend in `mobile/lib/demo/`.
 
 ## 6. Backend & Infrastructure
 

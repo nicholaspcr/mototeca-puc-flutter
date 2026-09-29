@@ -1,6 +1,7 @@
 # Como demonstrar o app em aula
 
-App Flutter com navegação funcional entre as 10 telas. Rotas em
+São **dois apps** Flutter com navegação funcional, um por perfil. Nenhum dos
+dois abre numa tela de login. Rotas em
 [`../design/NAVIGATION.md`](../design/NAVIGATION.md).
 
 **O app roda sozinho: sem backend, sem banco, sem internet.** Por padrão ele
@@ -24,7 +25,8 @@ export PATH="$HOME/.develop/flutter/bin:$PATH"
 
 ```bash
 cd mototeca/mobile
-flutter run -d chrome
+flutter run -d chrome -t lib/main_shop.dart     # app da oficina
+flutter run -d chrome -t lib/main_rider.dart    # app do motociclista
 ```
 
 Abre o app no Chrome em ~30s, com hot reload (tecla `r`). O app já se desenha
@@ -55,16 +57,21 @@ essa opção, instale o Android Studio, rode `flutter doctor` até o item Androi
 ficar ✓, e então:
 
 ```bash
-flutter run -d <id-do-aparelho>   # celular em modo desenvolvedor, via USB
+flutter run --flavor shop  -t lib/main_shop.dart  -d <id-do-aparelho>
+flutter run --flavor rider -t lib/main_rider.dart -d <id-do-aparelho>
 ```
+
+Os dois `applicationId` são diferentes (`.oficina` e `.motociclista`), então os
+dois aplicativos ficam instalados lado a lado.
 
 ## Entrar
 
-**Deixe os campos em branco e toque em Entrar** — vale para os dois perfis
-(oficina e proprietário). O modo demonstração entra na conta de exemplo.
+Entrar é opcional: as duas telas iniciais já funcionam sem conta. Quando for a
+hora, toque em **Entrar** e **deixe os campos em branco** — o modo demonstração
+entra na conta de exemplo, nos dois apps.
 
-Se quiser digitar (ou mostrar o erro de senha), as credenciais também aparecem
-no rodapé da tela de Login:
+Se quiser digitar (ou mostrar o erro de senha), as credenciais aparecem no
+rodapé da tela Entrar:
 
 | | |
 |---|---|
@@ -72,36 +79,40 @@ no rodapé da tela de Login:
 | Proprietário | celular `31990001234` · senha `senha-forte-123` |
 | Moto de exemplo | placa `ABC1D23` · final do chassi `000001` |
 
-## Roteiro sugerido (3 minutos)
+## Roteiro sugerido (4 minutos)
 
-Mostra os dois perfis e a consulta pública, que é o diferencial do produto:
+Mostra os dois apps e a consulta pública, que é o diferencial do produto.
 
-1. **Entrar como oficina** — campos vazios, toque em **Entrar** → Painel da
-   Oficina, com os serviços já registrados e o contador do mês.
-   (Ou **Cadastre sua oficina** para mostrar o cadastro: CNPJ válido, nome e
-   senha de 8+ caracteres.)
-2. **Criar Registro** → busca a placa `ABC1D23` → seleciona duas operações →
-   preenche km (acima de 18.420), valor e uma peça → toca em **Fotos antes**
-   (dá para escolher várias) e em **Foto da nota fiscal** → **Salvar
-   Registro**. Volta ao painel com o registro novo no topo.
-3. Toca no **registro recente** → Detalhe do Serviço (peças, observações,
-   fotos — toque para ver todas —, nota fiscal) → **Corrigir registro** →
-   muda a quilometragem → **Salvar Correção**. O detalhe passa a mostrar a
-   correção; o original fica preservado.
-4. **Sair** → **Consultar sem cadastro** → digita `ABC1D23` → **Consultar** →
-   o histórico aparece sem login, com serviços de **duas oficinas diferentes**.
-   É o argumento central do produto. **Baixar PDF** gera o histórico em PDF.
-5. **Sair** → "Sou proprietário" → **Entrar** (campos vazios) → **Minhas
-   Motos** já traz a Yamaha Factor com quilometragem, serviços e o aviso de
-   troca de óleo. (Ou **Cadastre-se** para mostrar o cadastro do
-   proprietário.)
-6. **+ Cadastrar nova moto** → placa `ABC1D23` e final do chassi `000001` (os
-   6 últimos caracteres, que estão no documento da moto) → **Continuar** → a
-   moto entra na lista com todo o histórico das oficinas.
-7. **Lembretes de manutenção** → a barra e o aviso saem da própria
-   quilometragem: 3.000 km desde a última troca de óleo.
-8. Menu **⋮** da moto → **Vendi esta moto** → **Desvincular**: o histórico
-   continua com a placa para o próximo dono.
+**App Oficina** (`flutter run -d chrome -t lib/main_shop.dart`)
+
+1. A tela inicial abre **sem login**, com o que dá para fazer agora: Novo
+   Registro, Fila de envio, Consultar placa.
+2. **Começar registro** *sem entrar* → digita a placa `ABC1D23`, o modelo,
+   escolhe duas operações, preenche km e valor → **Salvar na fila de envio**.
+   Nada foi para o servidor.
+3. **Fila de envio** → o registro está lá, marcado *Aguardando conta*.
+4. **Entrar e enviar** → campos vazios → **Entrar**: a fila sobe sozinha e o
+   Painel da Oficina abre com o registro publicado.
+5. Toca no **registro recente** → Detalhe do Serviço → **Corrigir registro** →
+   muda a quilometragem → **Salvar Correção**. O original fica preservado.
+6. **Consultar placa** → `ABC1D23` → histórico com serviços de **duas oficinas
+   diferentes**. É o argumento central do produto. **Baixar PDF** gera o
+   histórico em PDF.
+
+**App Motociclista** (`flutter run -d chrome -t lib/main_rider.dart`)
+
+7. A tela inicial lista o que funciona offline, com o selo *Funciona offline*
+   em cada item, e *Precisa de internet* só na consulta por placa.
+8. **Minha garagem** *sem entrar* → **+ Adicionar moto** → placa, modelo e km
+   → a moto entra com o selo **Só neste aparelho**.
+9. **Entrar** (campos vazios) → a garagem passa a mostrar as motos da conta,
+   com **Sincronizada**, quilometragem, serviços e o aviso de troca de óleo.
+10. **+ Adicionar moto** → placa `ABC1D23` e final do chassi `000001` (os 6
+    últimos, que estão no CRLV) → a moto entra com o histórico das oficinas.
+11. **Lembretes de manutenção** → a barra sai da própria quilometragem: 3.000
+    km desde a última troca de óleo.
+12. Menu **⋮** da moto → **Vendi esta moto** → **Desvincular**: o histórico
+    continua com a placa para o próximo dono.
 
 ### Erros que valem mostrar
 
@@ -119,6 +130,7 @@ mesmas regras:
   esta placa"*.
 - Buscar uma placa não cadastrada no Novo Registro → oferece cadastrar o
   veículo antes.
+- Sair da oficina e abrir a fila → *Nada é enviado antes de você entrar*.
 
 ## Rodando contra o backend de verdade (opcional)
 
@@ -130,7 +142,8 @@ docker compose up -d     # Postgres, migrations, MinIO e a API em :8080
 make e2e                  # popula dados e confere todos os endpoints
 
 cd mobile
-flutter run -d chrome --dart-define=MOTOTECA_API_URL=http://localhost:8080
+flutter run -d chrome -t lib/main_shop.dart \
+  --dart-define=MOTOTECA_API_URL=http://localhost:8080
 ```
 
 Passar `MOTOTECA_API_URL` desliga o modo demonstração; sem ele o app nunca

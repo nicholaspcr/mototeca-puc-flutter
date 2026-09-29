@@ -1,52 +1,83 @@
 # Navegação entre telas
 
-Mapa de telas e rotas do app Flutter. As telas são os artboards em `design/` (393×852); o mockup ao vivo está em https://claude.ai/code/artifact/d6cc8a70-1503-4f85-ac17-220bb3a631cc.
+Mapa de telas e rotas dos apps Flutter. As telas são os artboards em `design/`
+(393×852); o mockup ao vivo está em
+https://claude.ai/code/artifact/d6cc8a70-1503-4f85-ac17-220bb3a631cc.
 
-## Rotas
+A Mototeca é entregue como **dois aplicativos**, porque os dois perfis não
+compartilham rotina: o motociclista abre o app algumas vezes por ano, a oficina
+abre dezenas de vezes por dia. Um app só obrigava a escolher um perfil antes de
+ver qualquer coisa, e essa escolha virava uma tela de login na raiz.
+
+**Regra comum aos dois apps:** a rota `/` é uma tela inicial com o que já dá
+para usar, nunca um login. Entrar é uma ação dentro do app, em `/entrar`, e
+serve para sincronizar (motociclista) ou publicar (oficina).
+
+## App Motociclista
 
 | Rota | Tela | Artboard | Acesso |
 |---|---|---|---|
-| `/` | Login | `Main.dc.html` | público |
-| `/oficina/cadastro` | Cadastrar Oficina | `WorkshopRegister.dc.html` | público |
-| `/oficina` | Painel da Oficina | `Dashboard.dc.html` | oficina |
-| `/oficina/registro/novo` | Novo Registro | `NewRecord.dc.html` | oficina |
-| `/veiculo/cadastro` | Cadastrar Veículo | `VehicleRegister.dc.html` | oficina, proprietário |
-| `/proprietario` | Minhas Motos | `MyVehicles.dc.html` | proprietário |
-| `/proprietario/lembretes` | Lembretes | `Reminders.dc.html` | proprietário |
-| `/consulta` | Portal do Proprietário | `CustomerPortal.dc.html` | público |
-| `/servico/:id` | Detalhe do Serviço | `ServiceDetail.dc.html` | público (via histórico) |
-| `/registro/corrigir` | Corrigir Registro | `ReviseRecord.dc.html` | oficina (dono do registro) |
-| `/sobre` | Sobre o App | `About.dc.html` | público |
-
-## Fluxos
-
-**Oficina (mecânico)** — o perfil de alta frequência, que alimenta o histórico:
+| `/` | Início | `Main.dc.html` | público, offline |
+| `/entrar` | Entrar | `OwnerLogin.dc.html` | público |
+| `/cadastro` | Criar Conta | — | público |
+| `/garagem` | Minha Garagem | `MyVehicles.dc.html` | offline; sincroniza com conta |
+| `/veiculo/cadastro` | Cadastrar Veículo | `VehicleRegister.dc.html` | offline; reivindicar exige conta |
+| `/lembretes` | Lembretes | `Reminders.dc.html` | offline |
+| `/consulta` | Consultar Placa | `CustomerPortal.dc.html` | público, exige rede |
+| `/servico/:id` | Detalhe do Serviço | `ServiceDetail.dc.html` | público, exige rede |
+| `/sobre` | Sobre o App | `About.dc.html` | offline |
 
 ```
-/  --(entrar como oficina)-->  /oficina  --+--> /oficina/registro/novo --(salvar)--> /oficina
-                                           +--> /veiculo/cadastro      --(salvar)--> /oficina
-                                           +--> /servico/:id           --(voltar)--> /oficina
-/  --(cadastre sua oficina)-->  /oficina/cadastro  --(criar conta)-->  /oficina
+/  --+--> /garagem     --+--> /veiculo/cadastro
+     |                   +--> /servico/:id
+     +--> /lembretes
+     +--> /consulta    ----> /servico/:id
+     +--> /entrar      --(entrou)--> /garagem  (a garagem local sobe para a conta)
+     +--> /sobre
 ```
 
-**Proprietário** — perfil de baixa frequência, só leitura do histórico:
+## App Oficina
+
+| Rota | Tela | Artboard | Acesso |
+|---|---|---|---|
+| `/` | Início | `ShopHome.dc.html` | público, offline |
+| `/entrar` | Entrar | `ShopLogin.dc.html` | público |
+| `/cadastro` | Cadastrar Oficina | `WorkshopRegister.dc.html` | público |
+| `/registro/novo` | Novo Registro | `NewRecord.dc.html` | offline; publicar exige conta |
+| `/fila` | Fila de Envio | `Outbox.dc.html` | offline |
+| `/painel` | Painel da Oficina | `Dashboard.dc.html` | oficina |
+| `/registro/corrigir` | Corrigir Registro | `ReviseRecord.dc.html` | oficina (dona do registro) |
+| `/veiculo/cadastro` | Cadastrar Veículo | `VehicleRegister.dc.html` | oficina |
+| `/consulta` | Consultar Placa | `CustomerPortal.dc.html` | público, exige rede |
+| `/servico/:id` | Detalhe do Serviço | `ServiceDetail.dc.html` | público, exige rede |
+| `/sobre` | Sobre o App | `About.dc.html` | offline |
 
 ```
-/  --(entrar como proprietário)-->  /proprietario  --+--> /proprietario/lembretes
-                                                     +--> /veiculo/cadastro
-                                                     +--> /servico/:id
-```
+/  --+--> /registro/novo --(salvar)--> /fila
+     +--> /fila          --(entrar)--> /entrar --(entrou)--> /painel (a fila sobe sozinha)
+     +--> /consulta      ----> /servico/:id
+     +--> /entrar        --(entrou)--> /painel
+     +--> /cadastro      --(criar conta)--> /painel
+     +--> /sobre
 
-**Consulta pública** — sem conta, o diferencial do produto:
-
+/painel --+--> /registro/novo
+          +--> /veiculo/cadastro
+          +--> /servico/:id --> /registro/corrigir
 ```
-/  --(consultar sem cadastro)-->  /consulta  --(buscar placa)-->  /consulta (histórico)  -->  /servico/:id
-```
-
-**Comum aos dois perfis:** `/sobre` é alcançável a partir de `/`, e o botão "Sair" em `/oficina` e `/proprietario` volta para `/` limpando a sessão.
 
 ## Regras de navegação
 
-O login é a única raiz: o perfil escolhido (`oficina` ou `proprietário`) decide o destino após entrar, e não existe navegação cruzada entre os dois fluxos sem passar por `/`. O botão voltar do topo usa `Navigator.pop`, enquanto as ações que concluem um cadastro ou registro usam `pushReplacement` para não empilhar formulários já salvos.
+A raiz nunca é um formulário. `/` lista o que funciona sem conta e mostra um
+botão "Entrar"; quem nunca vai criar conta usa o app inteiro sem passar por
+`/entrar`.
 
-`/consulta` e `/servico/:id` são as únicas rotas que funcionam sem sessão — é o que sustenta a regra do produto de consultar histórico por placa sem criar conta.
+`/entrar` é empilhado sobre a tela de origem e volta para ela com
+`Navigator.pop`, levando junto o estado que já existia — a garagem local vira
+garagem sincronizada, a fila de envio começa a subir. Nada é apagado se o
+usuário desistir de entrar.
+
+As telas que concluem um cadastro ou um registro usam `pushReplacement`, para
+não empilhar formulários já salvos. O botão voltar do topo usa `Navigator.pop`.
+
+Dois apps, um histórico: `/consulta` e `/servico/:id` existem nos dois e leem os
+mesmos dados públicos. São as únicas rotas que exigem rede sem exigir conta.
