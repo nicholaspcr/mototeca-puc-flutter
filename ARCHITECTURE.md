@@ -19,7 +19,7 @@ mobile/lib/
   shop/      Oficina-only screens
   rider/     Motociclista-only screens
   shared/    plate lookup, service detail, vehicle, about
-  storage/   device storage: garage and outbox
+  storage/   SQLite on the device: garage, notes and outbox
   api/, models/, repositories/      Connect-over-JSON client
   state/     session, repositories and stores (AppScope)
   demo/      in-app backend used when no API URL is given
@@ -33,8 +33,24 @@ The root `/` of each app is a home screen, never a login.
   signal. It is saved to the *outbox* (`/fila`) on the device. Signing in, or
   tapping "Enviar tudo agora", uploads the queued records oldest first and
   removes each one that the API accepts.
-- **Motociclista.** The garage and the reminders work from bikes stored on the
-  device. Signing in shows the account's bikes and lets the owner claim one.
+- **Motociclista.** Bikes and maintenance notes are kept on the device and
+  can be added, edited and deleted. Signing in shows the account's bikes and
+  lets the owner claim one.
+
+### Device database
+
+One SQLite file, `mototeca.db`, through `sqflite` (`lib/storage/database.dart`).
+The web build runs the same SQLite as WebAssembly (`web/sqlite3.wasm`, from
+`dart run sqflite_common_ffi_web:setup`). Foreign keys cascade deletes.
+
+```
+bikes              plate (unique), label, year, mileage_km
+maintenance_notes  bike_id -> bikes, done_on, description, mileage_km, cost_cents
+outbox_drafts      plate, vehicle_label, mileage_km, mechanic_name, cost_cents, notes, saved_at
+outbox_operations  draft_id -> outbox_drafts, operation
+outbox_parts       draft_id -> outbox_drafts, name, quantity, cost_cents
+outbox_attachments draft_id -> outbox_drafts, kind, phase, filename, content_type, bytes
+```
 
 Plate lookup and service detail need the network but no account, in both apps.
 
@@ -47,7 +63,7 @@ Plate lookup and service detail need the network but no account, in both apps.
 | `/painel` | dashboard | |
 | `/registro/novo`, `/registro/corrigir` | new record, correction | |
 | `/fila` | outbox | |
-| `/garagem`, `/lembretes` | | garage, reminders |
+| `/garagem`, `/garagem/anotacoes`, `/lembretes` | | garage, notes, reminders |
 | `/consulta`, `/servico`, `/veiculo/cadastro`, `/sobre` | shared | shared |
 
 Screen mockups live in `design/` (`*.dc.html`, rendered by `design/render.mjs`).
@@ -114,8 +130,6 @@ Money is always integer cents.
 ## Not built yet
 
 - Uploading the outbox automatically when the connection returns.
-- Storing outbox photos inside the app. Today the outbox keeps file paths, and
-  the web build keeps none.
 - Merging the bikes saved on the device into the account after sign-in.
 - Checking workshop CNPJs, sign-in by OTP, password reset, presigned photo
   URLs, iOS build.
