@@ -13,6 +13,7 @@ class Routes {
   /// App Motociclista.
   static const garage = '/garagem';
   static const reminders = '/lembretes';
+  static const maintenanceNotes = '/garagem/anotacoes';
 
   /// App Oficina.
   static const dashboard = '/painel';

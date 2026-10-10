@@ -70,3 +70,7 @@ const chassiSuffixLength = 6;
 /// way the backend normalizes it.
 String normalizePlate(String raw) =>
     raw.trim().toUpperCase().replaceAll('-', '').replaceAll(' ', '');
+
+/// Old (ABC1234) and Mercosul (ABC1D23) plates.
+bool isValidPlate(String raw) =>
+    RegExp(r'^[A-Z]{3}[0-9][A-Z0-9][0-9]{2}$').hasMatch(normalizePlate(raw));

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../models/service_record.dart';
 import '../rider/garage_screen.dart';
+import '../rider/maintenance_notes_screen.dart';
 import '../rider/owner_register_screen.dart';
 import '../rider/reminders_screen.dart';
 import '../rider/rider_home_screen.dart';
@@ -17,6 +18,7 @@ import '../shop/shop_home_screen.dart';
 import '../shop/shop_sign_in_screen.dart';
 import '../shop/workshop_register_screen.dart';
 import '../state/app_scope.dart';
+import '../storage/garage_store.dart';
 import '../theme.dart';
 import 'flavor.dart';
 import 'routes.dart';
@@ -138,6 +140,11 @@ class _MototecaAppState extends State<MototecaApp> {
       Routes.newRecord when shopOnly => MaterialPageRoute<void>(
         builder: (_) =>
             NewRecordScreen(initialPlate: settings.arguments as String?),
+        settings: settings,
+      ),
+      Routes.maintenanceNotes when !shopOnly => MaterialPageRoute<void>(
+        builder: (_) =>
+            MaintenanceNotesScreen(bike: settings.arguments as LocalBike),
         settings: settings,
       ),
       Routes.reviseRecord when shopOnly => MaterialPageRoute<void>(

@@ -28,7 +28,7 @@ class _GarageScreenState extends State<GarageScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    AppScope.read(context).garage.load();
+    AppScope.read(context).garage.ensureLoaded();
     if (_signedIn) _vehicles ??= AppScope.read(context).owners.myVehicles();
   }
 
@@ -65,20 +65,35 @@ class _GarageScreenState extends State<GarageScreen> {
   }
 
   Future<void> _removeLocal(LocalBike bike) async {
-    final confirmed = await _confirmRelease(bike.label, bike.plate);
+    final confirmed = await _confirm(
+      title: 'Remover moto',
+      message:
+          '${bike.label} (${bike.plate}) e as anotações dela saem deste '
+          'aparelho.',
+      action: 'Remover',
+    );
     if (!confirmed || !mounted) return;
-    await AppScope.read(context).garage.remove(bike.plate);
+    await AppScope.read(context).garage.remove(bike.id!);
   }
 
-  Future<bool> _confirmRelease(String label, String plate) async {
+  Future<bool> _confirmRelease(String label, String plate) => _confirm(
+    title: 'Desvincular moto',
+    message:
+        '$label ($plate) sai da sua lista. O histórico continua com a '
+        'placa, e o novo dono pode vinculá-la.',
+    action: 'Desvincular',
+  );
+
+  Future<bool> _confirm({
+    required String title,
+    required String message,
+    required String action,
+  }) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Desvincular moto'),
-        content: Text(
-          '$label ($plate) sai da sua lista. O histórico continua com a '
-          'placa, e o novo dono pode vinculá-la.',
-        ),
+        title: Text(title),
+        content: Text(message),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -87,7 +102,7 @@ class _GarageScreenState extends State<GarageScreen> {
           TextButton(
             key: const Key('vehicle-release-confirmar'),
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Desvincular'),
+            child: Text(action),
           ),
         ],
       ),
@@ -96,7 +111,7 @@ class _GarageScreenState extends State<GarageScreen> {
   }
 
   Future<void> _addVehicle() async {
-    if (!_signedIn) return _addLocalBike();
+    if (!_signedIn) return _editLocalBike();
 
     final claim = await showDialog<_Claim>(
       context: context,
@@ -115,13 +130,17 @@ class _GarageScreenState extends State<GarageScreen> {
     }
   }
 
-  Future<void> _addLocalBike() async {
+  Future<void> _editLocalBike([LocalBike? initial]) async {
     final bike = await showDialog<LocalBike>(
       context: context,
-      builder: (_) => const _LocalBikeDialog(),
+      builder: (_) => _LocalBikeDialog(initial: initial),
     );
     if (bike == null || !mounted) return;
-    await AppScope.read(context).garage.save(bike);
+    try {
+      await AppScope.read(context).garage.save(bike);
+    } on DuplicatePlateException catch (error) {
+      if (mounted) showApiError(context, error.toString());
+    }
   }
 
   /// Claims by plate first, so a bike a shop already registered brings its
@@ -251,9 +270,7 @@ class _GarageScreenState extends State<GarageScreen> {
         ),
         const SizedBox(width: 12),
         Text(
-          count == null
-              ? ''
-              : '$count ${count == 1 ? 'veículo' : 'veículos'}',
+          count == null ? '' : '$count ${count == 1 ? 'veículo' : 'veículos'}',
           style: const TextStyle(fontSize: 12, color: MtColors.slate500),
         ),
       ],
@@ -343,13 +360,29 @@ class _GarageScreenState extends State<GarageScreen> {
     return _tile(
       plate: bike.plate,
       label: bike.label,
-      detail: '${bike.year} · ${bike.mileageKm} km',
+      detail: [?bike.year, '${bike.mileageKm} km'].join(' · '),
       storage: const MtBadge(
         label: 'Só neste aparelho',
         background: MtColors.slate100,
         foreground: MtColors.slate500,
       ),
-      onRemove: () => _removeLocal(bike),
+      onTap: () => Navigator.pushNamed(
+        context,
+        Routes.maintenanceNotes,
+        arguments: bike,
+      ),
+      actions: [
+        PopupMenuItem(
+          key: const Key('vehicle-edit'),
+          onTap: () => _editLocalBike(bike),
+          child: const Text('Editar'),
+        ),
+        PopupMenuItem(
+          key: const Key('vehicle-release'),
+          onTap: () => _removeLocal(bike),
+          child: const Text('Remover'),
+        ),
+      ],
     );
   }
 
@@ -384,7 +417,13 @@ class _GarageScreenState extends State<GarageScreen> {
               Routes.serviceDetail,
               arguments: ServiceDetailArgs(record: vehicle.lastService!),
             ),
-      onRemove: () => _release(vehicle),
+      actions: [
+        PopupMenuItem(
+          key: const Key('vehicle-release'),
+          onTap: () => _release(vehicle),
+          child: const Text('Vendi esta moto'),
+        ),
+      ],
     );
   }
 
@@ -395,7 +434,7 @@ class _GarageScreenState extends State<GarageScreen> {
     required Widget storage,
     Widget? reminder,
     VoidCallback? onTap,
-    required VoidCallback onRemove,
+    required List<PopupMenuEntry<void>> actions,
   }) {
     return InkWell(
       key: Key('vehicle-$plate'),
@@ -439,10 +478,11 @@ class _GarageScreenState extends State<GarageScreen> {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  Wrap(spacing: 8, runSpacing: 6, children: [
-                    storage,
-                    ?reminder,
-                  ]),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 6,
+                    children: [storage, ?reminder],
+                  ),
                 ],
               ),
             ),
@@ -454,13 +494,7 @@ class _GarageScreenState extends State<GarageScreen> {
                 color: MtColors.slate500,
                 size: 20,
               ),
-              itemBuilder: (_) => [
-                PopupMenuItem(
-                  key: const Key('vehicle-release'),
-                  onTap: onRemove,
-                  child: const Text('Vendi esta moto'),
-                ),
-              ],
+              itemBuilder: (_) => actions,
             ),
           ],
         ),
@@ -535,19 +569,25 @@ class _ClaimDialogState extends State<_ClaimDialog> {
   }
 }
 
-/// Adding a bike with no account: only what the rider can read off it.
+/// Adding or editing a bike on the device: only what the rider can read off it.
 class _LocalBikeDialog extends StatefulWidget {
-  const _LocalBikeDialog();
+  const _LocalBikeDialog({this.initial});
+
+  final LocalBike? initial;
 
   @override
   State<_LocalBikeDialog> createState() => _LocalBikeDialogState();
 }
 
 class _LocalBikeDialogState extends State<_LocalBikeDialog> {
-  final _plate = TextEditingController();
-  final _label = TextEditingController();
-  final _year = TextEditingController();
-  final _mileage = TextEditingController();
+  late final _plate = TextEditingController(text: widget.initial?.plate);
+  late final _label = TextEditingController(text: widget.initial?.label);
+  late final _year = TextEditingController(
+    text: widget.initial?.year?.toString(),
+  );
+  late final _mileage = TextEditingController(
+    text: widget.initial?.mileageKm.toString(),
+  );
 
   @override
   void dispose() {
@@ -561,25 +601,43 @@ class _LocalBikeDialogState extends State<_LocalBikeDialog> {
   void _submit() {
     final plate = _plate.text.trim();
     final label = _label.text.trim();
-    if (plate.isEmpty || label.isEmpty) {
-      showApiError(context, 'Informe a placa e o modelo da moto.');
+    final year = int.tryParse(_year.text.trim());
+    final mileage = int.tryParse(_mileage.text.trim().replaceAll('.', ''));
+    final error = _validate(plate, label, year, mileage);
+    if (error != null) {
+      showApiError(context, error);
       return;
     }
     Navigator.pop<LocalBike>(
       context,
       LocalBike(
+        id: widget.initial?.id,
         plate: plate,
         label: label,
-        year: int.tryParse(_year.text.trim()) ?? 0,
-        mileageKm: int.tryParse(_mileage.text.trim()) ?? 0,
+        year: year,
+        mileageKm: mileage ?? 0,
       ),
     );
+  }
+
+  String? _validate(String plate, String label, int? year, int? mileage) {
+    if (!isValidPlate(plate)) return 'Placa inválida. Use ABC1234 ou ABC1D23.';
+    if (label.isEmpty) return 'Informe a marca e o modelo da moto.';
+    final lastYear = DateTime.now().year + 1;
+    if (_year.text.trim().isNotEmpty &&
+        (year == null || year < 1900 || year > lastYear)) {
+      return 'Ano inválido.';
+    }
+    if (_mileage.text.trim().isNotEmpty && (mileage == null || mileage < 0)) {
+      return 'Quilometragem inválida.';
+    }
+    return null;
   }
 
   @override
   Widget build(BuildContext context) {
     return _DialogFrame(
-      title: 'Adicionar moto',
+      title: widget.initial == null ? 'Adicionar moto' : 'Editar moto',
       onSubmit: _submit,
       children: [
         MtField(
@@ -654,10 +712,7 @@ class _DialogFrame extends StatelessWidget {
           children: [
             Text(
               title,
-              style: const TextStyle(
-                fontSize: 17,
-                fontWeight: FontWeight.w600,
-              ),
+              style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 16),
             ...children,

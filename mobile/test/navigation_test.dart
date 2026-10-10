@@ -3,7 +3,9 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:mototeca/app/app.dart';
 import 'package:mototeca/app/flavor.dart';
+import 'package:mototeca/models/service_operation.dart';
 import 'package:mototeca/rider/garage_screen.dart';
+import 'package:mototeca/rider/maintenance_notes_screen.dart';
 import 'package:mototeca/rider/owner_register_screen.dart';
 import 'package:mototeca/rider/reminders_screen.dart';
 import 'package:mototeca/rider/rider_home_screen.dart';
@@ -18,6 +20,8 @@ import 'package:mototeca/shop/outbox_screen.dart';
 import 'package:mototeca/shop/shop_home_screen.dart';
 import 'package:mototeca/shop/shop_sign_in_screen.dart';
 import 'package:mototeca/shop/workshop_register_screen.dart';
+import 'package:mototeca/storage/garage_store.dart';
+import 'package:mototeca/storage/outbox_store.dart';
 
 import 'fake_api.dart';
 
@@ -132,8 +136,87 @@ void main() {
 
       expect(find.text('Só neste aparelho'), findsOneWidget);
       expect(find.text('Honda CG 160 Start'), findsOneWidget);
-      final stored = await api.store.read('garage');
-      expect((stored?['bikes'] as List).single, containsPair('plate', 'ABC1D23'));
+      expect(api.state.garage.bikes.single.plate, 'ABC1D23');
+    });
+
+    testWidgets('edita e remove uma moto do aparelho', (tester) async {
+      final api = await pumpRiderApp(tester);
+      await api.state.garage.save(
+        const LocalBike(plate: 'ABC1D23', label: 'Honda CG', mileageKm: 100),
+      );
+      await tapAndSettle(tester, find.byKey(const Key('inicio-garagem')));
+
+      await tapAndSettle(tester, find.byKey(const Key('vehicle-menu-ABC1D23')));
+      await tapAndSettle(tester, find.byKey(const Key('vehicle-edit')));
+      await enterInField(tester, const Key('adicionar-moto-km'), '2500');
+      await tapAndSettle(
+        tester,
+        find.byKey(const Key('adicionar-moto-continuar')),
+      );
+      expect(find.textContaining('2500 km'), findsOneWidget);
+
+      await tapAndSettle(tester, find.byKey(const Key('vehicle-menu-ABC1D23')));
+      await tapAndSettle(tester, find.byKey(const Key('vehicle-release')));
+      await tapAndSettle(
+        tester,
+        find.byKey(const Key('vehicle-release-confirmar')),
+      );
+      expect(api.state.garage.isEmpty, isTrue);
+    });
+
+    testWidgets('placa fora do padrão é recusada', (tester) async {
+      final api = await pumpRiderApp(tester);
+      await tapAndSettle(tester, find.byKey(const Key('inicio-garagem')));
+
+      await tapAndSettle(tester, find.byKey(const Key('garagem-adicionar')));
+      await enterInField(tester, const Key('adicionar-moto-placa'), 'AB12');
+      await enterInField(tester, const Key('adicionar-moto-modelo'), 'CG');
+      await tapAndSettle(
+        tester,
+        find.byKey(const Key('adicionar-moto-continuar')),
+      );
+
+      expect(
+        find.text('Placa inválida. Use ABC1234 ou ABC1D23.'),
+        findsOneWidget,
+      );
+      expect(api.state.garage.isEmpty, isTrue);
+    });
+
+    testWidgets('anota, corrige e apaga uma manutenção', (tester) async {
+      final api = await pumpRiderApp(tester);
+      await api.state.garage.save(
+        const LocalBike(plate: 'ABC1D23', label: 'Honda CG', mileageKm: 100),
+      );
+      await tapAndSettle(tester, find.byKey(const Key('inicio-garagem')));
+      await tapAndSettle(tester, find.byKey(const Key('vehicle-ABC1D23')));
+      expect(find.byType(MaintenanceNotesScreen), findsOneWidget);
+
+      await tapAndSettle(tester, find.byKey(const Key('anotacao-nova')));
+      await enterInField(
+        tester,
+        const Key('anotacao-descricao'),
+        'Troca de óleo',
+      );
+      await enterInField(tester, const Key('anotacao-km'), '3000');
+      await enterInField(tester, const Key('anotacao-valor'), '45,00');
+      await tapAndSettle(tester, find.byKey(const Key('anotacao-salvar')));
+      expect(find.text('Troca de óleo'), findsOneWidget);
+      expect(find.textContaining('3000 km'), findsWidgets);
+
+      await tapAndSettle(tester, find.text('Troca de óleo'));
+      await enterInField(tester, const Key('anotacao-descricao'), 'Óleo 10W30');
+      await tapAndSettle(tester, find.byKey(const Key('anotacao-salvar')));
+      expect(find.text('Óleo 10W30'), findsOneWidget);
+
+      await tester.longPress(find.text('Óleo 10W30'));
+      await tester.pumpAndSettle();
+      await tapAndSettle(
+        tester,
+        find.byKey(const Key('anotacao-apagar-confirmar')),
+      );
+      expect(find.text('Óleo 10W30'), findsNothing);
+      expect(api.state.garage.bikes.single.mileageKm, 3000);
     });
 
     testWidgets('entrar leva à garagem sincronizada', (tester) async {
@@ -300,10 +383,7 @@ void main() {
     ) async {
       final api = await pumpShopApp(tester);
 
-      await tapAndSettle(
-        tester,
-        find.byKey(const Key('inicio-novo-registro')),
-      );
+      await tapAndSettle(tester, find.byKey(const Key('inicio-novo-registro')));
       expect(find.byType(NewRecordScreen), findsOneWidget);
       await tester.enterText(find.byType(TextField).first, 'ABC1D23');
       await enterInField(
@@ -331,12 +411,39 @@ void main() {
       expect(find.text('Aguardando conta'), findsOneWidget);
     });
 
-    testWidgets('entrar publica a fila guardada no aparelho', (tester) async {
+    testWidgets('descarta um registro da fila', (tester) async {
       final api = await pumpShopApp(tester);
+      await api.state.outbox.add(
+        OutboxDraft(
+          plate: 'ABC1D23',
+          vehicleLabel: 'Honda CG',
+          operations: const [ServiceOperation.tires],
+          mileageKm: 18500,
+          savedAt: DateTime(2026, 10, 1),
+        ),
+      );
+      await tapAndSettle(tester, find.byKey(const Key('inicio-fila')));
+      final id = api.state.outbox.drafts.single.id;
+
+      await tester.longPress(find.byKey(Key('fila-rascunho-$id')));
+      await tester.pumpAndSettle();
       await tapAndSettle(
         tester,
-        find.byKey(const Key('inicio-novo-registro')),
+        find.byKey(const Key('fila-descartar-confirmar')),
       );
+
+      expect(api.state.outbox.isEmpty, isTrue);
+      expect(
+        find.text(
+          'Nada aguardando envio.\nUm registro novo fica aqui até ser publicado.',
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('entrar publica a fila guardada no aparelho', (tester) async {
+      final api = await pumpShopApp(tester);
+      await tapAndSettle(tester, find.byKey(const Key('inicio-novo-registro')));
       await tester.enterText(find.byType(TextField).first, 'ABC1D23');
       await tapAndSettle(tester, find.text('Pneus'));
       await enterInField(tester, const Key('novo-registro-km'), '18500');
@@ -570,8 +677,7 @@ void main() {
       await tapAndSettle(tester, find.byKey(const Key('detalhe-ver-correcao')));
 
       expect(
-        api
-            .lastBody['mototeca.service.v1.ServiceRecordService/GetServiceRecord'],
+        api.lastBody['mototeca.service.v1.ServiceRecordService/GetServiceRecord'],
         {'id': 'r2'},
       );
       expect(
