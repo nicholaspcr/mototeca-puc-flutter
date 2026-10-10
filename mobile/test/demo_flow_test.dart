@@ -253,6 +253,15 @@ void main() {
         .outbox;
     await outbox.add(
       OutboxDraft(
+        plate: demoPlate,
+        vehicleLabel: 'Honda CG 160',
+        operations: const [ServiceOperation.tires],
+        mileageKm: 99000,
+        savedAt: DateTime(2026, 10, 9),
+      ),
+    );
+    await outbox.add(
+      OutboxDraft(
         plate: 'XYZ9A99',
         vehicleLabel: 'Moto não identificada',
         operations: const [ServiceOperation.tires],
@@ -263,7 +272,12 @@ void main() {
 
     await signIn(tester, asOwner: false, blank: true);
 
-    expect(find.text('Não subiram: 1 registro. Continuam na fila.'), findsOne);
+    expect(
+      find.text(
+        'Publicados: 1 registro. Não subiram: 1 registro. Continuam na fila.',
+      ),
+      findsOne,
+    );
     expect(outbox.drafts.single.plate, 'XYZ9A99');
   });
 }

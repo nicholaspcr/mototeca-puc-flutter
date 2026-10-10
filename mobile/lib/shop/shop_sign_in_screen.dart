@@ -4,7 +4,6 @@ import '../app/routes.dart';
 import '../demo/demo_backend.dart';
 import '../demo/demo_client.dart';
 import '../state/app_scope.dart';
-import '../storage/outbox_store.dart';
 import '../theme.dart';
 import '../widgets/feedback.dart';
 import '../widgets/mt_widgets.dart';
@@ -45,15 +44,9 @@ class _ShopSignInScreenState extends State<ShopSignInScreen> {
       final flushed = await state.outbox.flush(state.serviceRecords);
       if (!mounted) return;
       if (flushed.failed > 0) {
-        showApiError(
-          context,
-          'Não subiram: ${recordCount(flushed.failed)}. Continuam na fila.',
-        );
-      } else if (flushed.sent > 0) {
-        showSuccess(
-          context,
-          'Publicados da fila: ${recordCount(flushed.sent)}.',
-        );
+        showApiError(context, flushed.message);
+      } else if (!flushed.isEmpty) {
+        showSuccess(context, flushed.message);
       }
       Navigator.pushReplacementNamed(context, Routes.dashboard);
     } catch (error) {

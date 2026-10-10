@@ -98,6 +98,12 @@ class FlushResult {
   final int failed;
 
   bool get isEmpty => sent == 0 && failed == 0;
+
+  /// "Publicados: 1 registro. Não subiram: 1 registro. Continuam na fila."
+  String get message => [
+    if (sent > 0) 'Publicados: ${recordCount(sent)}.',
+    if (failed > 0) 'Não subiram: ${recordCount(failed)}. Continuam na fila.',
+  ].join(' ');
 }
 
 /// Records waiting to be published, in SQLite. Nothing leaves the device

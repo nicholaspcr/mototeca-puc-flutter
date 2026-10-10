@@ -31,12 +31,9 @@ class _OutboxScreenState extends State<OutboxScreen> {
       final result = await state.outbox.flush(state.serviceRecords);
       if (!mounted) return;
       if (result.failed > 0) {
-        showApiError(
-          context,
-          'Não subiram: ${recordCount(result.failed)}. Continuam na fila.',
-        );
-      } else if (result.sent > 0) {
-        showSuccess(context, 'Publicados: ${recordCount(result.sent)}.');
+        showApiError(context, result.message);
+      } else if (!result.isEmpty) {
+        showSuccess(context, result.message);
       }
     } finally {
       if (mounted) setState(() => _sending = false);
