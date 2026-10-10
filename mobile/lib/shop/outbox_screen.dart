@@ -66,8 +66,12 @@ class _OutboxScreenState extends State<OutboxScreen> {
       ),
     );
     if (confirmed != true || !mounted) return;
-    await AppScope.read(context).outbox.remove(draft.id!);
-    if (mounted) showSuccess(context, 'Registro descartado.');
+    try {
+      await AppScope.read(context).outbox.remove(draft.id!);
+      if (mounted) showSuccess(context, 'Registro descartado.');
+    } on Object {
+      if (mounted) showApiError(context, localSaveFailed);
+    }
   }
 
   @override

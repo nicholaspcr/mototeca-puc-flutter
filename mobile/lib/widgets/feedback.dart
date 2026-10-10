@@ -16,6 +16,9 @@ void showApiError(BuildContext context, Object error) {
   _snack(context, message, MtColors.danger);
 }
 
+/// Shown when SQLite refuses a write the screen did not foresee.
+const localSaveFailed = 'Não foi possível salvar neste aparelho.';
+
 void showSuccess(BuildContext context, String message) {
   _snack(context, message, MtColors.petrol);
 }

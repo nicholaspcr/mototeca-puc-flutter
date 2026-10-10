@@ -44,8 +44,18 @@ class _MaintenanceNotesScreenState extends State<MaintenanceNotesScreen> {
       builder: (_) => _NoteDialog(bikeId: widget.bike.id!, initial: note),
     );
     if (saved == null || !mounted) return;
-    await _garage.saveNote(saved);
-    await _load();
+    try {
+      await _garage.saveNote(saved);
+      await _load();
+      if (mounted) {
+        showSuccess(
+          context,
+          note == null ? 'Anotação salva.' : 'Anotação atualizada.',
+        );
+      }
+    } on Object {
+      if (mounted) showApiError(context, localSaveFailed);
+    }
   }
 
   Future<void> _remove(MaintenanceNote note) async {
@@ -68,9 +78,13 @@ class _MaintenanceNotesScreenState extends State<MaintenanceNotesScreen> {
       ),
     );
     if (confirmed != true || !mounted) return;
-    await _garage.removeNote(note.id!);
-    await _load();
-    if (mounted) showSuccess(context, 'Anotação apagada.');
+    try {
+      await _garage.removeNote(note.id!);
+      await _load();
+      if (mounted) showSuccess(context, 'Anotação apagada.');
+    } on Object {
+      if (mounted) showApiError(context, localSaveFailed);
+    }
   }
 
   @override

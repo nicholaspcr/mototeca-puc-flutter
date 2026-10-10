@@ -44,7 +44,12 @@ class _ShopSignInScreenState extends State<ShopSignInScreen> {
       // Signing in is what the queue was waiting for.
       final flushed = await state.outbox.flush(state.serviceRecords);
       if (!mounted) return;
-      if (flushed.sent > 0) {
+      if (flushed.failed > 0) {
+        showApiError(
+          context,
+          'Não subiram: ${recordCount(flushed.failed)}. Continuam na fila.',
+        );
+      } else if (flushed.sent > 0) {
         showSuccess(
           context,
           'Publicados da fila: ${recordCount(flushed.sent)}.',

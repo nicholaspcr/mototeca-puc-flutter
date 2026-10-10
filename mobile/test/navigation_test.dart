@@ -136,7 +136,27 @@ void main() {
 
       expect(find.text('Só neste aparelho'), findsOneWidget);
       expect(find.text('Honda CG 160 Start'), findsOneWidget);
+      expect(find.text('Moto salva neste aparelho.'), findsOneWidget);
       expect(api.state.garage.bikes.single.plate, 'ABC1D23');
+    });
+
+    testWidgets('placa repetida mostra o erro do banco', (tester) async {
+      final api = await pumpRiderApp(tester);
+      await api.state.garage.save(
+        const LocalBike(plate: 'ABC1D23', label: 'Honda CG', mileageKm: 100),
+      );
+      await tapAndSettle(tester, find.byKey(const Key('inicio-garagem')));
+
+      await tapAndSettle(tester, find.byKey(const Key('garagem-adicionar')));
+      await enterInField(tester, const Key('adicionar-moto-placa'), 'abc1d23');
+      await enterInField(tester, const Key('adicionar-moto-modelo'), 'Outra');
+      await tapAndSettle(
+        tester,
+        find.byKey(const Key('adicionar-moto-continuar')),
+      );
+
+      expect(find.text('A moto ABC1D23 já está na garagem.'), findsOneWidget);
+      expect(api.state.garage.length, 1);
     });
 
     testWidgets('edita e remove uma moto do aparelho', (tester) async {
@@ -154,6 +174,7 @@ void main() {
         find.byKey(const Key('adicionar-moto-continuar')),
       );
       expect(find.textContaining('2500 km'), findsOneWidget);
+      expect(find.text('Moto atualizada.'), findsOneWidget);
 
       await tapAndSettle(tester, find.byKey(const Key('vehicle-menu-ABC1D23')));
       await tapAndSettle(tester, find.byKey(const Key('vehicle-release')));
@@ -161,6 +182,7 @@ void main() {
         tester,
         find.byKey(const Key('vehicle-release-confirmar')),
       );
+      expect(find.text('Moto removida deste aparelho.'), findsOneWidget);
       expect(api.state.garage.isEmpty, isTrue);
     });
 
@@ -202,6 +224,7 @@ void main() {
       await enterInField(tester, const Key('anotacao-valor'), '45,00');
       await tapAndSettle(tester, find.byKey(const Key('anotacao-salvar')));
       expect(find.text('Troca de óleo'), findsOneWidget);
+      expect(find.text('Anotação salva.'), findsOneWidget);
       expect(find.textContaining('3000 km'), findsWidgets);
 
       await tapAndSettle(tester, find.text('Troca de óleo'));

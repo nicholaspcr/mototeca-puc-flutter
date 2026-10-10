@@ -237,7 +237,19 @@ class _NewRecordScreenState extends State<NewRecordScreen> {
   /// Queues the record on the device; nothing is sent until the shop signs in.
   Future<void> _queue(_Draft draft) async {
     final state = AppScope.read(context);
-    await state.outbox.add(
+    try {
+      await _addToOutbox(state, draft);
+    } on Object {
+      if (mounted) showApiError(context, localSaveFailed);
+      return;
+    }
+    if (!mounted) return;
+    showSuccess(context, 'Registro salvo na fila de envio.');
+    Navigator.pop(context, true);
+  }
+
+  Future<void> _addToOutbox(AppState state, _Draft draft) {
+    return state.outbox.add(
       OutboxDraft(
         plate: normalizePlate(_plate.text),
         vehicleLabel: _vehicleLabel.text.trim().isEmpty
@@ -270,9 +282,6 @@ class _NewRecordScreenState extends State<NewRecordScreen> {
         ],
       ),
     );
-    if (!mounted) return;
-    showSuccess(context, 'Registro salvo na fila de envio.');
-    Navigator.pop(context, true);
   }
 
   /// Returns null when the mechanic declines to save a lower mileage.

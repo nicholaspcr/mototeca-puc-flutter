@@ -6,6 +6,7 @@ import 'package:mototeca/app/app.dart';
 import 'package:mototeca/app/flavor.dart';
 import 'package:mototeca/demo/demo_backend.dart';
 import 'package:mototeca/demo/demo_client.dart';
+import 'package:mototeca/models/service_operation.dart';
 import 'package:mototeca/rider/garage_screen.dart';
 import 'package:mototeca/rider/rider_home_screen.dart';
 import 'package:mototeca/shared/service_detail_screen.dart';
@@ -13,6 +14,7 @@ import 'package:mototeca/shop/dashboard_screen.dart';
 import 'package:mototeca/shop/outbox_screen.dart';
 import 'package:mototeca/shop/shop_home_screen.dart';
 import 'package:mototeca/state/app_scope.dart';
+import 'package:mototeca/storage/outbox_store.dart';
 
 import 'navigation_test.dart' show enterInField, tapAndSettle;
 import 'test_database.dart';
@@ -241,5 +243,27 @@ void main() {
       find.text('o final do chassi não confere com esta placa'),
       findsOneWidget,
     );
+  });
+
+  testWidgets('placa sem cadastro continua na fila depois de entrar', (
+    tester,
+  ) async {
+    await pumpDemoApp(tester, AppFlavor.shop);
+    final outbox = AppScope.read(tester.element(find.byType(ShopHomeScreen)))
+        .outbox;
+    await outbox.add(
+      OutboxDraft(
+        plate: 'XYZ9A99',
+        vehicleLabel: 'Moto não identificada',
+        operations: const [ServiceOperation.tires],
+        mileageKm: 1000,
+        savedAt: DateTime(2026, 10, 10),
+      ),
+    );
+
+    await signIn(tester, asOwner: false, blank: true);
+
+    expect(find.text('Não subiram: 1 registro. Continuam na fila.'), findsOne);
+    expect(outbox.drafts.single.plate, 'XYZ9A99');
   });
 }

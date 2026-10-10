@@ -73,7 +73,12 @@ class _GarageScreenState extends State<GarageScreen> {
       action: 'Remover',
     );
     if (!confirmed || !mounted) return;
-    await AppScope.read(context).garage.remove(bike.id!);
+    try {
+      await AppScope.read(context).garage.remove(bike.id!);
+      if (mounted) showSuccess(context, 'Moto removida deste aparelho.');
+    } on Object {
+      if (mounted) showApiError(context, localSaveFailed);
+    }
   }
 
   Future<bool> _confirmRelease(String label, String plate) => _confirm(
@@ -138,8 +143,15 @@ class _GarageScreenState extends State<GarageScreen> {
     if (bike == null || !mounted) return;
     try {
       await AppScope.read(context).garage.save(bike);
+      if (!mounted) return;
+      showSuccess(
+        context,
+        initial == null ? 'Moto salva neste aparelho.' : 'Moto atualizada.',
+      );
     } on DuplicatePlateException catch (error) {
       if (mounted) showApiError(context, error.toString());
+    } on Object {
+      if (mounted) showApiError(context, localSaveFailed);
     }
   }
 
