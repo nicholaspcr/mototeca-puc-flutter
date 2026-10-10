@@ -4,6 +4,7 @@ import '../app/routes.dart';
 import '../models/service_record.dart';
 import '../repositories/service_record_repository.dart';
 import '../state/app_scope.dart';
+import '../storage/outbox_store.dart';
 import '../theme.dart';
 import '../widgets/feedback.dart';
 import '../widgets/mt_widgets.dart';
@@ -219,7 +220,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   Text(
                     pending == 0
                         ? 'Tudo enviado'
-                        : '$pending registro(s) aguardando envio',
+                        : '${recordCount(pending)} aguardando envio',
                     style: const TextStyle(
                       fontSize: 12,
                       color: MtColors.slate500,

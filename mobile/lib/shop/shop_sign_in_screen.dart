@@ -4,6 +4,7 @@ import '../app/routes.dart';
 import '../demo/demo_backend.dart';
 import '../demo/demo_client.dart';
 import '../state/app_scope.dart';
+import '../storage/outbox_store.dart';
 import '../theme.dart';
 import '../widgets/feedback.dart';
 import '../widgets/mt_widgets.dart';
@@ -46,7 +47,7 @@ class _ShopSignInScreenState extends State<ShopSignInScreen> {
       if (flushed.sent > 0) {
         showSuccess(
           context,
-          '${flushed.sent} registro(s) da fila publicados.',
+          'Publicados da fila: ${recordCount(flushed.sent)}.',
         );
       }
       Navigator.pushReplacementNamed(context, Routes.dashboard);
@@ -117,8 +118,7 @@ class _ShopSignInScreenState extends State<ShopSignInScreen> {
                 const SizedBox(height: 12),
                 TextButton(
                   key: const Key('entrar-cadastrar'),
-                  onPressed: () =>
-                      Navigator.pushNamed(context, Routes.signUp),
+                  onPressed: () => Navigator.pushNamed(context, Routes.signUp),
                   child: const Text(
                     'Não tem conta? Cadastre sua oficina',
                     style: TextStyle(color: MtColors.rust),
@@ -137,8 +137,11 @@ class _ShopSignInScreenState extends State<ShopSignInScreen> {
                 borderRadius: BorderRadius.circular(MtSizes.cardRadius),
               ),
               child: Text(
-                'Ao entrar, os $queued registros que estão na fila deste '
-                'aparelho são enviados em segundo plano.',
+                queued == 1
+                    ? 'Ao entrar, o registro que está na fila deste aparelho '
+                          'é enviado em segundo plano.'
+                    : 'Ao entrar, os $queued registros que estão na fila deste '
+                          'aparelho são enviados em segundo plano.',
                 style: const TextStyle(
                   fontSize: 13,
                   color: MtColors.petrol,

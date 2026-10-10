@@ -21,7 +21,7 @@ class _OutboxScreenState extends State<OutboxScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    AppScope.read(context).outbox.load();
+    AppScope.read(context).outbox.ensureLoaded();
   }
 
   Future<void> _send() async {
@@ -33,14 +33,41 @@ class _OutboxScreenState extends State<OutboxScreen> {
       if (result.failed > 0) {
         showApiError(
           context,
-          '${result.failed} registro(s) não subiram e continuam na fila.',
+          'Não subiram: ${recordCount(result.failed)}. Continuam na fila.',
         );
       } else if (result.sent > 0) {
-        showSuccess(context, '${result.sent} registro(s) publicados.');
+        showSuccess(context, 'Publicados: ${recordCount(result.sent)}.');
       }
     } finally {
       if (mounted) setState(() => _sending = false);
     }
+  }
+
+  Future<void> _discard(OutboxDraft draft) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Descartar registro'),
+        content: Text(
+          'O registro de ${draft.plate} (${draft.operationsLabel}) sai da fila '
+          'e não será publicado.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            key: const Key('fila-descartar-confirmar'),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Descartar'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    await AppScope.read(context).outbox.remove(draft.id!);
+    if (mounted) showSuccess(context, 'Registro descartado.');
   }
 
   @override
@@ -54,67 +81,89 @@ class _OutboxScreenState extends State<OutboxScreen> {
         listenable: state.outbox,
         builder: (context, _) {
           final drafts = state.outbox.drafts;
-          return ListView(
+          return ListView.builder(
             padding: const EdgeInsets.all(MtSizes.screenPadding),
-            children: [
-              if (!signedIn) ...[_signInCard(), const SizedBox(height: 16)],
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'Neste aparelho',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  Text(
-                    '${drafts.length} '
-                    '${drafts.length == 1 ? 'registro' : 'registros'}',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: MtColors.slate500,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              if (drafts.isEmpty)
-                const MtEmptyState(
-                  message:
-                      'Nada aguardando envio.\n'
-                      'Um registro novo fica aqui até ser publicado.',
-                  icon: Icons.outbox_outlined,
-                )
-              else
-                for (final draft in drafts) ...[
-                  _draftTile(draft, signedIn),
-                  const SizedBox(height: 12),
-                ],
-              if (signedIn && drafts.isNotEmpty) ...[
-                const SizedBox(height: 4),
-                ElevatedButton(
-                  key: const Key('fila-enviar'),
-                  onPressed: _sending ? null : _send,
-                  child: Text(
-                    _sending ? 'Enviando…' : 'Enviar tudo agora',
-                  ),
-                ),
-              ],
-              const SizedBox(height: 16),
-              const MtFootnote(
-                'Um registro enviado não pode ser apagado — só corrigido por '
-                'outro registro que o substitui.',
-                align: TextAlign.center,
-              ),
-            ],
+            itemCount: drafts.length + 2,
+            itemBuilder: (context, index) {
+              if (index == 0) return _header(drafts.length, signedIn);
+              if (index > drafts.length) return _footer(drafts, signedIn);
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: _draftTile(drafts[index - 1], signedIn),
+              );
+            },
           );
         },
       ),
     );
   }
 
+  Widget _header(int count, bool signedIn) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (!signedIn) ...[_signInCard(), const SizedBox(height: 16)],
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Flexible(
+              child: Text(
+                'Neste aparelho',
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Text(
+              '$count ${count == 1 ? 'registro' : 'registros'}',
+              style: const TextStyle(fontSize: 12, color: MtColors.slate500),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        if (count == 0)
+          const MtEmptyState(
+            message:
+                'Nada aguardando envio.\n'
+                'Um registro novo fica aqui até ser publicado.',
+            icon: Icons.outbox_outlined,
+          ),
+      ],
+    );
+  }
+
+  Widget _footer(List<OutboxDraft> drafts, bool signedIn) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (signedIn && drafts.isNotEmpty) ...[
+          const SizedBox(height: 4),
+          ElevatedButton(
+            key: const Key('fila-enviar'),
+            onPressed: _sending ? null : _send,
+            child: Text(_sending ? 'Enviando…' : 'Enviar tudo agora'),
+          ),
+        ],
+        const SizedBox(height: 16),
+        const MtFootnote(
+          'Um registro enviado não pode ser apagado — só corrigido por '
+          'outro registro que o substitui.',
+          align: TextAlign.center,
+        ),
+      ],
+    );
+  }
+
   Widget _draftTile(OutboxDraft draft, bool signedIn) {
+    return InkWell(
+      key: Key('fila-rascunho-${draft.id}'),
+      onLongPress: () => _discard(draft),
+      borderRadius: BorderRadius.circular(MtSizes.cardRadius),
+      child: _draftCard(draft, signedIn),
+    );
+  }
+
+  Widget _draftCard(OutboxDraft draft, bool signedIn) {
     return MtCard(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       child: Column(
@@ -158,6 +207,17 @@ class _OutboxScreenState extends State<OutboxScreen> {
                       background: MtColors.slate100,
                       foreground: MtColors.slate500,
                     ),
+              IconButton(
+                key: Key('fila-descartar-${draft.id}'),
+                tooltip: 'Descartar',
+                visualDensity: VisualDensity.compact,
+                icon: const Icon(
+                  Icons.delete_outline,
+                  size: 20,
+                  color: MtColors.slate500,
+                ),
+                onPressed: () => _discard(draft),
+              ),
             ],
           ),
           const SizedBox(height: 6),
@@ -173,7 +233,7 @@ class _OutboxScreenState extends State<OutboxScreen> {
           Text(
             '${draft.mileageKm} km · ${_savedAt(draft.savedAt)}'
             '${draft.attachmentCount == 0 ? '' : ' · ${draft.attachmentCount} '
-                  '${draft.attachmentCount == 1 ? 'foto' : 'fotos'}'}',
+                      '${draft.attachmentCount == 1 ? 'foto' : 'fotos'}'}',
             style: const TextStyle(fontSize: 12, color: MtColors.slate500),
           ),
         ],
@@ -220,11 +280,7 @@ class _OutboxScreenState extends State<OutboxScreen> {
           const Text(
             'Os registros ficam salvos aqui pelo tempo que for preciso. Entre '
             'com o CNPJ para publicá-los no histórico das motos.',
-            style: TextStyle(
-              fontSize: 13,
-              color: MtColors.petrol,
-              height: 1.5,
-            ),
+            style: TextStyle(fontSize: 13, color: MtColors.petrol, height: 1.5),
           ),
           const SizedBox(height: 12),
           ElevatedButton(
