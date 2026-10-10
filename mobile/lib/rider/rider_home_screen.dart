@@ -19,7 +19,7 @@ class _RiderHomeScreenState extends State<RiderHomeScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    AppScope.read(context).garage.load();
+    AppScope.read(context).garage.ensureLoaded();
   }
 
   void _onAction() {

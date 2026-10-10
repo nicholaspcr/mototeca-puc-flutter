@@ -13,9 +13,9 @@ import 'package:mototeca/shop/dashboard_screen.dart';
 import 'package:mototeca/shop/outbox_screen.dart';
 import 'package:mototeca/shop/shop_home_screen.dart';
 import 'package:mototeca/state/app_scope.dart';
-import 'package:mototeca/storage/local_store.dart';
 
 import 'navigation_test.dart' show enterInField, tapAndSettle;
+import 'test_database.dart';
 
 /// The class demo runs with no backend at all: these drive the real screens
 /// against the in-app data, so every workflow shown on the day is covered.
@@ -32,7 +32,7 @@ Future<void> pumpDemoApp(WidgetTester tester, AppFlavor flavor) async {
       baseUrl: 'demo://mototeca',
       httpClient: DemoClient(backend: DemoBackend(), latency: Duration.zero),
     ),
-    store: MemoryLocalStore(),
+    database: testDatabase(),
   );
   await tester.pumpWidget(
     MototecaApp(key: ValueKey(flavor), flavor: flavor, state: state),

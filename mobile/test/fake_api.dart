@@ -4,7 +4,8 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:mototeca/api/api_client.dart';
 import 'package:mototeca/state/app_scope.dart';
-import 'package:mototeca/storage/local_store.dart';
+
+import 'test_database.dart';
 
 /// In-memory Go API for widget tests.
 class FakeApi {
@@ -152,13 +153,10 @@ class FakeApi {
     };
   });
 
-  /// The device storage behind this state, so a test can seed or read it.
-  final store = MemoryLocalStore();
-
   /// An AppState wired to this fake, ready to hand to MototecaApp.
   late final AppState state = AppState(
     client: ApiClient(baseUrl: 'http://fake', httpClient: client),
-    store: store,
+    database: testDatabase(),
   );
 
   static http.Response _json(Map<String, dynamic> body, [int status = 200]) =>

@@ -239,7 +239,6 @@ class _NewRecordScreenState extends State<NewRecordScreen> {
     final state = AppScope.read(context);
     await state.outbox.add(
       OutboxDraft(
-        id: DateTime.now().microsecondsSinceEpoch.toString(),
         plate: normalizePlate(_plate.text),
         vehicleLabel: _vehicleLabel.text.trim().isEmpty
             ? 'Moto não identificada'
@@ -251,11 +250,24 @@ class _NewRecordScreenState extends State<NewRecordScreen> {
         costCents: draft.costCents,
         notes: draft.notes.trim(),
         parts: draft.parts,
-        photoPaths: [
-          for (final photos in _photos.values)
-            for (final photo in photos) photo.name,
+        attachments: [
+          for (final MapEntry(key: phase, value: photos) in _photos.entries)
+            for (final photo in photos)
+              OutboxAttachment(
+                kind: 'photo',
+                phase: phase,
+                filename: photo.name,
+                contentType: photo.mimeType,
+                bytes: photo.bytes,
+              ),
+          if (_invoice case final invoice?)
+            OutboxAttachment(
+              kind: 'invoice',
+              filename: invoice.name,
+              contentType: invoice.mimeType,
+              bytes: invoice.bytes,
+            ),
         ],
-        invoicePath: _invoice?.name,
       ),
     );
     if (!mounted) return;

@@ -1,18 +1,52 @@
-import 'dart:io';
-
 import 'package:flutter/foundation.dart';
+import 'package:sqflite/sqflite.dart';
 
 import '../models/service_operation.dart';
 import '../models/service_record.dart';
 import '../repositories/service_record_repository.dart';
-import 'local_store.dart';
+import 'database.dart';
 
-/// A service record written in the box and still on the phone: records are
-/// always written locally first, published after (design/Outbox.dc.html).
+/// A photo or invoice held with its draft, so it survives until the upload.
+@immutable
+class OutboxAttachment {
+  const OutboxAttachment({
+    required this.kind,
+    this.phase,
+    required this.filename,
+    required this.contentType,
+    required this.bytes,
+  });
+
+  final String kind;
+  final String? phase;
+  final String filename;
+  final String contentType;
+  final Uint8List bytes;
+
+  factory OutboxAttachment.fromRow(Map<String, Object?> row) =>
+      OutboxAttachment(
+        kind: row['kind'] as String,
+        phase: row['phase'] as String?,
+        filename: row['filename'] as String,
+        contentType: row['content_type'] as String,
+        bytes: row['bytes'] as Uint8List,
+      );
+
+  Map<String, Object?> toRow(int draftId) => {
+    'draft_id': draftId,
+    'kind': kind,
+    'phase': phase,
+    'filename': filename,
+    'content_type': contentType,
+    'bytes': bytes,
+  };
+}
+
+/// A service record saved on the device and not yet published.
 @immutable
 class OutboxDraft {
   const OutboxDraft({
-    required this.id,
+    this.id,
     required this.plate,
     required this.vehicleLabel,
     required this.operations,
@@ -22,11 +56,10 @@ class OutboxDraft {
     this.costCents,
     this.notes = '',
     this.parts = const [],
-    this.photoPaths = const [],
-    this.invoicePath,
+    this.attachments = const [],
   });
 
-  final String id;
+  final int? id;
   final String plate;
   final String vehicleLabel;
   final List<ServiceOperation> operations;
@@ -36,58 +69,28 @@ class OutboxDraft {
   final int? costCents;
   final String notes;
   final List<Part> parts;
+  final List<OutboxAttachment> attachments;
 
-  /// Files stay where the camera put them; copying them in would make the
-  /// queue as heavy as the photos. A file since deleted is skipped on send.
-  final List<String> photoPaths;
-  final String? invoicePath;
-
-  int get attachmentCount => photoPaths.length + (invoicePath == null ? 0 : 1);
+  int get attachmentCount => attachments.length;
 
   String get operationsLabel =>
       operations.map((operation) => operation.label).join(', ');
 
-  factory OutboxDraft.fromJson(Map<String, dynamic> json) => OutboxDraft(
-    id: json['id'] as String? ?? '',
-    plate: json['plate'] as String? ?? '',
-    vehicleLabel: json['vehicleLabel'] as String? ?? '',
-    operations: ServiceOperation.listFromWire(
-      json['operations'] as List<dynamic>?,
-    ),
-    mileageKm: (json['mileageKm'] as num?)?.toInt() ?? 0,
-    savedAt:
-        DateTime.tryParse(json['savedAt'] as String? ?? '') ?? DateTime.now(),
-    mechanicName: json['mechanicName'] as String? ?? '',
-    costCents: (json['costCents'] as num?)?.toInt(),
-    notes: json['notes'] as String? ?? '',
-    parts: [
-      for (final part in json['parts'] as List<dynamic>? ?? const [])
-        if (part is Map<String, dynamic>) Part.fromJson(part),
-    ],
-    photoPaths: [
-      for (final path in json['photoPaths'] as List<dynamic>? ?? const [])
-        if (path is String) path,
-    ],
-    invoicePath: json['invoicePath'] as String?,
-  );
-
-  Map<String, dynamic> toJson() => {
-    'id': id,
+  Map<String, Object?> toRow() => {
     'plate': plate,
-    'vehicleLabel': vehicleLabel,
-    'operations': [for (final operation in operations) operation.wire],
-    'mileageKm': mileageKm,
-    'savedAt': savedAt.toIso8601String(),
-    if (mechanicName.isNotEmpty) 'mechanicName': mechanicName,
-    'costCents': ?costCents,
-    if (notes.isNotEmpty) 'notes': notes,
-    if (parts.isNotEmpty) 'parts': [for (final part in parts) part.toJson()],
-    if (photoPaths.isNotEmpty) 'photoPaths': photoPaths,
-    'invoicePath': ?invoicePath,
+    'vehicle_label': vehicleLabel,
+    'mileage_km': mileageKm,
+    'mechanic_name': mechanicName,
+    'cost_cents': costCents,
+    'notes': notes,
+    'saved_at': savedAt.toIso8601String(),
   };
 }
 
-/// What one [Outbox.flush] did, for the message the screen shows afterwards.
+/// "1 registro", "3 registros".
+String recordCount(int count) =>
+    '$count ${count == 1 ? 'registro' : 'registros'}';
+
 class FlushResult {
   const FlushResult({required this.sent, required this.failed});
 
@@ -97,14 +100,12 @@ class FlushResult {
   bool get isEmpty => sent == 0 && failed == 0;
 }
 
-/// Records waiting to be published. Nothing leaves the device before sign-in:
-/// a record in the public history is signed by the CNPJ that wrote it.
+/// Records waiting to be published, in SQLite. Nothing leaves the device
+/// before sign-in: a public record is signed by the CNPJ that wrote it.
 class Outbox extends ChangeNotifier {
-  Outbox(this._store);
+  Outbox(this._db);
 
-  static const storeKey = 'outbox';
-
-  final LocalStore _store;
+  final AppDatabase _db;
 
   var _drafts = <OutboxDraft>[];
   var _loaded = false;
@@ -115,33 +116,101 @@ class Outbox extends ChangeNotifier {
   bool get isEmpty => _drafts.isEmpty;
   bool get isLoaded => _loaded;
 
+  Future<void> ensureLoaded() async {
+    if (!_loaded) await load();
+  }
+
   Future<void> load() async {
-    if (_loaded) return;
-    final document = await _store.read(storeKey);
-    final raw = document?['drafts'] as List<dynamic>? ?? const [];
-    _drafts = [
-      for (final draft in raw)
-        if (draft is Map<String, dynamic>) OutboxDraft.fromJson(draft),
-    ]..sort((a, b) => a.savedAt.compareTo(b.savedAt));
+    final db = await _db.database;
+    final rows = await db.query('outbox_drafts', orderBy: 'saved_at, id');
+    _drafts = [for (final row in rows) await _readDraft(db, row)];
     _loaded = true;
     notifyListeners();
   }
 
+  Future<OutboxDraft> _readDraft(
+    DatabaseExecutor db,
+    Map<String, Object?> row,
+  ) async {
+    final id = row['id'] as int;
+    final operations = await db.query(
+      'outbox_operations',
+      where: 'draft_id = ?',
+      whereArgs: [id],
+      orderBy: 'rowid',
+    );
+    final parts = await db.query(
+      'outbox_parts',
+      where: 'draft_id = ?',
+      whereArgs: [id],
+      orderBy: 'id',
+    );
+    final attachments = await db.query(
+      'outbox_attachments',
+      where: 'draft_id = ?',
+      whereArgs: [id],
+      orderBy: 'id',
+    );
+    return OutboxDraft(
+      id: id,
+      plate: row['plate'] as String,
+      vehicleLabel: row['vehicle_label'] as String,
+      mileageKm: row['mileage_km'] as int,
+      mechanicName: row['mechanic_name'] as String,
+      costCents: row['cost_cents'] as int?,
+      notes: row['notes'] as String,
+      savedAt: DateTime.parse(row['saved_at'] as String),
+      operations: ServiceOperation.listFromWire([
+        for (final operation in operations) operation['operation'],
+      ]),
+      parts: [
+        for (final part in parts)
+          Part(
+            name: part['name'] as String,
+            quantity: part['quantity'] as int,
+            costCents: part['cost_cents'] as int?,
+          ),
+      ],
+      attachments: attachments.map(OutboxAttachment.fromRow).toList(),
+    );
+  }
+
+  /// Writes the draft and its children in one transaction.
   Future<void> add(OutboxDraft draft) async {
-    _drafts = [..._drafts, draft];
-    await _persist();
+    final db = await _db.database;
+    await db.transaction((txn) async {
+      final id = await txn.insert('outbox_drafts', draft.toRow());
+      for (final operation in draft.operations) {
+        await txn.insert('outbox_operations', {
+          'draft_id': id,
+          'operation': operation.wire,
+        });
+      }
+      for (final part in draft.parts) {
+        await txn.insert('outbox_parts', {
+          'draft_id': id,
+          'name': part.name,
+          'quantity': part.quantity,
+          'cost_cents': part.costCents,
+        });
+      }
+      for (final attachment in draft.attachments) {
+        await txn.insert('outbox_attachments', attachment.toRow(id));
+      }
+    });
+    await load();
   }
 
-  Future<void> remove(String id) async {
-    _drafts = [
-      for (final draft in _drafts)
-        if (draft.id != id) draft,
-    ];
-    await _persist();
+  /// Deletes the draft; its operations, parts and files go by cascade.
+  Future<void> remove(int id) async {
+    final db = await _db.database;
+    await db.delete('outbox_drafts', where: 'id = ?', whereArgs: [id]);
+    await load();
   }
 
-  /// Publishes oldest first, dropping what lands. A refused draft stays queued.
+  /// Publishes oldest first and deletes what lands. A refused draft stays.
   Future<FlushResult> flush(ServiceRecordRepository records) async {
+    await ensureLoaded();
     var sent = 0;
     var failed = 0;
     for (final draft in drafts) {
@@ -158,7 +227,7 @@ class Outbox extends ChangeNotifier {
           confirmLowerMileage: true,
         );
         await _uploadAttachments(records, record.id, draft);
-        await remove(draft.id);
+        await remove(draft.id!);
         sent++;
       } on Object {
         failed++;
@@ -167,49 +236,25 @@ class Outbox extends ChangeNotifier {
     return FlushResult(sent: sent, failed: failed);
   }
 
+  /// A failed upload does not put a published record back in the queue.
   Future<void> _uploadAttachments(
     ServiceRecordRepository records,
     String recordId,
     OutboxDraft draft,
   ) async {
-    if (kIsWeb) return;
-    for (final path in draft.photoPaths) {
-      await _upload(records, recordId, path, kind: 'photo', phase: 'after');
+    for (final attachment in draft.attachments) {
+      try {
+        await records.uploadAttachment(
+          recordId: recordId,
+          bytes: attachment.bytes,
+          filename: attachment.filename,
+          contentType: attachment.contentType,
+          kind: attachment.kind,
+          phase: attachment.phase,
+        );
+      } on Object {
+        continue;
+      }
     }
-    final invoice = draft.invoicePath;
-    if (invoice != null) {
-      await _upload(records, recordId, invoice, kind: 'invoice');
-    }
-  }
-
-  /// A photo gone from disk is skipped; the record is already saved.
-  Future<void> _upload(
-    ServiceRecordRepository records,
-    String recordId,
-    String path, {
-    required String kind,
-    String? phase,
-  }) async {
-    try {
-      final file = File(path);
-      if (!await file.exists()) return;
-      await records.uploadAttachment(
-        recordId: recordId,
-        bytes: await file.readAsBytes(),
-        filename: path.split('/').last,
-        contentType: 'image/jpeg',
-        kind: kind,
-        phase: phase,
-      );
-    } on Object {
-      // A lost photo does not put a saved record back in the queue.
-    }
-  }
-
-  Future<void> _persist() async {
-    await _store.write(storeKey, {
-      'drafts': [for (final draft in _drafts) draft.toJson()],
-    });
-    notifyListeners();
   }
 }

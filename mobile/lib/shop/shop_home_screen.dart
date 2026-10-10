@@ -19,7 +19,7 @@ class _ShopHomeScreenState extends State<ShopHomeScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    AppScope.read(context).outbox.load();
+    AppScope.read(context).outbox.ensureLoaded();
   }
 
   void _onAction() {

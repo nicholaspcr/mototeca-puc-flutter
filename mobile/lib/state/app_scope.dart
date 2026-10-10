@@ -8,26 +8,26 @@ import '../repositories/owner_repository.dart';
 import '../repositories/service_record_repository.dart';
 import '../repositories/vehicle_repository.dart';
 import '../repositories/workshop_repository.dart';
+import '../storage/database.dart';
 import '../storage/garage_store.dart';
-import '../storage/local_store.dart';
 import '../storage/outbox_store.dart';
 
 /// The session (workshop or owner), the repositories and the device stores.
 class AppState extends ChangeNotifier {
-  AppState({ApiClient? client, LocalStore? store})
+  AppState({ApiClient? client, AppDatabase? database})
     : _client = client ?? createApiClient(),
-      _store = store ?? createLocalStore() {
+      _database = database ?? AppDatabase() {
     _client.onUnauthenticated = _expireSession;
     workshops = WorkshopRepository(_client);
     owners = OwnerRepository(_client);
     vehicles = VehicleRepository(_client);
     serviceRecords = ServiceRecordRepository(_client);
-    garage = LocalGarage(_store);
-    outbox = Outbox(_store);
+    garage = LocalGarage(_database);
+    outbox = Outbox(_database);
   }
 
   final ApiClient _client;
-  final LocalStore _store;
+  final AppDatabase _database;
 
   late final WorkshopRepository workshops;
   late final OwnerRepository owners;
@@ -92,6 +92,7 @@ class AppState extends ChangeNotifier {
   void dispose() {
     garage.dispose();
     outbox.dispose();
+    _database.close();
     _client.close();
     super.dispose();
   }
