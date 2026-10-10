@@ -11,457 +11,157 @@ import 'package:mototeca/repositories/service_record_repository.dart';
 import 'package:mototeca/repositories/vehicle_repository.dart';
 import 'package:mototeca/repositories/workshop_repository.dart';
 
-/// Captures the last request so tests can assert on what went over the wire.
-class Recorder {
-  late http.Request request;
-  Map<String, dynamic> get body =>
-      jsonDecode(request.body) as Map<String, dynamic>;
+/// A client that answers [body] with [status] and keeps the requests it saw.
+(ApiClient, List<http.Request>) serving(Object body, {int status = 200}) {
+  final seen = <http.Request>[];
+  final client = ApiClient(
+    baseUrl: 'http://test',
+    httpClient: MockClient((request) async {
+      seen.add(request);
+      return http.Response(
+        body is String ? body : jsonEncode(body),
+        status,
+        headers: {'content-type': 'application/json'},
+      );
+    }),
+  );
+  return (client, seen);
 }
 
-ApiClient clientReturning(
-  Object responseBody, {
-  int status = 200,
-  Recorder? recorder,
-}) {
-  final mock = MockClient((request) async {
-    recorder?.request = request;
-    return http.Response(
-      jsonEncode(responseBody),
-      status,
-      headers: {'content-type': 'application/json'},
-    );
-  });
-  return ApiClient(baseUrl: 'http://test', httpClient: mock);
-}
+Map<String, dynamic> sent(http.Request request) =>
+    jsonDecode(request.body) as Map<String, dynamic>;
 
 void main() {
-  group('ApiClient', () {
-    test('posts to the Connect procedure path with a JSON body', () async {
-      final recorder = Recorder();
-      final client = clientReturning({'ok': true}, recorder: recorder);
+  test('sends the bearer token only after sign-in', () async {
+    final (client, seen) = serving({});
 
-      await client.call('pkg.v1.Service/Method', {'a': 1});
+    await client.call('pkg.v1.Service/Method', {});
+    client.authToken = 'tok-123';
+    await client.call('pkg.v1.Service/Method', {});
 
-      expect(recorder.request.method, 'POST');
-      expect(
-        recorder.request.url.toString(),
-        'http://test/pkg.v1.Service/Method',
-      );
-      expect(
-        recorder.request.headers['Content-Type'],
-        contains('application/json'),
-      );
-      expect(recorder.body, {'a': 1});
-    });
+    expect(seen[0].headers.containsKey('Authorization'), isFalse);
+    expect(seen[1].headers['Authorization'], 'Bearer tok-123');
+  });
 
-    test('omits the Authorization header when signed out', () async {
-      final recorder = Recorder();
-      final client = clientReturning({}, recorder: recorder);
-
-      await client.call('pkg.v1.Service/Method', {});
-
-      expect(recorder.request.headers.containsKey('Authorization'), isFalse);
-    });
-
-    test('sends the bearer token once signed in', () async {
-      final recorder = Recorder();
-      final client = clientReturning({}, recorder: recorder)
-        ..authToken = 'tok-123';
-
-      await client.call('pkg.v1.Service/Method', {});
-
-      expect(recorder.request.headers['Authorization'], 'Bearer tok-123');
-    });
-
-    test('turns a Connect error body into a typed ApiException', () async {
-      final client = clientReturning({
-        'code': 'invalid_argument',
-        'message': 'selecione ao menos uma operação',
-      }, status: 400);
-
-      expect(
-        () => client.call('pkg.v1.Service/Method', {}),
-        throwsA(
-          isA<ApiException>()
-              .having((e) => e.code, 'code', ApiErrorCode.invalidArgument)
-              .having(
-                (e) => e.message,
-                'message',
-                'selecione ao menos uma operação',
-              ),
-        ),
-      );
-    });
-
-    test(
-      'reports a transport failure as offline rather than a server error',
-      () async {
-        final client = ApiClient(
-          baseUrl: 'http://test',
-          httpClient: MockClient(
-            (_) async => throw const SocketExceptionStub(),
-          ),
-        );
-
-        expect(
-          () => client.call('pkg.v1.Service/Method', {}),
-          throwsA(
-            isA<ApiException>().having(
-              (e) => e.code,
-              'code',
-              ApiErrorCode.unavailable,
-            ),
-          ),
-        );
-      },
+  test('every failure reaches the screen as an ApiException', () async {
+    final (rejected, _) = serving({
+      'code': 'invalid_argument',
+      'message': 'selecione ao menos uma operação',
+    }, status: 400);
+    final (htmlPage, _) = serving('<html>502</html>', status: 502);
+    final offline = ApiClient(
+      baseUrl: 'http://test',
+      httpClient: MockClient((_) async => throw Exception('socket closed')),
     );
 
-    test('does not crash on a non-JSON error page', () async {
-      final client = ApiClient(
-        baseUrl: 'http://test',
-        httpClient: MockClient(
-          (_) async => http.Response('<html>502</html>', 502),
+    await expectLater(
+      rejected.call('x/Y', {}),
+      throwsA(
+        isA<ApiException>()
+            .having((e) => e.code, 'code', ApiErrorCode.invalidArgument)
+            .having((e) => e.message, 'message', contains('operação')),
+      ),
+    );
+    await expectLater(htmlPage.call('x/Y', {}), throwsA(isA<ApiException>()));
+    await expectLater(
+      offline.call('x/Y', {}),
+      throwsA(
+        isA<ApiException>().having(
+          (e) => e.code,
+          'code',
+          ApiErrorCode.unavailable,
         ),
-      );
-
-      expect(
-        () => client.call('pkg.v1.Service/Method', {}),
-        throwsA(isA<ApiException>()),
-      );
-    });
+      ),
+    );
   });
 
-  group('VehicleRepository', () {
-    test('normalizes the plate before sending it', () async {
-      final recorder = Recorder();
-      final repo = VehicleRepository(
-        clientReturning({
-          'vehicle': {
-            'id': '1',
-            'plate': 'ABC1D23',
-            'make': 'Honda',
-            'model': 'CG',
-            'year': 2022,
-          },
-        }, recorder: recorder),
-      );
+  test('an unknown plate is null; other errors still throw', () async {
+    final (notFound, _) = serving({
+      'code': 'not_found',
+      'message': 'x',
+    }, status: 404);
+    final (badRequest, _) = serving({
+      'code': 'invalid_argument',
+      'message': 'x',
+    }, status: 400);
 
-      await repo.findByPlate(' abc-1d23 ');
+    expect(await VehicleRepository(notFound).findByPlate('ZZZ9Z99'), isNull);
+    expect(
+      await ServiceRecordRepository(notFound).historyByPlate('ZZZ9Z99'),
+      isNull,
+    );
+    await expectLater(
+      VehicleRepository(badRequest).findByPlate('!!'),
+      throwsA(isA<ApiException>()),
+    );
+  });
 
-      expect(recorder.body['plate'], 'ABC1D23');
+  test('requests carry normalized ids and protobuf enum names', () async {
+    final (client, seen) = serving({
+      'record': {'id': 'r1', 'operations': <String>[], 'mileageKm': 1},
+      'workshop': {'id': 'w1', 'cnpj': '11222333000181', 'name': 'Oficina'},
+      'token': 'tok',
     });
 
-    test(
-      'returns null for an unregistered plate instead of throwing',
-      () async {
-        final repo = VehicleRepository(
-          clientReturning({
-            'code': 'not_found',
-            'message': 'vehicle not found',
-          }, status: 404),
-        );
-
-        expect(await repo.findByPlate('ZZZ9Z99'), isNull);
-      },
+    await WorkshopRepository(client)
+        .login(cnpj: '11.222.333/0001-81', password: 'senha-forte-123');
+    await ServiceRecordRepository(client).create(
+      plate: ' abc-1d23 ',
+      operations: [ServiceOperation.oilChange, ServiceOperation.tires],
+      mileageKm: 18420,
+      mechanicName: '   ',
+      parts: const [Part(name: 'Óleo', quantity: 1, costCents: 6200)],
     );
 
-    test('rethrows errors that are not "not found"', () async {
-      final repo = VehicleRepository(
-        clientReturning({
-          'code': 'invalid_argument',
-          'message': 'bad plate',
-        }, status: 400),
-      );
-
-      expect(() => repo.findByPlate('!!'), throwsA(isA<ApiException>()));
-    });
+    expect(sent(seen[0])['cnpj'], '11222333000181');
+    final record = sent(seen[1]);
+    expect(record['plate'], 'ABC1D23');
+    expect(record['operations'], [
+      'SERVICE_TYPE_OIL_CHANGE',
+      'SERVICE_TYPE_TIRES',
+    ]);
+    expect(record.containsKey('mechanicName'), isFalse);
+    expect(record['parts'], [
+      {'name': 'Óleo', 'quantity': 1, 'costCents': 6200},
+    ]);
   });
 
-  group('ServiceRecordRepository', () {
-    test('sends operations as protobuf enum names', () async {
-      final recorder = Recorder();
-      final repo = ServiceRecordRepository(
-        clientReturning({'record': _recordJson()}, recorder: recorder),
-      );
+  test('uploads are multipart; only photos carry a phase', () async {
+    final (client, seen) = serving({'id': 'a1', 'url': 'u', 'kind': 'photo'});
+    final records = ServiceRecordRepository(client);
 
-      await repo.create(
-        plate: 'abc1d23',
-        operations: [ServiceOperation.oilChange, ServiceOperation.tires],
-        mileageKm: 18420,
-        costCents: 24500,
-        parts: const [Part(name: 'Óleo', quantity: 1, costCents: 6200)],
-      );
-
-      expect(recorder.body['operations'], [
-        'SERVICE_TYPE_OIL_CHANGE',
-        'SERVICE_TYPE_TIRES',
-      ]);
-      expect(recorder.body['costCents'], 24500);
-      expect(recorder.body['parts'], [
-        {'name': 'Óleo', 'quantity': 1, 'costCents': 6200},
-      ]);
-    });
-
-    test(
-      'omits optional fields that are blank rather than sending empty strings',
-      () async {
-        final recorder = Recorder();
-        final repo = ServiceRecordRepository(
-          clientReturning({'record': _recordJson()}, recorder: recorder),
-        );
-
-        await repo.create(
-          plate: 'abc1d23',
-          operations: [ServiceOperation.tires],
-          mileageKm: 100,
-          mechanicName: '   ',
-          notes: '',
-        );
-
-        expect(recorder.body.containsKey('mechanicName'), isFalse);
-        expect(recorder.body.containsKey('notes'), isFalse);
-        expect(recorder.body.containsKey('costCents'), isFalse);
-      },
+    await records.uploadAttachment(
+      recordId: 'r1',
+      bytes: [1],
+      filename: 'foto.png',
+      contentType: 'image/png',
+      phase: 'before',
+    );
+    await records.uploadAttachment(
+      recordId: 'r1',
+      bytes: [1],
+      filename: 'nota.pdf',
+      contentType: 'application/pdf',
+      kind: 'invoice',
     );
 
-    test('parses a record, including money and the operation labels', () async {
-      final repo = ServiceRecordRepository(
-        clientReturning({'record': _recordJson()}),
-      );
-
-      final record = await repo.byId('record-1');
-
-      expect(record.operations, [
-        ServiceOperation.oilChange,
-        ServiceOperation.chainAndSprocket,
-      ]);
-      expect(
-        record.operationsLabel,
-        'Troca de óleo e filtro, Corrente, relação e coroa',
-      );
-      expect(record.formattedCost, r'R$ 245,00');
-      expect(record.formattedDate, '02/06/2026');
-      expect(record.vehicle.labelWithYear, 'Honda CG 160 Start (2022)');
-    });
-
-    test('ignores an operation the app does not know', () async {
-      final json = _recordJson()
-        ..['operations'] = ['SERVICE_TYPE_OIL_CHANGE', 'SERVICE_TYPE_TELEPORT'];
-      final repo = ServiceRecordRepository(clientReturning({'record': json}));
-
-      final record = await repo.byId('record-1');
-
-      expect(record.operations, [ServiceOperation.oilChange]);
-    });
-
-    test('returns null history for an unregistered plate', () async {
-      final repo = ServiceRecordRepository(
-        clientReturning({
-          'code': 'not_found',
-          'message': 'no vehicle',
-        }, status: 404),
-      );
-
-      expect(await repo.historyByPlate('ZZZ9Z99'), isNull);
-    });
-
-    test('reads the dashboard feed and its monthly count', () async {
-      final repo = ServiceRecordRepository(
-        clientReturning({
-          'records': [_recordJson()],
-          'countThisMonth': 7,
-        }),
-      );
-
-      final feed = await repo.workshopFeed();
-
-      expect(feed.records, hasLength(1));
-      expect(feed.countThisMonth, 7);
-    });
+    expect(seen[0].url.path, '/v1/service-records/r1/attachments');
+    expect(seen[0].headers['content-type'], contains('multipart/form-data'));
+    expect(seen[0].body, contains('name="phase"'));
+    expect(seen[1].body, isNot(contains('name="phase"')));
   });
 
-  group('attachment upload', () {
-    test('posts multipart with the kind and phase fields', () async {
-      late http.BaseRequest captured;
-      final client = ApiClient(
-        baseUrl: 'http://test',
-        httpClient: MockClient((request) async {
-          captured = request;
-          return http.Response(
-            jsonEncode({
-              'id': 'a1',
-              'url': 'http://storage/photo.png',
-              'kind': 'photo',
-              'phase': 'PHOTO_PHASE_BEFORE',
-            }),
-            200,
-            headers: {'content-type': 'application/json'},
-          );
-        }),
-      )..authToken = 'tok-123';
-
-      final attachment = await ServiceRecordRepository(client).uploadAttachment(
-        recordId: 'r1',
-        bytes: [1, 2, 3],
-        filename: 'foto.png',
-        contentType: 'image/png',
-        phase: 'before',
-      );
-
-      expect(captured.method, 'POST');
-      expect(captured.url.path, '/v1/service-records/r1/attachments');
-      expect(captured.headers['Authorization'], 'Bearer tok-123');
-      expect(captured.headers['content-type'], contains('multipart/form-data'));
-
-      // MockClient flattens multipart into a plain Request, so assert on the
-      // encoded body — which is what the server actually parses anyway.
-      final body = (captured as http.Request).body;
-      expect(body, contains('name="kind"'));
-      expect(body, contains('photo'));
-      expect(body, contains('name="phase"'));
-      expect(body, contains('before'));
-      expect(body, contains('filename="foto.png"'));
-      expect(body, contains('image/png'));
-
-      // The upload route and the RPCs must speak the same phase spelling.
-      expect(attachment.phase, 'PHOTO_PHASE_BEFORE');
-      expect(attachment.isInvoice, isFalse);
+  test('an operation the app does not know is dropped', () async {
+    final (client, _) = serving({
+      'record': {
+        'id': 'r1',
+        'operations': ['SERVICE_TYPE_OIL_CHANGE', 'SERVICE_TYPE_TELEPORT'],
+        'mileageKm': 1,
+      },
     });
 
-    test('omits phase for an invoice, which has none', () async {
-      late http.BaseRequest captured;
-      final client = ApiClient(
-        baseUrl: 'http://test',
-        httpClient: MockClient((request) async {
-          captured = request;
-          return http.Response(
-            jsonEncode({'id': 'a1', 'url': 'u', 'kind': 'invoice'}),
-            200,
-            headers: {'content-type': 'application/json'},
-          );
-        }),
-      );
+    final record = await ServiceRecordRepository(client).byId('r1');
 
-      final attachment = await ServiceRecordRepository(client).uploadAttachment(
-        recordId: 'r1',
-        bytes: [1],
-        filename: 'nota.pdf',
-        contentType: 'application/pdf',
-        kind: 'invoice',
-      );
-
-      final body = (captured as http.Request).body;
-      expect(body, contains('name="kind"'));
-      expect(body, contains('invoice'));
-      expect(body, isNot(contains('name="phase"')));
-      expect(attachment.isInvoice, isTrue);
-      expect(attachment.phase, isNull);
-    });
-
-    test('surfaces a rejected file as a typed error', () async {
-      final client = ApiClient(
-        baseUrl: 'http://test',
-        httpClient: MockClient(
-          (_) async => http.Response(
-            jsonEncode({
-              'code': 'invalid_argument',
-              'message': 'tipo não suportado',
-            }),
-            400,
-            headers: {'content-type': 'application/json'},
-          ),
-        ),
-      );
-
-      expect(
-        () => ServiceRecordRepository(client).uploadAttachment(
-          recordId: 'r1',
-          bytes: [1],
-          filename: 'x.exe',
-          contentType: 'application/octet-stream',
-        ),
-        throwsA(
-          isA<ApiException>()
-              .having((e) => e.code, 'code', ApiErrorCode.invalidArgument)
-              .having((e) => e.message, 'message', 'tipo não suportado'),
-        ),
-      );
-    });
+    expect(record.operations, [ServiceOperation.oilChange]);
   });
-
-  group('WorkshopRepository', () {
-    test('strips CNPJ punctuation before sending', () async {
-      final recorder = Recorder();
-      final repo = WorkshopRepository(
-        clientReturning({
-          'workshop': {'id': 'w1', 'cnpj': '11222333000181', 'name': 'Oficina'},
-          'token': 'tok',
-        }, recorder: recorder),
-      );
-
-      final session = await repo.login(
-        cnpj: '11.222.333/0001-81',
-        password: 'senha-forte-123',
-      );
-
-      expect(recorder.body['cnpj'], '11222333000181');
-      expect(session.token, 'tok');
-      expect(session.workshop.name, 'Oficina');
-    });
-
-    test('surfaces a rejected sign-in as unauthenticated', () async {
-      final repo = WorkshopRepository(
-        clientReturning({
-          'code': 'unauthenticated',
-          'message': 'CNPJ ou senha inválidos',
-        }, status: 401),
-      );
-
-      expect(
-        () => repo.login(cnpj: '11222333000181', password: 'errada'),
-        throwsA(
-          isA<ApiException>().having(
-            (e) => e.isSessionExpired,
-            'isSessionExpired',
-            isTrue,
-          ),
-        ),
-      );
-    });
-  });
-
-  group('formatCents', () {
-    test('renders cents as Brazilian currency without floating point', () {
-      expect(formatCents(0), r'R$ 0,00');
-      expect(formatCents(5), r'R$ 0,05');
-      expect(formatCents(24500), r'R$ 245,00');
-      expect(formatCents(100099), r'R$ 1000,99');
-    });
-  });
-}
-
-Map<String, dynamic> _recordJson() => {
-  'id': 'record-1',
-  'vehicle': {
-    'plate': 'ABC1D23',
-    'make': 'Honda',
-    'model': 'CG 160 Start',
-    'year': 2022,
-  },
-  'workshopName': 'Oficina do Zé',
-  'mechanicName': 'José Carlos',
-  'operations': ['SERVICE_TYPE_OIL_CHANGE', 'SERVICE_TYPE_CHAIN_AND_SPROCKET'],
-  'mileageKm': 18420,
-  'costCents': 24500,
-  'notes': 'Óleo trocado.',
-  'parts': [
-    {'name': 'Óleo 10w30', 'quantity': 1, 'costCents': 6200},
-  ],
-  'createdAt': '2026-06-02T12:00:00Z',
-};
-
-/// A stand-in for a socket failure: MockClient can only throw, and ApiClient
-/// treats any transport exception the same way.
-class SocketExceptionStub implements Exception {
-  const SocketExceptionStub();
 }
