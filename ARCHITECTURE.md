@@ -37,7 +37,10 @@ The root `/` of each app is a home screen, never a login.
   can be added, edited and deleted. Signing in shows the account's bikes and
   lets the owner claim one.
 
-### Device database
+### Device database (mobile only)
+
+The Go API never touches SQLite: it stores everything in PostgreSQL. SQLite
+holds only what an app keeps on the phone before it reaches the API.
 
 One SQLite file, `mototeca.db`, through `sqflite` (`lib/storage/database.dart`).
 The web build runs the same SQLite as WebAssembly (`web/sqlite3.wasm`, from
