@@ -12,14 +12,8 @@ import 'package:mototeca/repositories/service_record_repository.dart';
 import 'package:mototeca/repositories/vehicle_repository.dart';
 import 'package:mototeca/repositories/workshop_repository.dart';
 
-/// Contract tests against JSON captured from the real Go API.
-///
-/// test/fixtures/*.json are verbatim responses recorded by scripts/e2e.sh
-/// running against Postgres. The other tests use hand-written JSON, which can
-/// drift from what the server actually sends — protobuf's JSON mapping
-/// (camelCase names, enum values as strings, nanosecond timestamps, omitted
-/// zero values) is easy to get subtly wrong by hand. Re-record the fixtures if
-/// the proto changes.
+/// Parses JSON recorded from the real API by scripts/e2e.sh (test/fixtures/).
+/// Re-record when a proto changes.
 ApiClient clientServing(String fixture, {int status = 200}) {
   final body = File('test/fixtures/$fixture').readAsStringSync();
   return ApiClient(

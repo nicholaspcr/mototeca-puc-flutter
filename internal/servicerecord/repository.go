@@ -214,9 +214,7 @@ func (r *Repository) CountByWorkshopSince(ctx context.Context, workshopID string
 	return count, err
 }
 
-// Create writes the record, its operations and its parts as one transaction:
-// a record that lost its operations halfway through would be history nobody
-// could interpret.
+// Create writes the record, its operations and its parts in one transaction.
 func (r *Repository) Create(ctx context.Context, input CreateInput) (*ServiceRecord, error) {
 	return r.write(ctx, input, nil)
 }
@@ -403,9 +401,7 @@ func checkMileage(ctx context.Context, tx pgx.Tx, vehicleID string, mileageKm in
 	return nil
 }
 
-// upsertMechanic maps the free-text mechanic name the app collects onto the
-// mechanics table, reusing the row when that shop already has someone by that
-// name so the same person isn't duplicated on every service.
+// upsertMechanic reuses the shop's mechanic row with the same name.
 func upsertMechanic(ctx context.Context, tx pgx.Tx, workshopID string, name *string) (*string, error) {
 	if name == nil {
 		return nil, nil

@@ -2,11 +2,7 @@ import 'package:flutter/widgets.dart';
 
 import '../demo/demo_client.dart';
 
-/// Resolves an attachment URL to an image.
-///
-/// Photos normally come from object storage over HTTP. In demo mode there is
-/// no storage, so an upload keeps its bytes in memory under a `demo:` URL and
-/// they are shown straight from there.
+/// Shows an attachment from storage, or from memory for `demo:` URLs.
 ImageProvider photoImage(String url) {
   if (url.startsWith('demo:')) {
     final bytes = demoBackend.images[url];

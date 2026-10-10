@@ -10,9 +10,7 @@ var (
 	ErrDuplicateChassi = errors.New("chassi already registered")
 )
 
-// Store is the storage contract Handler depends on. Repository is the
-// Postgres-backed implementation; tests substitute an in-memory fake instead
-// of standing up a real database.
+// Store is what Handler needs; tests use an in-memory fake.
 type Store interface {
 	// FindByPlate returns nil, nil when the plate has no history yet.
 	FindByPlate(ctx context.Context, plate string) (*Vehicle, error)

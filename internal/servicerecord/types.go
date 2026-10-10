@@ -2,9 +2,7 @@ package servicerecord
 
 import "time"
 
-// Operation is one entry of the fixed taxonomy. The values are exactly the
-// labels of the `service_type` Postgres enum (db/migrations/0001_init.sql) and
-// the chips on the Novo Registro screen.
+// Operation is one value of the `service_type` Postgres enum.
 type Operation string
 
 const (
@@ -22,9 +20,8 @@ const (
 	OperationOther            Operation = "other"
 )
 
-// validOperations gates what reaches the database. A value outside this set
-// would be rejected by the enum anyway, but failing in validation gives the
-// client an INVALID_ARGUMENT instead of an opaque INTERNAL.
+// validOperations rejects unknown operations as INVALID_ARGUMENT before the
+// enum fails as INTERNAL.
 var validOperations = map[Operation]bool{
 	OperationOilChange: true, OperationScheduledReview: true, OperationBrakes: true,
 	OperationChainAndSprocket: true, OperationTires: true, OperationElectrical: true,
@@ -54,7 +51,7 @@ type Attachment struct {
 }
 
 // VehicleSummary is the subset of vehicle fields safe to return on the public
-// plate lookup — no chassi, no owner (ARCHITECTURE.md section 8).
+// plate lookup — no chassi, no owner.
 type VehicleSummary struct {
 	Plate string `json:"plate"`
 	Make  string `json:"make"`

@@ -58,7 +58,7 @@ CREATE TYPE service_type AS ENUM (
 
 -- Append-only by convention: a workshop never updates another shop's row.
 -- Corrections are new rows that point back via superseded_by, which is what
--- keeps cross-workshop history trustworthy (see ARCHITECTURE.md section 4).
+-- keeps cross-workshop history trustworthy.
 CREATE TABLE service_records (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   vehicle_id UUID NOT NULL REFERENCES vehicles(id) ON DELETE CASCADE,

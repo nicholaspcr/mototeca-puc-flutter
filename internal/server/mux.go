@@ -1,6 +1,4 @@
-// Package server wires up the HTTP mux and cross-cutting middleware for the
-// Mototeca API, kept separate from cmd/api/main.go so main stays a thin
-// composition root.
+// Package server wires the HTTP mux and middleware of the Mototeca API.
 package server
 
 import (
@@ -35,9 +33,7 @@ type Handlers struct {
 	Owner         ownerv1connect.OwnerServiceHandler
 }
 
-// rateLimits are tighter limits for the endpoints an anonymous caller can
-// abuse: signing in (password guessing) and the public plate lookup (scraping
-// the history of every bike in Brazil one plate at a time).
+// rateLimits are stricter limits for logins and the public plate lookup.
 func rateLimits() map[string]*RateLimiter {
 	return map[string]*RateLimiter{
 		workshopv1connect.WorkshopServiceLoginProcedure:                         NewRateLimiter(0.2, 5),
@@ -50,13 +46,8 @@ func rateLimits() map[string]*RateLimiter {
 	}
 }
 
-// NewMux builds the HTTP mux serving the Connect-RPC API and health check.
-//
-// Interceptor order is outermost first: tracing covers the whole request, then
-// rate limiting rejects abuse before any work is done, then logging, then
-// authentication, so an unauthenticated request is still traced and logged.
-// NewMux registers the upload route only when uploads is non-nil, so the API
-// runs without object storage configured.
+// NewMux builds the API mux. Interceptors run tracing, rate limit, logging,
+// then auth. The upload route exists only when uploads is non-nil.
 func NewMux(handlers Handlers, uploads *UploadHandler, signer *auth.Signer, db Pinger, logger *slog.Logger) (*http.ServeMux, error) {
 	otelInterceptor, err := otelconnect.NewInterceptor()
 	if err != nil {

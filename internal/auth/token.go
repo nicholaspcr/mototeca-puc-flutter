@@ -35,13 +35,8 @@ type Subject struct {
 	ID   string
 }
 
-// Signer issues and verifies session tokens.
-//
-// A token is `<payload>.<signature>`, both base64url, where payload is
-// "<kind>:<id>:<expiryUnix>" and signature is HMAC-SHA256 of the payload.
-// It is self-contained on purpose: no session table, so verifying a request
-// costs no database round-trip. The trade-off is that a token cannot be
-// revoked before it expires, which is why the TTL is short.
+// Signer issues and verifies `<payload>.<signature>` tokens: payload is
+// "<kind>:<id>:<expiryUnix>", signed with HMAC-SHA256. No session table.
 type Signer struct {
 	secret []byte
 	ttl    time.Duration

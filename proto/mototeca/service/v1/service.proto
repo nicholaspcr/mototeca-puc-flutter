@@ -45,7 +45,7 @@ message Attachment {
 }
 
 // The vehicle fields safe to return on the public plate lookup: no chassi, no
-// owner id (see ARCHITECTURE.md section 8 — shared history never leaks PII).
+// owner id.
 message VehicleSummary {
   string plate = 1;
   string make = 2;
@@ -93,7 +93,7 @@ message CreateServiceRecordResponse {
 }
 
 // A correction. The original is never edited: it stays in the table pointing
-// at its replacement, so the history is auditable (ARCHITECTURE.md §3).
+// at its replacement, so the history is auditable.
 message ReviseServiceRecordRequest {
   // The record being corrected. Must belong to the calling workshop.
   string record_id = 1;

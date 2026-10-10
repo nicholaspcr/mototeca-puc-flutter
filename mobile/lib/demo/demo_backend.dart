@@ -2,13 +2,8 @@ import 'dart:typed_data';
 
 import '../models/vehicle.dart';
 
-/// The demo's stand-in for the Go API: the same procedures, the same JSON,
-/// the same refusals — all in memory, so the app runs with no backend and no
-/// database (mobile/DEMO.md). State lives as long as the app does, so every
-/// workflow that writes something shows the result everywhere else.
-///
-/// Wire shapes mirror proto/ and are asserted against the real server by
-/// test/contract_test.dart, so a drift shows up as a failing test.
+/// In-memory stand-in for the Go API: same procedures, JSON and errors.
+/// test/contract_test.dart keeps the shapes in line with the server.
 class DemoBackend {
   DemoBackend() {
     _seed();
@@ -152,9 +147,7 @@ class DemoBackend {
   }
 
   Map<String, dynamic> _workshopLogin(Map<String, dynamic> request) {
-    // Empty fields sign in as the demo shop: on stage, "Entrar" should be one
-    // tap. Typed-but-wrong credentials still fail, so the refusal is
-    // demonstrable.
+    // Blank fields sign in as the demo shop; wrong credentials still fail.
     if (_blankCredentials(request['cnpj'], request['password'])) {
       final demo = _workshops.first;
       return {'workshop': _workshopJson(demo), 'token': 'demo-w-${demo['id']}'};

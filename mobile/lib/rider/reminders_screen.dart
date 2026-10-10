@@ -6,7 +6,7 @@ import '../theme.dart';
 import '../widgets/feedback.dart';
 import '../widgets/mt_widgets.dart';
 
-/// Lembretes — km-based maintenance reminders (ARCHITECTURE.md §3).
+/// Lembretes — km-based maintenance reminders.
 class RemindersScreen extends StatefulWidget {
   const RemindersScreen({super.key});
 

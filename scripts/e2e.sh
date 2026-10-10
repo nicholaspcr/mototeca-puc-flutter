@@ -4,7 +4,7 @@
 # response code, so a regression fails the run instead of scrolling past.
 #
 # The data is fixed and every write tolerates a previous run, so it doubles as
-# the demo seed (mobile/DEMO.md). The last step drains the owner login rate
+# the demo seed. The last step drains the owner login rate
 # limit: wait about 30 seconds before running it again.
 set -u
 

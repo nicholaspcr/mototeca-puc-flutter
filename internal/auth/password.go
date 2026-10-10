@@ -39,9 +39,7 @@ func HashPassword(plain string) (string, error) {
 	return string(digest), nil
 }
 
-// CheckPassword reports whether plain matches the stored digest. It is
-// deliberately boolean: callers must not distinguish "no such user" from
-// "wrong password" in what they return to the client.
+// CheckPassword reports whether plain matches the stored digest.
 func CheckPassword(digest, plain string) bool {
 	if digest == "" {
 		return false

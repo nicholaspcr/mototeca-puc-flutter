@@ -13,11 +13,8 @@ const (
 	corsExposedHeaders = "Connect-Protocol-Version, Grpc-Status, Grpc-Message"
 )
 
-// CORS lets browser clients call the API from another origin, which is how
-// the Flutter web build runs. Without configured origins only loopback ones
-// are allowed, since `flutter run -d chrome` serves from a random localhost
-// port. "*" allows any origin; that is safe here because sessions travel in
-// the Authorization header, never in cookies a foreign page could ride.
+// CORS lets the Flutter web build call the API. With no configured origins
+// only localhost is allowed. Sessions use a header, never cookies.
 func CORS(allowedOrigins []string, next http.Handler) http.Handler {
 	allowAny := slices.Contains(allowedOrigins, "*")
 

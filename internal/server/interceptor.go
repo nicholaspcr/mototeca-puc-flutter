@@ -9,9 +9,7 @@ import (
 	"connectrpc.com/connect"
 )
 
-// LoggingInterceptor logs the procedure, duration, and resulting status code
-// for every unary RPC — one place to log requests instead of each handler
-// doing it ad hoc.
+// LoggingInterceptor logs procedure, duration and status of every unary RPC.
 func LoggingInterceptor(logger *slog.Logger) connect.Interceptor {
 	return connect.UnaryInterceptorFunc(func(next connect.UnaryFunc) connect.UnaryFunc {
 		return func(ctx context.Context, req connect.AnyRequest) (connect.AnyResponse, error) {

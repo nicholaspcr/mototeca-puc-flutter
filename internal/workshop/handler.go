@@ -14,10 +14,8 @@ import (
 	workshopv1 "mototeca-backend/internal/gen/mototeca/workshop/v1"
 )
 
-// dummyHash is a valid bcrypt digest of a random string. Login compares
-// against it when no workshop matches the CNPJ, so an unregistered CNPJ costs
-// the same time as a wrong password and the endpoint cannot be used to
-// enumerate which shops are registered.
+// dummyHash makes an unknown CNPJ cost the same as a wrong password, so login
+// cannot reveal which shops are registered.
 const dummyHash = "$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy"
 
 type Handler struct {

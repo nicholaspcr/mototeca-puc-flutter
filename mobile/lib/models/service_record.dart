@@ -17,13 +17,8 @@ String formatDate(DateTime moment) {
   return '$day/$month/${local.year}';
 }
 
-/// Parses what a mechanic types into a money field ("245", "245,50",
-/// "R$ 1.245,50") into integer cents.
-///
-/// Returns null for blank input and throws [FormatException] for something
-/// that isn't a number, so the caller can tell "left empty" from "typed
-/// nonsense". Deliberately integer-only: parsing money as a double loses
-/// centavos.
+/// Parses "245", "245,50" or "R$ 1.245,50" into integer cents. Returns null
+/// when blank and throws [FormatException] when not a number.
 int? parseCents(String raw) {
   final cleaned = raw
       .trim()

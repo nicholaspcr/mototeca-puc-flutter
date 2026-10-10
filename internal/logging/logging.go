@@ -7,9 +7,7 @@ import (
 	"os"
 )
 
-// New returns a structured logger writing to stdout. format selects the
-// handler: "json" for log aggregation, anything else falls back to the
-// human-readable text handler used for local development.
+// New returns a stdout logger: JSON when format is "json", text otherwise.
 func New(format string) *slog.Logger {
 	return NewWithWriter(format, os.Stdout)
 }

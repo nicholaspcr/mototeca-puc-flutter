@@ -45,7 +45,7 @@ services:
       - ./scripts/migrate.sh:/migrate.sh:ro
     entrypoint: ["sh", "/migrate.sh"]
 
-  # S3-compatible object storage for service photos (ARCHITECTURE.md §6).
+  # S3-compatible object storage for service photos.
   storage:
     image: quay.io/minio/minio:latest
     restart: unless-stopped

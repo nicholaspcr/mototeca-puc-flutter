@@ -21,10 +21,8 @@ type Shutdown func(context.Context) error
 
 var noopShutdown Shutdown = func(context.Context) error { return nil }
 
-// Setup installs the global TracerProvider for the given exporter ("none",
-// "stdout", or "otlp") and returns a Shutdown func. "none" is the default:
-// it installs nothing, so tracing has zero runtime cost and nobody needs a
-// collector running just to `make run`.
+// Setup installs the TracerProvider for "none", "stdout" or "otlp" and
+// returns its shutdown func. "none" installs nothing.
 func Setup(ctx context.Context, exporter, otlpEndpoint string) (Shutdown, error) {
 	if exporter == "" || exporter == "none" {
 		return noopShutdown, nil

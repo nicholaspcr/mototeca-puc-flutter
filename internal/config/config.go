@@ -35,9 +35,7 @@ type Config struct {
 	// AuthTokenTTL is how long a workshop session stays valid. Tokens are
 	// self-contained and cannot be revoked early, so this is kept short.
 	AuthTokenTTL time.Duration
-	// Storage holds the object-storage settings for service photos. Empty
-	// StorageEndpoint disables uploads rather than failing to start, so the
-	// rest of the API runs without object storage available.
+	// Storage is optional: an empty StorageEndpoint disables uploads.
 	StorageEndpoint  string
 	StorageAccessKey string
 	StorageSecretKey string

@@ -284,7 +284,7 @@ func (x *Attachment) GetPhase() PhotoPhase {
 }
 
 // The vehicle fields safe to return on the public plate lookup: no chassi, no
-// owner id (see ARCHITECTURE.md section 8 — shared history never leaks PII).
+// owner id.
 type VehicleSummary struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Plate         string                 `protobuf:"bytes,1,opt,name=plate,proto3" json:"plate,omitempty"`
@@ -646,7 +646,7 @@ func (x *CreateServiceRecordResponse) GetRecord() *ServiceRecord {
 }
 
 // A correction. The original is never edited: it stays in the table pointing
-// at its replacement, so the history is auditable (ARCHITECTURE.md §3).
+// at its replacement, so the history is auditable.
 type ReviseServiceRecordRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The record being corrected. Must belong to the calling workshop.

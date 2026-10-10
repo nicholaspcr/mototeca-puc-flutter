@@ -11,13 +11,8 @@ import (
 	"connectrpc.com/connect"
 )
 
-// RateLimiter is a per-caller token bucket.
-//
-// State is in-process, so limits are per API instance rather than global. That
-// is honest for a single-instance deployment and still blunts the two abuses
-// that matter here: password guessing against Login, and scraping the plate
-// lookup, which is public by design (ARCHITECTURE.md sections 8 and 3).
-// A multi-instance deployment needs a shared store instead.
+// RateLimiter is an in-process, per-caller token bucket. Several API
+// instances would need a shared store.
 type RateLimiter struct {
 	mu      sync.Mutex
 	buckets map[string]*bucket

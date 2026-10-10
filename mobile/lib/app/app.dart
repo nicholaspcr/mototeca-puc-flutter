@@ -97,7 +97,6 @@ class _MototecaAppState extends State<MototecaApp> {
     );
   }
 
-  /// App Motociclista — see design/NAVIGATION.md.
   static final _riderRoutes = <String, WidgetBuilder>{
     Routes.home: (_) => const RiderHomeScreen(),
     Routes.signIn: (_) => const RiderSignInScreen(),
@@ -107,7 +106,6 @@ class _MototecaAppState extends State<MototecaApp> {
     Routes.about: (_) => const AboutScreen(),
   };
 
-  /// App Oficina — see design/NAVIGATION.md.
   static final _shopRoutes = <String, WidgetBuilder>{
     Routes.home: (_) => const ShopHomeScreen(),
     Routes.signIn: (_) => const ShopSignInScreen(),

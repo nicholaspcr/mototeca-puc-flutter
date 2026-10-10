@@ -11,7 +11,7 @@ message Vehicle {
   string make = 4;
   string model = 5;
   int32 year = 6;
-  // Owner ids stay server-side (ARCHITECTURE.md §8).
+  // Owner ids stay server-side.
   reserved 7;
   reserved "current_owner_id";
   google.protobuf.Timestamp created_at = 8;

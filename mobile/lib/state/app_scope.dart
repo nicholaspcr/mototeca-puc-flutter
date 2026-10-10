@@ -12,12 +12,7 @@ import '../storage/garage_store.dart';
 import '../storage/local_store.dart';
 import '../storage/outbox_store.dart';
 
-/// Holds the signed-in account, the repositories the screens call and the two
-/// stores that work before any account exists.
-///
-/// A plain [ChangeNotifier] rather than a state-management package: the app
-/// has one piece of shared state, and a dependency would cost more than it
-/// saves. A session is a workshop or an owner, never both.
+/// The session (workshop or owner), the repositories and the device stores.
 class AppState extends ChangeNotifier {
   AppState({ApiClient? client, LocalStore? store})
     : _client = client ?? createApiClient(),

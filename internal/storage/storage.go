@@ -80,13 +80,8 @@ func New(ctx context.Context, cfg Config) (*Store, error) {
 	}, nil
 }
 
-// readOnlyPolicy allows anonymous GET on the bucket's objects.
-//
-// The plate lookup is public by design, so the photos hanging off it have to
-// be readable without an account. Object names are random UUIDs, so a URL
-// cannot be guessed from a plate — but this is obscurity, not authorization.
-// Presigned, expiring URLs are the hardening step if photos ever carry
-// anything more sensitive than a picture of a chain.
+// readOnlyPolicy allows anonymous reads, since the plate lookup is public.
+// Object names are random UUIDs; presigned URLs would be stronger.
 func readOnlyPolicy(bucket string) string {
 	return `{
 	  "Version": "2012-10-17",
@@ -99,9 +94,8 @@ func readOnlyPolicy(bucket string) string {
 	}`
 }
 
-// Put stores one file under a generated name and returns its URL. The name is
-// never taken from the client, so an upload cannot overwrite another's file or
-// smuggle a path.
+// Put stores a file under a generated name, never the client's, and returns
+// its URL.
 func (s *Store) Put(ctx context.Context, prefix, contentType string, size int64, body io.Reader) (string, error) {
 	extension, ok := allowedTypes[contentType]
 	if !ok {

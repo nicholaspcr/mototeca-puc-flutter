@@ -11,9 +11,7 @@ import (
 	"mototeca-backend/internal/db"
 )
 
-// integrationTestPlate and integrationTestChassi are reserved for this test
-// (plate and chassi both have unique constraints); rows are deleted before
-// and after each run so the suite stays repeatable even after a crash.
+// Reserved for this test; rows are deleted before and after each run.
 const (
 	integrationTestPlate  = "ZZZ9Z99"
 	integrationTestChassi = "ZZZ0000000000ZZZZ"

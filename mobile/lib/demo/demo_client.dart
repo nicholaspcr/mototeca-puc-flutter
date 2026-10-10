@@ -7,18 +7,13 @@ import 'package:http/http.dart' as http;
 import '../api/api_client.dart';
 import 'demo_backend.dart';
 
-/// True unless the app was built against a real API. Flipping it needs no
-/// code change:
-///   flutter run -d chrome                                   → demo data
-///   flutter run --dart-define=MOTOTECA_API_URL=http://…     → the Go backend
+/// True unless built with `--dart-define=MOTOTECA_API_URL=...`.
 const demoMode = bool.fromEnvironment(
   'MOTOTECA_DEMO',
   defaultValue: !bool.hasEnvironment('MOTOTECA_API_URL'),
 );
 
-/// The demo's data, shared by the client and by the photo widgets that show
-/// back what was just picked. Created on first use, so a build against the
-/// real API never touches it.
+/// The demo data, created on first use.
 final demoBackend = DemoBackend();
 
 /// The API client the app runs with.

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// Design tokens from `design/` — see design/README.md for the source palette.
+/// Design tokens from the mockups in `design/`.
 class MtColors {
   static const petrol = Color(0xFF1B4965);
   static const petrolHover = Color(0xFF2D7AA9);

@@ -6,10 +6,7 @@ import 'package:mototeca/api/api_client.dart';
 import 'package:mototeca/state/app_scope.dart';
 import 'package:mototeca/storage/local_store.dart';
 
-/// An in-memory stand-in for the Go API, so widget tests exercise the real
-/// screens, repositories and JSON parsing without a server.
-///
-/// Responses mirror the shapes verified end to end by scripts/e2e.sh.
+/// In-memory Go API for widget tests.
 class FakeApi {
   /// Every procedure called, in order — lets a test assert that a screen
   /// actually hit the backend.

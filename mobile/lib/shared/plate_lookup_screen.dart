@@ -48,7 +48,7 @@ class _PlateLookupScreenState extends State<PlateLookupScreen> {
     setState(() => _busy = true);
     try {
       // No token is sent: this lookup is public by design, and it is the
-      // reason the product exists (ARCHITECTURE.md section 3).
+      // reason the product exists.
       final history = await AppScope.read(context).serviceRecords
           .historyByPlate(_plate.text);
       if (!mounted) return;

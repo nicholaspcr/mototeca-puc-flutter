@@ -89,12 +89,8 @@ class MtField extends StatelessWidget {
   }
 }
 
-/// Pill used for the operation taxonomy and for read-only labels.
-///
-/// None of the three treatments uses the solid petrol fill — that belongs to
-/// the primary button, and a chip wearing it reads as one. An option is an
-/// outline that takes the petrol tint and a petrol rim once picked; a tag is a
-/// flat neutral badge with no tap target at all.
+/// Pill for operation options and read-only tags. Never solid petrol: that
+/// is the primary button.
 class MtChip extends StatelessWidget {
   const MtChip({
     super.key,

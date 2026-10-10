@@ -173,9 +173,7 @@ class ServiceDetailScreen extends StatelessWidget {
     );
   }
 
-  /// Replaces this screen with the correction, so going back lands where the
-  /// user started — not on the record that was just superseded. The `true`
-  /// result tells the dashboard its feed changed.
+  /// Replaces this screen with the correction, so back skips the old record.
   Future<void> _revise(BuildContext context, ServiceRecord record) async {
     final corrected = await Navigator.pushNamed(
       context,

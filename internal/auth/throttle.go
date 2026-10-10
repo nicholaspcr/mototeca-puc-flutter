@@ -12,13 +12,8 @@ const (
 	LockedMessage     = "muitas tentativas para esta conta — aguarde alguns minutos"
 )
 
-// LoginThrottle slows password guessing against one account, however many
-// addresses the guesses come from — the per-IP rate limit alone does not.
-//
-// Only failures count, and a success clears them, so someone signing in
-// normally is never slowed. Accounts are keyed by the identifier typed, known
-// or not, so a lock reveals nothing about who is registered. The lock is short
-// on purpose: anyone can trip it for someone else's CNPJ or phone.
+// LoginThrottle locks an identifier after repeated failed logins from any
+// address. Unknown identifiers lock too, so a lock reveals nothing.
 type LoginThrottle struct {
 	mu       sync.Mutex
 	accounts map[string]*loginFailures

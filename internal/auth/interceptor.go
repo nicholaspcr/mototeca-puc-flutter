@@ -13,12 +13,8 @@ type contextKey struct{}
 
 var subjectKey contextKey
 
-// Interceptor authenticates but does not authorize: it reads a bearer token
-// when one is present and annotates the context with the subject it belongs
-// to. Requests without a token pass through untouched, because the plate
-// lookup and service detail are deliberately public.
-//
-// Enforcement is the handler's job, via RequireWorkshopID / RequireOwnerID.
+// Interceptor attaches the token's subject to the context. It does not
+// authorize: handlers call RequireWorkshopID / RequireOwnerID.
 func Interceptor(signer *Signer) connect.UnaryInterceptorFunc {
 	return func(next connect.UnaryFunc) connect.UnaryFunc {
 		return func(ctx context.Context, req connect.AnyRequest) (connect.AnyResponse, error) {

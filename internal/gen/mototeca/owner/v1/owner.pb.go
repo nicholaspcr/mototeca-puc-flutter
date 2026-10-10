@@ -555,7 +555,7 @@ func (x *ClaimVehicleRequest) GetChassiSuffix() string {
 
 // Unlinks a bike from the signed-in owner, so its next owner can claim it.
 // The service history is untouched — that is the point of keying it to the
-// plate rather than to a person (ARCHITECTURE.md §3).
+// plate rather than to a person.
 type ReleaseVehicleRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Plate         string                 `protobuf:"bytes,1,opt,name=plate,proto3" json:"plate,omitempty"`

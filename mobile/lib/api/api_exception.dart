@@ -1,7 +1,4 @@
-/// The error codes the Connect protocol returns in `{"code": ...}`.
-///
-/// Only the ones this app reacts to differently are named; anything else
-/// becomes [ApiErrorCode.unknown] and is shown as a generic failure.
+/// Connect error codes the app handles; others map to [ApiErrorCode.unknown].
 enum ApiErrorCode {
   invalidArgument,
   notFound,

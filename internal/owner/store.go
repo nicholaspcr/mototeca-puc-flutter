@@ -25,9 +25,7 @@ type Store interface {
 	// ListVehicles returns the owner's bikes, with the figures derived from
 	// their service history.
 	ListVehicles(ctx context.Context, ownerID string) ([]OwnedVehicle, error)
-	// Claim links a vehicle to an owner who knows the end of its chassi.
-	// Claiming a bike already linked to
-	// that same owner succeeds, so the action is idempotent.
+	// Claim links a vehicle to an owner who knows its chassi suffix. Idempotent.
 	Claim(ctx context.Context, ownerID, plate, chassiSuffix string) (*OwnedVehicle, error)
 	// Release unlinks a bike the owner holds, leaving its history intact.
 	Release(ctx context.Context, ownerID, plate string) error

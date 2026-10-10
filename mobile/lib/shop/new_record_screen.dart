@@ -213,9 +213,7 @@ class _NewRecordScreenState extends State<NewRecordScreen> {
           : await _revise(original, draft);
       if (record == null || !mounted) return;
 
-      // Attachments need the record to exist, so they follow the save. A
-      // failed photo must not discard a saved record — the record is the part
-      // that matters.
+      // Attachments need a saved record; a failed upload keeps the record.
       final failed = await _uploadAttachments(record.id);
       if (!mounted) return;
       final saved = original == null ? 'Registro salvo' : 'Correção salva';
@@ -359,8 +357,7 @@ class _NewRecordScreenState extends State<NewRecordScreen> {
     return failed;
   }
 
-  // Shop connections are poor and the API caps uploads at 8 MiB
-  // (ARCHITECTURE.md §9).
+  // Shop connections are poor and the API caps uploads at 8 MiB.
   static const _maxWidth = 1600.0;
   static const _imageQuality = 80;
 

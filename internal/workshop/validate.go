@@ -26,9 +26,8 @@ func NormalizeCNPJ(raw string) string {
 	return b.String()
 }
 
-// ValidateCNPJ checks length and the two check digits, so an obviously bogus
-// number is rejected before it reaches the database. It does NOT prove the
-// company exists — that is what the `verified` flag is for.
+// ValidateCNPJ checks length and check digits. It does not prove the
+// company exists.
 func ValidateCNPJ(cnpj string) error {
 	if len(cnpj) != cnpjDigits {
 		return fmt.Errorf("CNPJ deve ter %d dígitos", cnpjDigits)

@@ -5,17 +5,14 @@ import 'package:http_parser/http_parser.dart';
 
 import 'api_exception.dart';
 
-/// Calls the Go backend over Connect's JSON mode: a unary RPC is just
-/// `POST /<package>.<Service>/<Method>` with a JSON body, so no generated
-/// Dart code and no separate REST layer (ARCHITECTURE.md §5).
+/// Calls the Go API in Connect's JSON mode: `POST /<package>.<Service>/<Method>`.
 class ApiClient {
   ApiClient({String? baseUrl, http.Client? httpClient})
     : baseUrl = baseUrl ?? defaultBaseUrl,
       _http = httpClient ?? http.Client();
 
-  /// Overridable at build time:
-  /// `flutter run --dart-define=MOTOTECA_API_URL=http://10.0.2.2:8080`
-  /// (10.0.2.2 is how the Android emulator reaches the host machine).
+  /// Set with `--dart-define=MOTOTECA_API_URL=...`; the Android emulator
+  /// reaches the host at 10.0.2.2.
   static const defaultBaseUrl = String.fromEnvironment(
     'MOTOTECA_API_URL',
     defaultValue: 'http://localhost:8080',
@@ -34,7 +31,7 @@ class ApiClient {
 
   static const _timeout = Duration(seconds: 15);
   // Photos are far larger than an RPC body, and often on a shop's poor
-  // connection (ARCHITECTURE.md §9).
+  // connection.
   static const _uploadTimeout = Duration(seconds: 60);
 
   /// Calls [procedure] (e.g. `mototeca.vehicle.v1.VehicleService/CreateVehicle`)

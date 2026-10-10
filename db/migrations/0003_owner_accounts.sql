@@ -2,7 +2,7 @@
 --
 -- 0001 modelled an owner as a record someone else creates, with a mandatory
 -- CPF. Signing in needs a credential of their own, and a CPF is more personal
--- data than reading your own history warrants (ARCHITECTURE.md §8).
+-- data than reading your own history warrants.
 
 BEGIN;
 

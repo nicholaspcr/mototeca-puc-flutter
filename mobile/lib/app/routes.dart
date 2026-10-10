@@ -1,4 +1,4 @@
-/// Route names — mirrors design/NAVIGATION.md. `/` is a home screen in both
+/// Route names. `/` is a home screen in both
 /// apps, never a login; [signIn] is an ordinary route pushed on top.
 class Routes {
   /// Shared by both apps.

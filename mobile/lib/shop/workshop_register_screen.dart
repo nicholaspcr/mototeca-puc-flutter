@@ -6,7 +6,7 @@ import '../theme.dart';
 import '../widgets/feedback.dart';
 import '../widgets/mt_widgets.dart';
 
-/// Cadastrar Oficina — CNPJ-verified onboarding (ARCHITECTURE.md §6).
+/// Cadastrar Oficina — workshop sign-up by CNPJ.
 class WorkshopRegisterScreen extends StatefulWidget {
   const WorkshopRegisterScreen({super.key});
 

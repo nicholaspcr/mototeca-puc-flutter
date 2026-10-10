@@ -77,10 +77,8 @@ func (r *Repository) Release(ctx context.Context, ownerID, plate string) error {
 	return nil
 }
 
-// ownedVehicleQuery derives the whole owner screen in one pass: odometer
-// (highest mileage any workshop recorded), service count, newest record, and
-// the mileage at the last oil change. Superseded records are skipped, so a
-// corrected typo in the mileage stops counting.
+// ownedVehicleQuery returns each bike with its odometer, service count, last
+// record and last oil change, ignoring superseded records.
 const ownedVehicleQuery = `
 	SELECT v.plate, v.make, v.model, v.year,
 	       COALESCE(MAX(sr.mileage_km), 0) AS current_km,
@@ -149,9 +147,8 @@ func (r *Repository) Claim(ctx context.Context, ownerID, plate, chassiSuffix str
 		return nil, ErrChassiMismatch
 	}
 
-	// The row lock above keeps two owners from both seeing it unclaimed.
-	// Re-claiming your own bike is a no-op; taking someone else's is refused.
-	// Transfer on sale is a separate flow (ARCHITECTURE.md §3).
+	// The row lock keeps two owners from claiming the same bike at once.
+	// Re-claiming your own bike is a no-op.
 	if currentOwner != nil && *currentOwner != ownerID {
 		return nil, ErrVehicleClaimed
 	}

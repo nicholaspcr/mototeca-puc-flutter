@@ -1,8 +1,4 @@
-/// The fixed operation taxonomy (ARCHITECTURE.md section 3).
-///
-/// [wire] is the protobuf enum name the API speaks; [label] is what the
-/// mechanic reads on the chips. Keeping both on one enum means the two can
-/// never drift apart in separate lists.
+/// The fixed operation list: [wire] is the proto enum name, [label] the chip text.
 enum ServiceOperation {
   oilChange('SERVICE_TYPE_OIL_CHANGE', 'Troca de óleo e filtro'),
   scheduledReview('SERVICE_TYPE_SCHEDULED_REVIEW', 'Revisão programada'),

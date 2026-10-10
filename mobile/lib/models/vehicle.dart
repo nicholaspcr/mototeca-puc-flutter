@@ -1,5 +1,5 @@
 /// The vehicle fields the public plate lookup returns. Deliberately no chassi
-/// and no owner — see ARCHITECTURE.md section 8.
+/// and no owner.
 class VehicleSummary {
   const VehicleSummary({
     required this.plate,

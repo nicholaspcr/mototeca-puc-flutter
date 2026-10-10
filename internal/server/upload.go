@@ -16,9 +16,7 @@ import (
 	"mototeca-backend/internal/storage"
 )
 
-// uploadDeadline replaces the server's short read and write timeouts on this
-// route: a phone photo over a shop's weak connection takes far longer than an
-// RPC body. It matches the Flutter client's upload timeout.
+// uploadDeadline replaces the server's short timeouts for slow photo uploads.
 const uploadDeadline = 60 * time.Second
 
 // ObjectStore is the upload route's view of object storage.
@@ -27,11 +25,8 @@ type ObjectStore interface {
 	Delete(ctx context.Context, url string) error
 }
 
-// UploadHandler serves multipart photo uploads.
-//
-// Not a Connect RPC: protobuf would carry the bytes base64-encoded, inflating
-// every photo by a third and holding it all in memory. A plain multipart POST
-// streams instead, and reuses the same bearer token.
+// UploadHandler streams multipart photo uploads; base64 in protobuf would add
+// a third to every photo.
 type UploadHandler struct {
 	store   ObjectStore
 	records servicerecord.Store

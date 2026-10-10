@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../theme.dart';
 
 /// Which of the two apps this binary is. One codebase, two entry points:
-/// `lib/main_rider.dart` and `lib/main_shop.dart` (design/NAVIGATION.md).
+/// `lib/main_rider.dart` and `lib/main_shop.dart`.
 enum AppFlavor {
   rider(
     title: 'Mototeca Motociclista',
