@@ -7,6 +7,7 @@ import '../state/app_scope.dart';
 import '../theme.dart';
 import '../widgets/feedback.dart';
 import '../widgets/mt_widgets.dart';
+import '../widgets/phone_input_formatter.dart';
 
 /// Entrar — pushed from the home screen, never the root
 /// (design/OwnerLogin.dc.html).
@@ -80,6 +81,7 @@ class _RiderSignInScreenState extends State<RiderSignInScreen> {
                   hint: '(31) 90000-0000',
                   controller: _phone,
                   keyboardType: TextInputType.phone,
+                  inputFormatters: const [PhoneInputFormatter()],
                 ),
                 const SizedBox(height: 14),
                 MtField(

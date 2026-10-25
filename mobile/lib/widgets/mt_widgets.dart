@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../app/flavor.dart';
 import '../theme.dart';
@@ -47,6 +48,7 @@ class MtField extends StatelessWidget {
     this.mono = false,
     this.obscure = false,
     this.keyboardType,
+    this.inputFormatters,
     this.textCapitalization = TextCapitalization.none,
   });
 
@@ -57,6 +59,7 @@ class MtField extends StatelessWidget {
   final bool mono;
   final bool obscure;
   final TextInputType? keyboardType;
+  final List<TextInputFormatter>? inputFormatters;
   final TextCapitalization textCapitalization;
 
   @override
@@ -73,6 +76,7 @@ class MtField extends StatelessWidget {
           controller: controller,
           obscureText: obscure,
           keyboardType: keyboardType,
+          inputFormatters: inputFormatters,
           textCapitalization: textCapitalization,
           style: TextStyle(fontSize: 15, fontFamily: mono ? 'monospace' : null),
           decoration: InputDecoration(hintText: hint),

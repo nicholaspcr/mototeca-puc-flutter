@@ -5,6 +5,7 @@ import '../state/app_scope.dart';
 import '../theme.dart';
 import '../widgets/feedback.dart';
 import '../widgets/mt_widgets.dart';
+import '../widgets/phone_input_formatter.dart';
 
 /// Cadastro do proprietário. No CPF: reading your own history doesn't need
 /// one, and collecting it anyway is personal data with no use (§8).
@@ -79,6 +80,7 @@ class _OwnerRegisterScreenState extends State<OwnerRegisterScreen> {
                   helper: 'Com DDD',
                   controller: _phone,
                   keyboardType: TextInputType.phone,
+                  inputFormatters: const [PhoneInputFormatter()],
                 ),
                 const SizedBox(height: 14),
                 MtField(

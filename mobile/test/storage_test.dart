@@ -1,9 +1,9 @@
-import 'dart:typed_data';
-
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mototeca/api/api_client.dart';
 import 'package:mototeca/demo/demo_backend.dart';
 import 'package:mototeca/demo/demo_client.dart';
+import 'package:mototeca/models/owner.dart';
 import 'package:mototeca/models/service_operation.dart';
 import 'package:mototeca/models/service_record.dart';
 import 'package:mototeca/models/vehicle.dart';
@@ -11,6 +11,7 @@ import 'package:mototeca/repositories/service_record_repository.dart';
 import 'package:mototeca/repositories/workshop_repository.dart';
 import 'package:mototeca/storage/garage_store.dart';
 import 'package:mototeca/storage/outbox_store.dart';
+import 'package:mototeca/widgets/phone_input_formatter.dart';
 import 'package:sqflite/sqflite.dart';
 
 import 'test_database.dart';
@@ -38,6 +39,25 @@ void main() {
       expect(parseCents(''), isNull);
       expect(() => parseCents('1,2,3'), throwsFormatException);
       expect(formatCents(100099), r'R$ 1000,99');
+    });
+
+    test('formats a phone while it is typed', () {
+      String typed(String text) => const PhoneInputFormatter()
+          .formatEditUpdate(
+            TextEditingValue.empty,
+            TextEditingValue(
+              text: text,
+              selection: TextSelection.collapsed(offset: text.length),
+            ),
+          )
+          .text;
+
+      expect(typed('3'), '(3');
+      expect(typed('319988'), '(31) 9988');
+      expect(typed('3133334444'), '(31) 3333-4444');
+      expect(typed('31998891997'), '(31) 99889-1997');
+      expect(typed('31998891997999'), '(31) 99889-1997');
+      expect(normalizePhone(typed('31998891997')), '31998891997');
     });
   });
 
