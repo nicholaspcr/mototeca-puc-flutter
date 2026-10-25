@@ -153,6 +153,28 @@ void main() {
       expect(notes.map((n) => n.description), ['Corrente', 'Óleo']);
     });
 
+    test(
+      'an account bike gets one device copy that follows its odometer',
+      () async {
+        final garage = LocalGarage(testDatabase());
+        const account = LocalBike(
+          plate: 'abc1d23',
+          label: 'CG',
+          mileageKm: 5000,
+        );
+
+        final first = await garage.localCopy(account);
+        final again = await garage.localCopy(
+          const LocalBike(plate: 'ABC1D23', label: 'CG', mileageKm: 7000),
+        );
+        final behind = await garage.localCopy(account);
+
+        expect(garage.length, 1);
+        expect(again.id, first.id);
+        expect(behind.mileageKm, 7000);
+      },
+    );
+
     test('removing a bike removes its notes', () async {
       final database = testDatabase();
       final garage = LocalGarage(database);

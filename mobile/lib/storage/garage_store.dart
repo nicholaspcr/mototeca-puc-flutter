@@ -133,6 +133,33 @@ class LocalGarage extends ChangeNotifier {
     await load();
   }
 
+  /// The device copy of an account bike, created the first time its notes are
+  /// opened. Its odometer follows the account's when that one is ahead.
+  Future<LocalBike> localCopy(LocalBike bike) async {
+    await ensureLoaded();
+    final plate = normalizePlate(bike.plate);
+    final existing = _withPlate(plate);
+    if (existing == null) {
+      await save(bike);
+    } else if (bike.mileageKm > existing.mileageKm) {
+      await save(
+        LocalBike(
+          id: existing.id,
+          plate: plate,
+          label: existing.label,
+          year: existing.year,
+          mileageKm: bike.mileageKm,
+        ),
+      );
+    } else {
+      return existing;
+    }
+    return _withPlate(plate)!;
+  }
+
+  LocalBike? _withPlate(String plate) =>
+      _bikes.where((bike) => bike.plate == plate).firstOrNull;
+
   /// Deletes the bike and, by cascade, its notes.
   Future<void> remove(int id) async {
     final db = await _db.database;

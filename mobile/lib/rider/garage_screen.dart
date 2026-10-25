@@ -12,7 +12,8 @@ import '../widgets/feedback.dart';
 import '../widgets/mt_widgets.dart';
 
 /// Minha Garagem (design/MyVehicles.dc.html). Signed out it lists the bikes
-/// held on the device; signed in, the ones the server owns.
+/// held on the device; signed in, the account's bikes and then the device
+/// bikes not yet linked to it.
 class GarageScreen extends StatefulWidget {
   const GarageScreen({super.key});
 
@@ -116,10 +117,14 @@ class _GarageScreenState extends State<GarageScreen> {
 
   Future<void> _addVehicle() async {
     if (!_signedIn) return _editLocalBike();
+    return _linkToAccount();
+  }
 
+  /// Without [plate] the owner types one; with it, a device bike is linked.
+  Future<void> _linkToAccount([String? plate]) async {
     final claim = await showDialog<_Claim>(
       context: context,
-      builder: (_) => const _ClaimDialog(),
+      builder: (_) => _ClaimDialog(plate: plate),
     );
     if (claim == null || !mounted) return;
 
@@ -149,6 +154,28 @@ class _GarageScreenState extends State<GarageScreen> {
       );
     } on DuplicatePlateException catch (error) {
       if (mounted) showApiError(context, error.toString());
+    } on Object {
+      if (mounted) showApiError(context, localSaveFailed);
+    }
+  }
+
+  /// Notes stay on the device, so an account bike gets a device copy for them.
+  Future<void> _openNotes(OwnedVehicle vehicle) async {
+    try {
+      final bike = await AppScope.read(context).garage.localCopy(
+        LocalBike(
+          plate: vehicle.plate,
+          label: vehicle.label,
+          year: vehicle.year,
+          mileageKm: vehicle.currentMileageKm,
+        ),
+      );
+      if (!mounted) return;
+      await Navigator.pushNamed(
+        context,
+        Routes.maintenanceNotes,
+        arguments: bike,
+      );
     } on Object {
       if (mounted) showApiError(context, localSaveFailed);
     }
@@ -192,9 +219,13 @@ class _GarageScreenState extends State<GarageScreen> {
       body: signedIn
           ? RefreshIndicator(
               onRefresh: _reload,
-              child: FutureBuilder<List<OwnedVehicle>>(
-                future: _vehicles,
-                builder: _remoteBody,
+              child: ListenableBuilder(
+                listenable: state.garage,
+                builder: (context, _) => FutureBuilder<List<OwnedVehicle>>(
+                  future: _vehicles,
+                  builder: (context, snapshot) =>
+                      _remoteBody(snapshot, state.garage),
+                ),
               ),
             )
           : ListenableBuilder(
@@ -231,11 +262,15 @@ class _GarageScreenState extends State<GarageScreen> {
   }
 
   Widget _remoteBody(
-    BuildContext context,
     AsyncSnapshot<List<OwnedVehicle>> snapshot,
+    LocalGarage garage,
   ) {
     final vehicles = snapshot.data ?? const <OwnedVehicle>[];
     final dueCount = vehicles.where((v) => v.reminderIsDue).length;
+    final linked = {for (final vehicle in vehicles) vehicle.plate};
+    final unlinked = snapshot.hasData
+        ? garage.bikes.where((bike) => !linked.contains(bike.plate)).toList()
+        : const <LocalBike>[];
 
     return ListView(
       padding: const EdgeInsets.all(MtSizes.screenPadding),
@@ -262,6 +297,23 @@ class _GarageScreenState extends State<GarageScreen> {
           const SizedBox(height: 16),
         ],
         _addButton(),
+        if (unlinked.isNotEmpty) ...[
+          const SizedBox(height: 24),
+          const Text(
+            'Só neste aparelho',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 4),
+          const MtFootnote(
+            'Vincule à conta para ver os serviços que as oficinas '
+            'registraram. As anotações continuam neste aparelho.',
+          ),
+          const SizedBox(height: 12),
+          for (final bike in unlinked) ...[
+            _localTile(bike),
+            const SizedBox(height: 16),
+          ],
+        ],
         const SizedBox(height: 16),
         _remindersCard(dueCount),
       ],
@@ -383,6 +435,12 @@ class _GarageScreenState extends State<GarageScreen> {
         arguments: bike,
       ),
       actions: [
+        if (_signedIn)
+          PopupMenuItem(
+            key: const Key('vehicle-link'),
+            onTap: () => _linkToAccount(bike.plate),
+            child: const Text('Vincular à conta'),
+          ),
         PopupMenuItem(
           key: const Key('vehicle-edit'),
           onTap: () => _editLocalBike(bike),
@@ -420,15 +478,18 @@ class _GarageScreenState extends State<GarageScreen> {
                   .withValues(alpha: 0.14),
               foreground: due ? MtColors.warningText : MtColors.successText,
             ),
-      // A bike with no service yet has no detail screen to open.
-      onTap: vehicle.lastService == null
-          ? null
-          : () => Navigator.pushNamed(
+      onTap: () => _openNotes(vehicle),
+      actions: [
+        if (vehicle.lastService != null)
+          PopupMenuItem(
+            key: const Key('vehicle-last-service'),
+            onTap: () => Navigator.pushNamed(
               context,
               Routes.serviceDetail,
               arguments: ServiceDetailArgs(record: vehicle.lastService!),
             ),
-      actions: [
+            child: const Text('Último serviço'),
+          ),
         PopupMenuItem(
           key: const Key('vehicle-release'),
           onTap: () => _release(vehicle),
@@ -518,14 +579,16 @@ typedef _Claim = ({String plate, String chassiSuffix});
 
 /// Claiming a bike: the plate plus the end of the chassi that proves it.
 class _ClaimDialog extends StatefulWidget {
-  const _ClaimDialog();
+  const _ClaimDialog({this.plate});
+
+  final String? plate;
 
   @override
   State<_ClaimDialog> createState() => _ClaimDialogState();
 }
 
 class _ClaimDialogState extends State<_ClaimDialog> {
-  final _plate = TextEditingController();
+  late final _plate = TextEditingController(text: widget.plate);
   final _chassiSuffix = TextEditingController();
 
   @override
@@ -552,7 +615,7 @@ class _ClaimDialogState extends State<_ClaimDialog> {
   @override
   Widget build(BuildContext context) {
     return _DialogFrame(
-      title: 'Adicionar moto',
+      title: widget.plate == null ? 'Adicionar moto' : 'Vincular à conta',
       onSubmit: _submit,
       children: [
         MtField(

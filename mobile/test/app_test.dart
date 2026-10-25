@@ -169,6 +169,31 @@ void main() {
     expectMessage('Moto vinculada.');
   });
 
+  testWidgets('Motociclista com conta: vincula moto do aparelho e anota nela', (
+    tester,
+  ) async {
+    final state = await pumpApp(tester, AppFlavor.rider);
+    await state.garage.save(
+      const LocalBike(plate: demoPlate, label: 'Minha CG', mileageKm: 100),
+    );
+    await signIn(tester);
+
+    expect(find.text('Só neste aparelho'), findsWidgets);
+    await tap(tester, find.byKey(const Key('vehicle-menu-$demoPlate')));
+    await tap(tester, find.byKey(const Key('vehicle-link')));
+    await type(tester, 'adicionar-moto-chassi', demoChassi.substring(11));
+    await tap(tester, find.byKey(const Key('adicionar-moto-continuar')));
+    expectMessage('Moto vinculada.');
+    expect(find.byKey(const Key('vehicle-link')), findsNothing);
+
+    await tap(tester, find.byKey(const Key('vehicle-$demoPlate')));
+    await tap(tester, find.byKey(const Key('anotacao-nova')));
+    await type(tester, 'anotacao-descricao', 'Lavagem da corrente');
+    await tap(tester, find.byKey(const Key('anotacao-salvar')));
+    expectMessage('Anotação salva.');
+    expect(state.garage.bikes.single.plate, demoPlate);
+  });
+
   group('Oficina', () {
     testWidgets('sem conta o registro fica na fila e pode ser descartado', (
       tester,
