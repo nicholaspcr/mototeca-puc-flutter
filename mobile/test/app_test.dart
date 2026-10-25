@@ -192,6 +192,10 @@ void main() {
     await tap(tester, find.byKey(const Key('anotacao-salvar')));
     expectMessage('Anotação salva.');
     expect(state.garage.bikes.single.plate, demoPlate);
+
+    expect(find.text('Sua anotação'), findsOneWidget);
+    expect(find.text('Oficina · Oficina do Zé'), findsWidgets);
+    expect(find.text('Oficina · Moto Center BH'), findsWidgets);
   });
 
   group('Oficina', () {

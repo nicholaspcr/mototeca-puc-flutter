@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../app/routes.dart';
 import '../models/service_record.dart';
+import '../shared/service_detail_screen.dart';
 import '../state/app_scope.dart';
 import '../storage/garage_store.dart';
 import '../theme.dart';
@@ -8,6 +10,7 @@ import '../widgets/feedback.dart';
 import '../widgets/mt_widgets.dart';
 
 /// Anotações — services the rider wrote down for one bike on the device.
+/// Signed in, the workshops' records for the plate join the same list.
 class MaintenanceNotesScreen extends StatefulWidget {
   const MaintenanceNotesScreen({super.key, required this.bike});
 
@@ -19,14 +22,32 @@ class MaintenanceNotesScreen extends StatefulWidget {
 
 class _MaintenanceNotesScreenState extends State<MaintenanceNotesScreen> {
   var _notes = <MaintenanceNote>[];
+  var _services = <ServiceRecord>[];
+  var _servicesFailed = false;
   var _loading = true;
 
   LocalGarage get _garage => AppScope.read(context).garage;
 
+  bool get _signedIn => AppScope.read(context).owner != null;
+
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _load());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _load();
+      if (_signedIn) _loadServices();
+    });
+  }
+
+  Future<void> _loadServices() async {
+    try {
+      final history = await AppScope.read(context).serviceRecords
+          .historyByPlate(widget.bike.plate);
+      if (!mounted) return;
+      setState(() => _services = history?.records ?? const []);
+    } on Object {
+      if (mounted) setState(() => _servicesFailed = true);
+    }
   }
 
   Future<void> _load() async {
@@ -92,7 +113,12 @@ class _MaintenanceNotesScreenState extends State<MaintenanceNotesScreen> {
     final garage = AppScope.of(context).garage;
 
     return Scaffold(
-      appBar: MtAppBar(title: 'Anotações', status: 'Salvas neste aparelho'),
+      appBar: _signedIn
+          ? const MtAppBar(
+              title: 'Manutenções',
+              status: 'Anotações e serviços das oficinas',
+            )
+          : const MtAppBar(title: 'Anotações', status: 'Salvas neste aparelho'),
       floatingActionButton: FloatingActionButton(
         key: const Key('anotacao-nova'),
         backgroundColor: MtColors.petrol,
@@ -136,7 +162,13 @@ class _MaintenanceNotesScreenState extends State<MaintenanceNotesScreen> {
 
   Widget _list() {
     if (_loading) return const MtLoading();
-    if (_notes.isEmpty) {
+    final entries = [
+      for (final note in _notes) (date: note.doneOn, note: note, service: null),
+      for (final service in _services)
+        (date: service.createdAt, note: null, service: service),
+    ]..sort((a, b) => b.date.compareTo(a.date));
+
+    if (entries.isEmpty && !_servicesFailed) {
       return const MtEmptyState(
         message:
             'Nenhuma anotação ainda.\n'
@@ -151,32 +183,88 @@ class _MaintenanceNotesScreenState extends State<MaintenanceNotesScreen> {
         MtSizes.screenPadding,
         96,
       ),
-      itemCount: _notes.length,
+      itemCount: entries.length + (_servicesFailed ? 1 : 0),
       itemBuilder: (context, index) {
-        final note = _notes[index];
+        if (index == entries.length) {
+          return const MtFootnote(
+            'Não foi possível carregar os serviços das oficinas.',
+          );
+        }
+        final entry = entries[index];
         return Padding(
           padding: const EdgeInsets.only(bottom: 12),
-          child: MtCard(
-            padding: EdgeInsets.zero,
-            child: Material(
-              type: MaterialType.transparency,
-              child: ListTile(
-                key: Key('anotacao-${note.id}'),
-                title: Text(note.description),
-                subtitle: Text(
-                  [
-                    formatDate(note.doneOn),
-                    if (note.mileageKm != null) '${note.mileageKm} km',
-                    if (note.costCents != null) formatCents(note.costCents!),
-                  ].join(' · '),
-                ),
-                onTap: () => _edit(note),
-                onLongPress: () => _remove(note),
-              ),
-            ),
-          ),
+          child: entry.note != null
+              ? _noteCard(entry.note!)
+              : _serviceCard(entry.service!),
         );
       },
+    );
+  }
+
+  Widget _noteCard(MaintenanceNote note) => _entryCard(
+    key: Key('anotacao-${note.id}'),
+    badge: const MtBadge(
+      label: 'Sua anotação',
+      background: MtColors.slate100,
+      foreground: MtColors.slate500,
+    ),
+    title: note.description,
+    details: [
+      formatDate(note.doneOn),
+      if (note.mileageKm != null) '${note.mileageKm} km',
+      if (note.costCents != null) formatCents(note.costCents!),
+    ],
+    onTap: () => _edit(note),
+    onLongPress: () => _remove(note),
+  );
+
+  Widget _serviceCard(ServiceRecord service) => _entryCard(
+    key: Key('servico-${service.id}'),
+    badge: MtBadge(
+      label: 'Oficina · ${service.workshopName}',
+      background: MtColors.petrolTint,
+      foreground: MtColors.petrol,
+    ),
+    title: service.operationsLabel,
+    details: [
+      service.formattedDate,
+      '${service.mileageKm} km',
+      if (service.costCents != null) service.formattedCost,
+    ],
+    onTap: () => Navigator.pushNamed(
+      context,
+      Routes.serviceDetail,
+      arguments: ServiceDetailArgs(record: service),
+    ),
+  );
+
+  Widget _entryCard({
+    required Key key,
+    required Widget badge,
+    required String title,
+    required List<String> details,
+    required VoidCallback onTap,
+    VoidCallback? onLongPress,
+  }) {
+    return MtCard(
+      padding: EdgeInsets.zero,
+      child: Material(
+        type: MaterialType.transparency,
+        child: ListTile(
+          key: key,
+          title: Text(title),
+          subtitle: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(details.join(' · ')),
+              const SizedBox(height: 6),
+              badge,
+            ],
+          ),
+          onTap: onTap,
+          onLongPress: onLongPress,
+        ),
+      ),
     );
   }
 }
