@@ -22,7 +22,6 @@ class Workshop {
   );
 }
 
-/// A workshop plus the session token issued with it.
 class WorkshopSession {
   const WorkshopSession({required this.workshop, required this.token});
 

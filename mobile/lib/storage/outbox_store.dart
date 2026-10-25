@@ -181,7 +181,6 @@ class Outbox extends ChangeNotifier {
     );
   }
 
-  /// Writes the draft and its children in one transaction.
   Future<void> add(OutboxDraft draft) async {
     final db = await _db.database;
     await db.transaction((txn) async {

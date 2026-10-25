@@ -57,10 +57,8 @@ class AppState extends ChangeNotifier {
 
   void acknowledgeExpiry() => _sessionExpired = false;
 
-  /// The signed-in oficina, or null when nobody is signed in as one.
   Workshop? get workshop => _workshop;
 
-  /// The signed-in proprietário, or null.
   Owner? get owner => _owner;
 
   bool get isSignedIn => _workshop != null || _owner != null;

@@ -110,7 +110,6 @@ class LocalGarage extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Inserts a new bike or updates an existing one.
   Future<void> save(LocalBike bike) async {
     final db = await _db.database;
     try {

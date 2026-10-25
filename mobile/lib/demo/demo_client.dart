@@ -13,10 +13,8 @@ const demoMode = bool.fromEnvironment(
   defaultValue: !bool.hasEnvironment('MOTOTECA_API_URL'),
 );
 
-/// The demo data, created on first use.
 final demoBackend = DemoBackend();
 
-/// The API client the app runs with.
 ApiClient createApiClient() => demoMode
     ? ApiClient(baseUrl: 'demo://mototeca', httpClient: DemoClient())
     : ApiClient();

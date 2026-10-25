@@ -34,8 +34,6 @@ class ApiClient {
   // connection.
   static const _uploadTimeout = Duration(seconds: 60);
 
-  /// Calls [procedure] (e.g. `mototeca.vehicle.v1.VehicleService/CreateVehicle`)
-  /// and returns the decoded response body.
   Future<Map<String, dynamic>> call(
     String procedure,
     Map<String, dynamic> request,

@@ -38,12 +38,11 @@ class _GarageScreenState extends State<GarageScreen> {
     setState(() {
       _vehicles = reloaded;
     });
-    // The FutureBuilder renders the failure; awaiting it here too would make
-    // the same error unhandled a second time.
+    // The FutureBuilder shows the error; here we only wait for the reload.
     try {
       await reloaded;
     } on Object {
-      // handled above
+      return;
     }
   }
 

@@ -15,7 +15,6 @@ class Owner {
   );
 }
 
-/// An owner plus the session token issued with it.
 class OwnerSession {
   const OwnerSession({required this.owner, required this.token});
 

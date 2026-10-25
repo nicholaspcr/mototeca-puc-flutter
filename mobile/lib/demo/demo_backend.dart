@@ -21,8 +21,6 @@ class DemoBackend {
 
   String _id(String prefix) => '$prefix-${++_sequence}';
 
-  // --- Routing ---------------------------------------------------------------
-
   /// Answers one RPC. Throws [DemoFailure] for anything the API would refuse.
   Map<String, dynamic> call(
     String procedure,
@@ -120,8 +118,6 @@ class DemoBackend {
     return stored;
   }
 
-  // --- Workshops -------------------------------------------------------------
-
   Map<String, dynamic> _createWorkshop(Map<String, dynamic> request) {
     final cnpj = _digits(request['cnpj'] as String? ?? '');
     _requireValidCNPJ(cnpj);
@@ -163,8 +159,6 @@ class DemoBackend {
       'token': 'demo-w-${workshop['id']}',
     };
   }
-
-  // --- Owners ----------------------------------------------------------------
 
   Map<String, dynamic> _createOwner(Map<String, dynamic> request) {
     final phone = _digits(request['phone'] as String? ?? '');
@@ -272,8 +266,6 @@ class DemoBackend {
     return const {};
   }
 
-  // --- Vehicles --------------------------------------------------------------
-
   Map<String, dynamic> _createVehicle(
     Map<String, dynamic> request,
     String? token,
@@ -347,8 +339,6 @@ class DemoBackend {
     }
     return {'vehicle': _vehicleJson(vehicle)};
   }
-
-  // --- Service records -------------------------------------------------------
 
   Map<String, dynamic> _createRecord(
     Map<String, dynamic> request,
@@ -529,8 +519,6 @@ class DemoBackend {
     return record;
   }
 
-  // --- JSON ------------------------------------------------------------------
-
   Map<String, dynamic> _workshopJson(Map<String, dynamic> w) => {
     'id': w['id'],
     'cnpj': w['cnpj'],
@@ -647,8 +635,6 @@ class DemoBackend {
     );
   }
 
-  // --- Sessions and validation ----------------------------------------------
-
   String _requireSession(String? token) {
     if (token == null || !token.startsWith('demo-')) {
       throw DemoFailure(401, 'unauthenticated', 'entre para continuar');
@@ -726,8 +712,6 @@ class DemoBackend {
       (password as String? ?? '').trim().isEmpty;
 
   String _digits(String raw) => raw.replaceAll(RegExp(r'\D'), '');
-
-  // --- Seed ------------------------------------------------------------------
 
   /// Enough history for every screen to look real on the first tap: two shops,
   /// two bikes, one of them already the demo owner's.

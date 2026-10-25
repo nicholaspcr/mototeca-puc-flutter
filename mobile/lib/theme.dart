@@ -20,7 +20,6 @@ class MtColors {
   static const danger = Color(0xFFEF4444);
 }
 
-/// Spacing and shape constants shared by every screen.
 class MtSizes {
   static const screenPadding = 20.0;
   static const cardRadius = 10.0;

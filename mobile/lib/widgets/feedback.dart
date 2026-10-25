@@ -35,7 +35,6 @@ void _snack(BuildContext context, String message, Color background) {
     );
 }
 
-/// Centred spinner for a screen that is loading its first data.
 class MtLoading extends StatelessWidget {
   const MtLoading({super.key});
 

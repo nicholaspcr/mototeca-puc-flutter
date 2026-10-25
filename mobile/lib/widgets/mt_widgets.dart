@@ -473,7 +473,6 @@ class MtFeatureCard extends StatelessWidget {
   }
 }
 
-/// Key/value row used by the service detail screen.
 class MtDetailRow extends StatelessWidget {
   const MtDetailRow({
     super.key,
@@ -517,7 +516,6 @@ class MtDetailRow extends StatelessWidget {
   }
 }
 
-/// Muted footnote paragraph.
 class MtFootnote extends StatelessWidget {
   const MtFootnote(this.text, {super.key, this.align = TextAlign.left});
 

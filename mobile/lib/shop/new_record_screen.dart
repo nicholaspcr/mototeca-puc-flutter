@@ -28,7 +28,6 @@ class _PickedPhoto {
   final String mimeType;
 }
 
-/// One editable row in the parts list.
 class _PartDraft {
   _PartDraft()
     : name = TextEditingController(),
