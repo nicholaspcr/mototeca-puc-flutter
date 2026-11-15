@@ -47,6 +47,12 @@ const (
 	// OwnerServiceReleaseVehicleProcedure is the fully-qualified name of the OwnerService's
 	// ReleaseVehicle RPC.
 	OwnerServiceReleaseVehicleProcedure = "/mototeca.owner.v1.OwnerService/ReleaseVehicle"
+	// OwnerServiceAddMaintenanceNoteProcedure is the fully-qualified name of the OwnerService's
+	// AddMaintenanceNote RPC.
+	OwnerServiceAddMaintenanceNoteProcedure = "/mototeca.owner.v1.OwnerService/AddMaintenanceNote"
+	// OwnerServiceDeleteMaintenanceNoteProcedure is the fully-qualified name of the OwnerService's
+	// DeleteMaintenanceNote RPC.
+	OwnerServiceDeleteMaintenanceNoteProcedure = "/mototeca.owner.v1.OwnerService/DeleteMaintenanceNote"
 )
 
 // OwnerServiceClient is a client for the mototeca.owner.v1.OwnerService service.
@@ -63,6 +69,12 @@ type OwnerServiceClient interface {
 	ClaimVehicle(context.Context, *connect.Request[v1.ClaimVehicleRequest]) (*connect.Response[v1.ClaimVehicleResponse], error)
 	// Releases a bike on sale. Only the current owner may release it.
 	ReleaseVehicle(context.Context, *connect.Request[v1.ReleaseVehicleRequest]) (*connect.Response[v1.ReleaseVehicleResponse], error)
+	// Publishes a note on a bike the caller owns; it joins the plate's public
+	// history. Returns NOT_FOUND when the caller does not own the bike.
+	AddMaintenanceNote(context.Context, *connect.Request[v1.AddMaintenanceNoteRequest]) (*connect.Response[v1.AddMaintenanceNoteResponse], error)
+	// Only the note's author, and only while still owning the bike: after a
+	// sale the history belongs to the next owner's buyers too.
+	DeleteMaintenanceNote(context.Context, *connect.Request[v1.DeleteMaintenanceNoteRequest]) (*connect.Response[v1.DeleteMaintenanceNoteResponse], error)
 }
 
 // NewOwnerServiceClient constructs a client for the mototeca.owner.v1.OwnerService service. By
@@ -106,16 +118,30 @@ func NewOwnerServiceClient(httpClient connect.HTTPClient, baseURL string, opts .
 			connect.WithSchema(ownerServiceMethods.ByName("ReleaseVehicle")),
 			connect.WithClientOptions(opts...),
 		),
+		addMaintenanceNote: connect.NewClient[v1.AddMaintenanceNoteRequest, v1.AddMaintenanceNoteResponse](
+			httpClient,
+			baseURL+OwnerServiceAddMaintenanceNoteProcedure,
+			connect.WithSchema(ownerServiceMethods.ByName("AddMaintenanceNote")),
+			connect.WithClientOptions(opts...),
+		),
+		deleteMaintenanceNote: connect.NewClient[v1.DeleteMaintenanceNoteRequest, v1.DeleteMaintenanceNoteResponse](
+			httpClient,
+			baseURL+OwnerServiceDeleteMaintenanceNoteProcedure,
+			connect.WithSchema(ownerServiceMethods.ByName("DeleteMaintenanceNote")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
 // ownerServiceClient implements OwnerServiceClient.
 type ownerServiceClient struct {
-	createOwner    *connect.Client[v1.CreateOwnerRequest, v1.CreateOwnerResponse]
-	login          *connect.Client[v1.LoginRequest, v1.LoginResponse]
-	listMyVehicles *connect.Client[v1.ListMyVehiclesRequest, v1.ListMyVehiclesResponse]
-	claimVehicle   *connect.Client[v1.ClaimVehicleRequest, v1.ClaimVehicleResponse]
-	releaseVehicle *connect.Client[v1.ReleaseVehicleRequest, v1.ReleaseVehicleResponse]
+	createOwner           *connect.Client[v1.CreateOwnerRequest, v1.CreateOwnerResponse]
+	login                 *connect.Client[v1.LoginRequest, v1.LoginResponse]
+	listMyVehicles        *connect.Client[v1.ListMyVehiclesRequest, v1.ListMyVehiclesResponse]
+	claimVehicle          *connect.Client[v1.ClaimVehicleRequest, v1.ClaimVehicleResponse]
+	releaseVehicle        *connect.Client[v1.ReleaseVehicleRequest, v1.ReleaseVehicleResponse]
+	addMaintenanceNote    *connect.Client[v1.AddMaintenanceNoteRequest, v1.AddMaintenanceNoteResponse]
+	deleteMaintenanceNote *connect.Client[v1.DeleteMaintenanceNoteRequest, v1.DeleteMaintenanceNoteResponse]
 }
 
 // CreateOwner calls mototeca.owner.v1.OwnerService.CreateOwner.
@@ -143,6 +169,16 @@ func (c *ownerServiceClient) ReleaseVehicle(ctx context.Context, req *connect.Re
 	return c.releaseVehicle.CallUnary(ctx, req)
 }
 
+// AddMaintenanceNote calls mototeca.owner.v1.OwnerService.AddMaintenanceNote.
+func (c *ownerServiceClient) AddMaintenanceNote(ctx context.Context, req *connect.Request[v1.AddMaintenanceNoteRequest]) (*connect.Response[v1.AddMaintenanceNoteResponse], error) {
+	return c.addMaintenanceNote.CallUnary(ctx, req)
+}
+
+// DeleteMaintenanceNote calls mototeca.owner.v1.OwnerService.DeleteMaintenanceNote.
+func (c *ownerServiceClient) DeleteMaintenanceNote(ctx context.Context, req *connect.Request[v1.DeleteMaintenanceNoteRequest]) (*connect.Response[v1.DeleteMaintenanceNoteResponse], error) {
+	return c.deleteMaintenanceNote.CallUnary(ctx, req)
+}
+
 // OwnerServiceHandler is an implementation of the mototeca.owner.v1.OwnerService service.
 type OwnerServiceHandler interface {
 	// Returns ALREADY_EXISTS when the phone is already registered.
@@ -157,6 +193,12 @@ type OwnerServiceHandler interface {
 	ClaimVehicle(context.Context, *connect.Request[v1.ClaimVehicleRequest]) (*connect.Response[v1.ClaimVehicleResponse], error)
 	// Releases a bike on sale. Only the current owner may release it.
 	ReleaseVehicle(context.Context, *connect.Request[v1.ReleaseVehicleRequest]) (*connect.Response[v1.ReleaseVehicleResponse], error)
+	// Publishes a note on a bike the caller owns; it joins the plate's public
+	// history. Returns NOT_FOUND when the caller does not own the bike.
+	AddMaintenanceNote(context.Context, *connect.Request[v1.AddMaintenanceNoteRequest]) (*connect.Response[v1.AddMaintenanceNoteResponse], error)
+	// Only the note's author, and only while still owning the bike: after a
+	// sale the history belongs to the next owner's buyers too.
+	DeleteMaintenanceNote(context.Context, *connect.Request[v1.DeleteMaintenanceNoteRequest]) (*connect.Response[v1.DeleteMaintenanceNoteResponse], error)
 }
 
 // NewOwnerServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -196,6 +238,18 @@ func NewOwnerServiceHandler(svc OwnerServiceHandler, opts ...connect.HandlerOpti
 		connect.WithSchema(ownerServiceMethods.ByName("ReleaseVehicle")),
 		connect.WithHandlerOptions(opts...),
 	)
+	ownerServiceAddMaintenanceNoteHandler := connect.NewUnaryHandler(
+		OwnerServiceAddMaintenanceNoteProcedure,
+		svc.AddMaintenanceNote,
+		connect.WithSchema(ownerServiceMethods.ByName("AddMaintenanceNote")),
+		connect.WithHandlerOptions(opts...),
+	)
+	ownerServiceDeleteMaintenanceNoteHandler := connect.NewUnaryHandler(
+		OwnerServiceDeleteMaintenanceNoteProcedure,
+		svc.DeleteMaintenanceNote,
+		connect.WithSchema(ownerServiceMethods.ByName("DeleteMaintenanceNote")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/mototeca.owner.v1.OwnerService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case OwnerServiceCreateOwnerProcedure:
@@ -208,6 +262,10 @@ func NewOwnerServiceHandler(svc OwnerServiceHandler, opts ...connect.HandlerOpti
 			ownerServiceClaimVehicleHandler.ServeHTTP(w, r)
 		case OwnerServiceReleaseVehicleProcedure:
 			ownerServiceReleaseVehicleHandler.ServeHTTP(w, r)
+		case OwnerServiceAddMaintenanceNoteProcedure:
+			ownerServiceAddMaintenanceNoteHandler.ServeHTTP(w, r)
+		case OwnerServiceDeleteMaintenanceNoteProcedure:
+			ownerServiceDeleteMaintenanceNoteHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -235,4 +293,12 @@ func (UnimplementedOwnerServiceHandler) ClaimVehicle(context.Context, *connect.R
 
 func (UnimplementedOwnerServiceHandler) ReleaseVehicle(context.Context, *connect.Request[v1.ReleaseVehicleRequest]) (*connect.Response[v1.ReleaseVehicleResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("mototeca.owner.v1.OwnerService.ReleaseVehicle is not implemented"))
+}
+
+func (UnimplementedOwnerServiceHandler) AddMaintenanceNote(context.Context, *connect.Request[v1.AddMaintenanceNoteRequest]) (*connect.Response[v1.AddMaintenanceNoteResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("mototeca.owner.v1.OwnerService.AddMaintenanceNote is not implemented"))
+}
+
+func (UnimplementedOwnerServiceHandler) DeleteMaintenanceNote(context.Context, *connect.Request[v1.DeleteMaintenanceNoteRequest]) (*connect.Response[v1.DeleteMaintenanceNoteResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("mototeca.owner.v1.OwnerService.DeleteMaintenanceNote is not implemented"))
 }

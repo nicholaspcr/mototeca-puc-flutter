@@ -13,6 +13,7 @@ import (
 
 	"mototeca-backend/internal/auth"
 	servicev1 "mototeca-backend/internal/gen/mototeca/service/v1"
+	"mototeca-backend/internal/note"
 	"mototeca-backend/internal/vehicle"
 )
 
@@ -23,13 +24,19 @@ const (
 	maxListLimit     = 100
 )
 
+// NoteLister is the plate lookup's view of the owners' maintenance notes.
+type NoteLister interface {
+	ListByPlate(ctx context.Context, plate string, limit int) ([]note.Note, error)
+}
+
 type Handler struct {
 	repo   Store
+	notes  NoteLister
 	logger *slog.Logger
 }
 
-func NewHandler(repo Store, logger *slog.Logger) *Handler {
-	return &Handler{repo: repo, logger: logger}
+func NewHandler(repo Store, notes NoteLister, logger *slog.Logger) *Handler {
+	return &Handler{repo: repo, notes: notes, logger: logger}
 }
 
 func (h *Handler) CreateServiceRecord(ctx context.Context, req *connect.Request[servicev1.CreateServiceRecordRequest]) (*connect.Response[servicev1.CreateServiceRecordResponse], error) {
@@ -178,9 +185,16 @@ func (h *Handler) ListServiceRecordsByPlate(ctx context.Context, req *connect.Re
 		return nil, connect.NewError(connect.CodeNotFound, errors.New("nenhuma moto cadastrada com esta placa"))
 	}
 
+	notes, err := h.notes.ListByPlate(ctx, plate, note.MaxPerPlate)
+	if err != nil {
+		h.logger.ErrorContext(ctx, "list maintenance notes by plate failed", "err", err, "plate", plate)
+		return nil, connect.NewError(connect.CodeInternal, errors.New("falha ao carregar o histórico"))
+	}
+
 	return connect.NewResponse(&servicev1.ListServiceRecordsByPlateResponse{
-		Vehicle: vehicleToProto(*summary),
-		Records: recordsToProto(records),
+		Vehicle:          vehicleToProto(*summary),
+		Records:          recordsToProto(records),
+		MaintenanceNotes: note.ListToProto(notes),
 	}), nil
 }
 

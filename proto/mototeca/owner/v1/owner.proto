@@ -82,6 +82,28 @@ message ClaimVehicleResponse {
   OwnedVehicle vehicle = 1;
 }
 
+message AddMaintenanceNoteRequest {
+  string plate = 1;
+  // UUID the device gives the note, so a retry after a lost response does
+  // not publish it twice.
+  string client_id = 2;
+  // "YYYY-MM-DD"; not in the future.
+  string done_on = 3;
+  string description = 4;
+  optional int32 mileage_km = 5;
+  optional int32 cost_cents = 6;
+}
+
+message AddMaintenanceNoteResponse {
+  mototeca.service.v1.MaintenanceNote note = 1;
+}
+
+message DeleteMaintenanceNoteRequest {
+  string id = 1;
+}
+
+message DeleteMaintenanceNoteResponse {}
+
 service OwnerService {
   // Returns ALREADY_EXISTS when the phone is already registered.
   rpc CreateOwner(CreateOwnerRequest) returns (CreateOwnerResponse);
@@ -95,4 +117,10 @@ service OwnerService {
   rpc ClaimVehicle(ClaimVehicleRequest) returns (ClaimVehicleResponse);
   // Releases a bike on sale. Only the current owner may release it.
   rpc ReleaseVehicle(ReleaseVehicleRequest) returns (ReleaseVehicleResponse);
+  // Publishes a note on a bike the caller owns; it joins the plate's public
+  // history. Returns NOT_FOUND when the caller does not own the bike.
+  rpc AddMaintenanceNote(AddMaintenanceNoteRequest) returns (AddMaintenanceNoteResponse);
+  // Only the note's author, and only while still owning the bike: after a
+  // sale the history belongs to the next owner's buyers too.
+  rpc DeleteMaintenanceNote(DeleteMaintenanceNoteRequest) returns (DeleteMaintenanceNoteResponse);
 }

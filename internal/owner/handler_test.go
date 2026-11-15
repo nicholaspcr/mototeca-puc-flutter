@@ -109,7 +109,7 @@ func newTestHandler(t *testing.T, store Store, records servicerecord.Store) *Han
 	if err != nil {
 		t.Fatalf("NewSigner: %v", err)
 	}
-	return NewHandler(store, records, signer, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	return NewHandler(store, records, newFakeNotes(), &fakePhotos{}, signer, slog.New(slog.NewTextHandler(io.Discard, nil)))
 }
 
 func assertConnectCode(t *testing.T, err error, want connect.Code) {

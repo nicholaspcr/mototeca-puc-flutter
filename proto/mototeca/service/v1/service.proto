@@ -128,6 +128,21 @@ message ListServiceRecordsByPlateResponse {
   VehicleSummary vehicle = 1;
   // Newest first.
   repeated ServiceRecord records = 2;
+  // What owners wrote down themselves, newest first. No shop vouches for
+  // these, so clients must show them apart from the records.
+  repeated MaintenanceNote maintenance_notes = 3;
+}
+
+// A service the owner did at home or at a shop not on Mototeca.
+message MaintenanceNote {
+  string id = 1;
+  // Calendar day as "YYYY-MM-DD": the owner picks a day, not an instant.
+  string done_on = 2;
+  string description = 3;
+  optional int32 mileage_km = 4;
+  optional int32 cost_cents = 5;
+  optional string photo_url = 6;
+  google.protobuf.Timestamp created_at = 7;
 }
 
 message ListWorkshopServiceRecordsRequest {

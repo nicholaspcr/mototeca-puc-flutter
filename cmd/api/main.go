@@ -14,6 +14,7 @@ import (
 	"mototeca-backend/internal/config"
 	"mototeca-backend/internal/db"
 	"mototeca-backend/internal/logging"
+	"mototeca-backend/internal/note"
 	"mototeca-backend/internal/owner"
 	"mototeca-backend/internal/server"
 	"mototeca-backend/internal/servicerecord"
@@ -62,17 +63,12 @@ func main() {
 	// One service-record repository, shared: the owner domain reads through it
 	// to show the last service on each bike.
 	serviceRecords := servicerecord.NewRepository(pool)
-
-	handlers := server.Handlers{
-		Vehicle:       vehicle.NewHandler(vehicle.NewRepository(pool), logger),
-		Workshop:      workshop.NewHandler(workshop.NewRepository(pool), signer, logger),
-		ServiceRecord: servicerecord.NewHandler(serviceRecords, logger),
-		Owner:         owner.NewHandler(owner.NewRepository(pool), serviceRecords, signer, logger),
-	}
+	notes := note.NewRepository(pool)
 
 	// Uploads are optional: without STORAGE_ENDPOINT the API serves everything
-	// else and only the attachment route is absent.
-	var uploads *server.UploadHandler
+	// else and only the upload routes are absent.
+	var uploads server.Uploads
+	var photoRemover owner.PhotoRemover
 	if cfg.StorageEnabled() {
 		photos, err := storage.New(context.Background(), storage.Config{
 			Endpoint:  cfg.StorageEndpoint,
@@ -86,9 +82,20 @@ func main() {
 			logger.Error("connecting to object storage", "err", err)
 			os.Exit(1)
 		}
-		uploads = server.NewUploadHandler(photos, serviceRecords, signer, logger)
+		uploads = server.Uploads{
+			Attachments: server.NewUploadHandler(photos, serviceRecords, signer, logger),
+			NotePhotos:  server.NewNotePhotoHandler(photos, notes, signer, logger),
+		}
+		photoRemover = photos
 	} else {
 		logger.Warn("STORAGE_ENDPOINT not set — photo uploads are disabled")
+	}
+
+	handlers := server.Handlers{
+		Vehicle:       vehicle.NewHandler(vehicle.NewRepository(pool), logger),
+		Workshop:      workshop.NewHandler(workshop.NewRepository(pool), signer, logger),
+		ServiceRecord: servicerecord.NewHandler(serviceRecords, notes, logger),
+		Owner:         owner.NewHandler(owner.NewRepository(pool), serviceRecords, notes, photoRemover, signer, logger),
 	}
 
 	mux, err := server.NewMux(handlers, uploads, signer, pool, logger)

@@ -12,6 +12,7 @@ import (
 	"mototeca-backend/internal/auth"
 	ownerv1 "mototeca-backend/internal/gen/mototeca/owner/v1"
 	servicev1 "mototeca-backend/internal/gen/mototeca/service/v1"
+	"mototeca-backend/internal/note"
 	"mototeca-backend/internal/servicerecord"
 	"mototeca-backend/internal/vehicle"
 )
@@ -23,17 +24,22 @@ const dummyHash = "$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy"
 type Handler struct {
 	repo     Store
 	records  servicerecord.Store
+	notes    note.Store
+	photos   PhotoRemover
 	signer   *auth.Signer
 	logger   *slog.Logger
 	throttle *auth.LoginThrottle
 }
 
 // NewHandler takes the record store too, so "Minhas Motos" can show the last
-// service without re-implementing its hydration.
-func NewHandler(repo Store, records servicerecord.Store, signer *auth.Signer, logger *slog.Logger) *Handler {
+// service without re-implementing its hydration. photos may be nil when
+// object storage is off.
+func NewHandler(repo Store, records servicerecord.Store, notes note.Store, photos PhotoRemover, signer *auth.Signer, logger *slog.Logger) *Handler {
 	return &Handler{
 		repo:     repo,
 		records:  records,
+		notes:    notes,
+		photos:   photos,
 		signer:   signer,
 		logger:   logger,
 		throttle: auth.NewLoginThrottle(auth.LoginFailureLimit, auth.LoginLockout),

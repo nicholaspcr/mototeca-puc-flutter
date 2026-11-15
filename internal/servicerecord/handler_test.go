@@ -12,6 +12,7 @@ import (
 
 	"mototeca-backend/internal/auth"
 	servicev1 "mototeca-backend/internal/gen/mototeca/service/v1"
+	"mototeca-backend/internal/note"
 )
 
 const (
@@ -129,8 +130,14 @@ func (f *fakeStore) CountByWorkshopSince(_ context.Context, _ string, _ time.Tim
 	return f.countMonth, nil
 }
 
+type fakeNotes []note.Note
+
+func (f fakeNotes) ListByPlate(context.Context, string, int) ([]note.Note, error) {
+	return f, nil
+}
+
 func newTestHandler(store Store) *Handler {
-	return NewHandler(store, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	return NewHandler(store, fakeNotes{}, slog.New(slog.NewTextHandler(io.Discard, nil)))
 }
 
 func authedContext() context.Context {
@@ -329,6 +336,30 @@ func TestListByPlatePassesTheClampedLimit(t *testing.T) {
 	}
 	if store.lastLimit != maxListLimit {
 		t.Errorf("limit reaching the store = %d, want it capped at %d", store.lastLimit, maxListLimit)
+	}
+}
+
+// Owner notes travel apart from the records, so no client can mistake one
+// for something a workshop vouched for.
+func TestListByPlateReturnsOwnerNotesSeparately(t *testing.T) {
+	km := 18000
+	notes := fakeNotes{{
+		ID: "note-1", DoneOn: time.Date(2026, 10, 3, 0, 0, 0, 0, time.UTC),
+		Description: "Troca de óleo em casa", MileageKm: &km,
+	}}
+	h := NewHandler(newFakeStore(), notes, slog.New(slog.NewTextHandler(io.Discard, nil)))
+
+	res, err := h.ListServiceRecordsByPlate(context.Background(),
+		connect.NewRequest(&servicev1.ListServiceRecordsByPlateRequest{Plate: testPlate}))
+	if err != nil {
+		t.Fatalf("ListServiceRecordsByPlate: %v", err)
+	}
+	if len(res.Msg.Records) != 0 {
+		t.Errorf("records = %d, want 0", len(res.Msg.Records))
+	}
+	got := res.Msg.MaintenanceNotes
+	if len(got) != 1 || got[0].DoneOn != "2026-10-03" || got[0].GetMileageKm() != 18000 {
+		t.Errorf("maintenance notes = %v, want the one note dated 2026-10-03 at 18000 km", got)
 	}
 }
 

@@ -53,9 +53,9 @@ rpc() {
   read_response
 }
 
-# upload <record id> <token> <curl args...>
+# upload <path> <token> <curl args...>
 upload() {
-  url="$API/v1/service-records/$1/attachments" token=$2
+  url="$API/$1" token=$2
   shift 2
   if [ -n "$token" ]; then
     curl -sS -w '\n%{http_code}' -X POST "$url" -H "Authorization: Bearer $token" "$@" >"$TMP/response"
@@ -229,21 +229,21 @@ section "photo uploads"
 printf '\211PNG\r\n\032\n\0\0\0\rIHDR\0\0\0\1\0\0\0\1\10\2\0\0\0\220wS\336\0\0\0\014IDATx\234c\370\17\4\0\11\373\3\375\343\125\362\261\0\0\0\0IEND\256B`\202' >"$TMP/px.png"
 printf '<html><script>alert(1)</script></html>' >"$TMP/page.html"
 
-upload "$RECORD_ID" "$TOKEN" -F "file=@$TMP/px.png;type=image/png" -F phase=before
+upload "v1/service-records/$RECORD_ID/attachments" "$TOKEN" -F "file=@$TMP/px.png;type=image/png" -F phase=before
 expect ok "workshop uploads a before photo"
 PHOTO_URL=$(field url)
 
-upload "$RECORD_ID" "" -F "file=@$TMP/px.png;type=image/png"
+upload "v1/service-records/$RECORD_ID/attachments" "" -F "file=@$TMP/px.png;type=image/png"
 expect unauthenticated "upload without a session"
-upload "$RECORD_ID" "$OTHER_TOKEN" -F "file=@$TMP/px.png;type=image/png"
+upload "v1/service-records/$RECORD_ID/attachments" "$OTHER_TOKEN" -F "file=@$TMP/px.png;type=image/png"
 expect not_found "upload onto another workshop's record"
-upload "$RECORD_ID" "$TOKEN" -F "file=@$TMP/page.html;type=image/png"
+upload "v1/service-records/$RECORD_ID/attachments" "$TOKEN" -F "file=@$TMP/page.html;type=image/png"
 expect invalid_argument "HTML disguised as a PNG"
-upload "$RECORD_ID" "$TOKEN" -H 'Content-Type: application/json' -d '{}'
+upload "v1/service-records/$RECORD_ID/attachments" "$TOKEN" -H 'Content-Type: application/json' -d '{}'
 expect invalid_argument "upload that is not multipart"
-upload not-a-uuid "$TOKEN" -F "file=@$TMP/px.png;type=image/png"
+upload v1/service-records/not-a-uuid/attachments "$TOKEN" -F "file=@$TMP/px.png;type=image/png"
 expect not_found "upload onto a malformed record id"
-upload "$RECORD_ID" "$TOKEN" -F "file=@$TMP/px.png;type=image/png" -F kind=invoice -F phase=before
+upload "v1/service-records/$RECORD_ID/attachments" "$TOKEN" -F "file=@$TMP/px.png;type=image/png" -F kind=invoice -F phase=before
 expect invalid_argument "invoice with a before/after phase"
 
 # The API hands out URLs on the public host; inside the network that is storage.
@@ -319,12 +319,52 @@ expect ok "minhas motos"
 contains "\"plate\":\"$PLATE\"" "the claimed bike is listed"
 contains "\"reminder\"" "the bike carries a reminder"
 
+# ---------------------------------------------------------------------------
+section "owner maintenance notes"
+
+# Fixed client ids: a rerun finds the note it already published.
+NOTE="{\"plate\":\"$PLATE\",\"clientId\":\"6f1c2a9e-0d4b-4e8a-9b1f-2c3d4e5f6a70\",\"doneOn\":\"2026-09-14\",\"description\":\"Troca de óleo em casa\",\"mileageKm\":17900,\"costCents\":4500}"
+rpc mototeca.owner.v1.OwnerService/AddMaintenanceNote "$NOTE" "$OWNER_TOKEN"
+expect ok "owner publishes a note on their bike"
+NOTE_ID=$(field id)
+rpc mototeca.owner.v1.OwnerService/AddMaintenanceNote "$NOTE" "$OWNER_TOKEN"
+[ "$(field id)" = "$NOTE_ID" ] && pass "sending the same note again keeps one copy" || fail "retry made a second note"
+rpc mototeca.owner.v1.OwnerService/AddMaintenanceNote "$NOTE" "$OTHER_OWNER_TOKEN"
+expect not_found "a note on someone else's bike"
+rpc mototeca.owner.v1.OwnerService/AddMaintenanceNote "$NOTE" "$TOKEN"
+expect unauthenticated "a workshop writing an owner note"
+rpc mototeca.owner.v1.OwnerService/AddMaintenanceNote \
+  "{\"plate\":\"$PLATE\",\"clientId\":\"6f1c2a9e-0d4b-4e8a-9b1f-2c3d4e5f6a71\",\"doneOn\":\"2999-01-01\",\"description\":\"x\"}" "$OWNER_TOKEN"
+expect invalid_argument "a note dated in the future"
+
+upload "v1/maintenance-notes/$NOTE_ID/photo" "$OWNER_TOKEN" -F "file=@$TMP/px.png;type=image/png"
+expect "ok already_exists" "owner attaches the note's photo"
+upload "v1/maintenance-notes/$NOTE_ID/photo" "$OTHER_OWNER_TOKEN" -F "file=@$TMP/px.png;type=image/png"
+expect not_found "a photo on someone else's note"
+upload "v1/maintenance-notes/$NOTE_ID/photo" "$TOKEN" -F "file=@$TMP/px.png;type=image/png"
+expect unauthenticated "a workshop adding a note photo"
+
+rpc mototeca.owner.v1.OwnerService/AddMaintenanceNote \
+  "{\"plate\":\"$PLATE\",\"clientId\":\"6f1c2a9e-0d4b-4e8a-9b1f-2c3d4e5f6a72\",\"doneOn\":\"2026-09-20\",\"description\":\"Anotação errada\"}" "$OWNER_TOKEN"
+DOOMED_ID=$(field id)
+rpc mototeca.owner.v1.OwnerService/DeleteMaintenanceNote "{\"id\":\"$DOOMED_ID\"}" "$OTHER_OWNER_TOKEN"
+expect not_found "deleting someone else's note"
+rpc mototeca.owner.v1.OwnerService/DeleteMaintenanceNote "{\"id\":\"$DOOMED_ID\"}" "$OWNER_TOKEN"
+expect ok "owner deletes their note"
+
+rpc mototeca.service.v1.ServiceRecordService/ListServiceRecordsByPlate "{\"plate\":\"$PLATE\"}"
+contains "\"id\":\"$NOTE_ID\"" "the public history carries the owner's note"
+contains "\"photoUrl\"" "the note's photo is in the history"
+lacks "$DOOMED_ID" "a deleted note leaves the history"
+
 rpc mototeca.owner.v1.OwnerService/ReleaseVehicle "{\"plate\":\"$PLATE\"}" "$OTHER_OWNER_TOKEN"
 expect not_found "releasing a bike you do not hold"
 rpc mototeca.owner.v1.OwnerService/ReleaseVehicle "{\"plate\":\"$PLATE\"}" "$OWNER_TOKEN"
 expect ok "owner releases the bike"
 rpc mototeca.owner.v1.OwnerService/ListMyVehicles '{}' "$OWNER_TOKEN"
 lacks "\"plate\":\"$PLATE\"" "a released bike is no longer listed"
+rpc mototeca.owner.v1.OwnerService/DeleteMaintenanceNote "{\"id\":\"$NOTE_ID\"}" "$OWNER_TOKEN"
+expect not_found "a seller cannot delete notes on a sold bike"
 
 # ---------------------------------------------------------------------------
 section "abuse limits"

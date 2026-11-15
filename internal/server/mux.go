@@ -46,9 +46,15 @@ func rateLimits() map[string]*RateLimiter {
 	}
 }
 
+// Uploads are the multipart routes; both are nil when object storage is off.
+type Uploads struct {
+	Attachments *UploadHandler
+	NotePhotos  *NotePhotoHandler
+}
+
 // NewMux builds the API mux. Interceptors run tracing, rate limit, logging,
-// then auth. The upload route exists only when uploads is non-nil.
-func NewMux(handlers Handlers, uploads *UploadHandler, signer *auth.Signer, db Pinger, logger *slog.Logger) (*http.ServeMux, error) {
+// then auth. The upload routes exist only when their handlers are non-nil.
+func NewMux(handlers Handlers, uploads Uploads, signer *auth.Signer, db Pinger, logger *slog.Logger) (*http.ServeMux, error) {
 	otelInterceptor, err := otelconnect.NewInterceptor()
 	if err != nil {
 		return nil, fmt.Errorf("creating otel interceptor: %w", err)
@@ -85,8 +91,11 @@ func NewMux(handlers Handlers, uploads *UploadHandler, signer *auth.Signer, db P
 		mux.Handle(path, handler)
 	}
 
-	if uploads != nil {
-		mux.Handle("POST /v1/service-records/{id}/attachments", RateLimitHTTP(NewRateLimiter(1, 10), uploads))
+	if uploads.Attachments != nil {
+		mux.Handle("POST /v1/service-records/{id}/attachments", RateLimitHTTP(NewRateLimiter(1, 10), uploads.Attachments))
+	}
+	if uploads.NotePhotos != nil {
+		mux.Handle("POST /v1/maintenance-notes/{id}/photo", RateLimitHTTP(NewRateLimiter(1, 10), uploads.NotePhotos))
 	}
 
 	// Reports the database too: an instance that can't reach Postgres serves
