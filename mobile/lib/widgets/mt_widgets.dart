@@ -320,24 +320,28 @@ class MtHomeHeader extends StatelessWidget implements PreferredSizeWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Row(
-            children: [
-              const MtLogo(),
-              const SizedBox(width: 8),
-              const Flexible(
-                child: Text(
+          // Shrinks as a whole on narrow phones (320 dp) instead of clipping
+          // the app badge.
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const MtLogo(),
+                const SizedBox(width: 8),
+                const Text(
                   'Mototeca',
-                  overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
                     letterSpacing: -0.4,
                   ),
                 ),
-              ),
-              const SizedBox(width: 8),
-              MtBadge.flavor(AppFlavorScope.of(context)),
-            ],
+                const SizedBox(width: 8),
+                MtBadge.flavor(AppFlavorScope.of(context)),
+              ],
+            ),
           ),
           const SizedBox(height: 6),
           MtStatusLine(status),

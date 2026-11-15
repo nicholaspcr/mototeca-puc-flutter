@@ -85,20 +85,23 @@ class _MototecaAppState extends State<MototecaApp> {
   Widget _buildApp() {
     return MaterialApp(
       navigatorKey: _navigator,
+      scaffoldMessengerKey: _messenger,
       title: widget.flavor.title,
       debugShowCheckedModeBanner: false,
       theme: buildMototecaTheme(),
       // Keeps the app phone-shaped (iPhone 15 Pro width) when demoed in a
-      // desktop browser; a no-op on a real phone, which is already narrower.
-      builder: (context, child) => ColoredBox(
-        color: const Color(0xFFE9EEF3),
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 393),
-            child: child,
-          ),
-        ),
-      ),
+      // desktop browser. Phones and small tablets use their full width.
+      builder: (context, child) => MediaQuery.sizeOf(context).width < 600
+          ? child!
+          : ColoredBox(
+              color: const Color(0xFFE9EEF3),
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 393),
+                  child: child,
+                ),
+              ),
+            ),
       initialRoute: Routes.home,
       routes: switch (widget.flavor) {
         AppFlavor.rider => _riderRoutes,
