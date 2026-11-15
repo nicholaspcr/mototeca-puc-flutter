@@ -92,11 +92,17 @@ class _PlateLookupScreenState extends State<PlateLookupScreen> {
           Row(
             children: [
               Expanded(
-                child: TextField(
-                  controller: _plate,
-                  textCapitalization: TextCapitalization.characters,
-                  style: const TextStyle(fontFamily: 'monospace', fontSize: 15),
-                  decoration: const InputDecoration(hintText: 'EX: ABC1D23'),
+                child: Semantics(
+                  label: 'Placa',
+                  child: TextField(
+                    controller: _plate,
+                    textCapitalization: TextCapitalization.characters,
+                    style: const TextStyle(
+                      fontFamily: 'monospace',
+                      fontSize: 15,
+                    ),
+                    decoration: const InputDecoration(hintText: 'EX: ABC1D23'),
+                  ),
                 ),
               ),
               const SizedBox(width: 8),

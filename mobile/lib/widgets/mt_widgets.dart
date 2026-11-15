@@ -64,31 +64,37 @@ class MtField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
-        ),
-        const SizedBox(height: 7),
-        TextField(
-          controller: controller,
-          obscureText: obscure,
-          keyboardType: keyboardType,
-          inputFormatters: inputFormatters,
-          textCapitalization: textCapitalization,
-          style: TextStyle(fontSize: 15, fontFamily: mono ? 'monospace' : null),
-          decoration: InputDecoration(hintText: hint),
-        ),
-        if (helper != null) ...[
-          const SizedBox(height: 5),
+    // Merged so a screen reader names the field by its label, not its hint.
+    return MergeSemantics(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
           Text(
-            helper!,
-            style: const TextStyle(fontSize: 11, color: MtColors.slate500),
+            label,
+            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
           ),
+          const SizedBox(height: 7),
+          TextField(
+            controller: controller,
+            obscureText: obscure,
+            keyboardType: keyboardType,
+            inputFormatters: inputFormatters,
+            textCapitalization: textCapitalization,
+            style: TextStyle(
+              fontSize: 15,
+              fontFamily: mono ? 'monospace' : null,
+            ),
+            decoration: InputDecoration(hintText: hint),
+          ),
+          if (helper != null) ...[
+            const SizedBox(height: 5),
+            Text(
+              helper!,
+              style: const TextStyle(fontSize: 11, color: MtColors.slate500),
+            ),
+          ],
         ],
-      ],
+      ),
     );
   }
 }

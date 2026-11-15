@@ -743,29 +743,38 @@ class _NewRecordScreenState extends State<NewRecordScreen> {
       children: [
         Expanded(
           flex: 3,
-          child: TextField(
-            controller: part.name,
-            style: const TextStyle(fontSize: 14),
-            decoration: const InputDecoration(hintText: 'Nome da peça'),
+          child: Semantics(
+            label: 'Nome da peça',
+            child: TextField(
+              controller: part.name,
+              style: const TextStyle(fontSize: 14),
+              decoration: const InputDecoration(hintText: 'Nome da peça'),
+            ),
           ),
         ),
         const SizedBox(width: 8),
         Expanded(
-          child: TextField(
-            controller: part.quantity,
-            keyboardType: TextInputType.number,
-            style: const TextStyle(fontSize: 14),
-            decoration: const InputDecoration(hintText: 'Qtd'),
+          child: Semantics(
+            label: 'Quantidade',
+            child: TextField(
+              controller: part.quantity,
+              keyboardType: TextInputType.number,
+              style: const TextStyle(fontSize: 14),
+              decoration: const InputDecoration(hintText: 'Qtd'),
+            ),
           ),
         ),
         const SizedBox(width: 8),
         Expanded(
           flex: 2,
-          child: TextField(
-            controller: part.cost,
-            keyboardType: TextInputType.number,
-            style: const TextStyle(fontSize: 14),
-            decoration: const InputDecoration(hintText: 'R\$'),
+          child: Semantics(
+            label: 'Valor da peça',
+            child: TextField(
+              controller: part.cost,
+              keyboardType: TextInputType.number,
+              style: const TextStyle(fontSize: 14),
+              decoration: const InputDecoration(hintText: 'R\$'),
+            ),
           ),
         ),
         // The first row is the form's baseline and has nothing to remove.
