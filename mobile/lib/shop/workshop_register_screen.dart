@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../app/routes.dart';
 import '../state/app_scope.dart';
 import '../theme.dart';
+import '../widgets/digit_input_formatters.dart';
 import '../widgets/feedback.dart';
 import '../widgets/mt_widgets.dart';
 
@@ -76,6 +77,7 @@ class _WorkshopRegisterScreenState extends State<WorkshopRegisterScreen> {
                   mono: true,
                   controller: _cnpj,
                   keyboardType: TextInputType.number,
+                  inputFormatters: const [CnpjInputFormatter()],
                 ),
                 const SizedBox(height: 14),
                 MtField(

@@ -9,12 +9,13 @@ import 'package:mototeca/models/owner.dart';
 import 'package:mototeca/models/service_operation.dart';
 import 'package:mototeca/models/service_record.dart';
 import 'package:mototeca/models/vehicle.dart';
+import 'package:mototeca/models/workshop.dart';
 import 'package:mototeca/repositories/service_record_repository.dart';
 import 'package:mototeca/repositories/workshop_repository.dart';
 import 'package:mototeca/storage/garage_store.dart';
 import 'package:mototeca/storage/outbox_store.dart';
 import 'package:mototeca/storage/session_store.dart';
-import 'package:mototeca/widgets/phone_input_formatter.dart';
+import 'package:mototeca/widgets/digit_input_formatters.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite/sqflite.dart';
 
@@ -45,8 +46,11 @@ void main() {
       expect(formatCents(100099), r'R$ 1000,99');
     });
 
-    test('formats a phone while it is typed', () {
-      String typed(String text) => const PhoneInputFormatter()
+    test('formats a phone and a CNPJ while they are typed', () {
+      String typed(
+        String text, [
+        DigitInputFormatter mask = const PhoneInputFormatter(),
+      ]) => mask
           .formatEditUpdate(
             TextEditingValue.empty,
             TextEditingValue(
@@ -62,6 +66,12 @@ void main() {
       expect(typed('31998891997'), '(31) 99889-1997');
       expect(typed('31998891997999'), '(31) 99889-1997');
       expect(normalizePhone(typed('31998891997')), '31998891997');
+
+      const cnpj = CnpjInputFormatter();
+      expect(typed('11222', cnpj), '11.222');
+      expect(typed('112223330001', cnpj), '11.222.333/0001');
+      expect(typed('11222333000181999', cnpj), '11.222.333/0001-81');
+      expect(normalizeCnpj(typed('11222333000181', cnpj)), '11222333000181');
     });
   });
 
@@ -272,6 +282,27 @@ void main() {
 
       expect((result.sent, result.failed), (1, 1));
       expect(outbox.drafts.single.plate, 'XYZ9A99');
+    });
+
+    test('two flushes at once send each record once', () async {
+      final client = ApiClient(
+        baseUrl: 'demo://mototeca',
+        httpClient: DemoClient(backend: DemoBackend(), latency: Duration.zero),
+      );
+      final records = ServiceRecordRepository(client);
+      client.authToken = (await WorkshopRepository(
+        client,
+      ).login(cnpj: demoCNPJ, password: demoPassword)).token;
+      final before = (await records.historyByPlate(demoPlate))!.records.length;
+
+      final outbox = Outbox(testDatabase());
+      await outbox.add(draft(demoPlate));
+      await Future.wait([outbox.flush(records), outbox.flush(records)]);
+
+      expect(
+        (await records.historyByPlate(demoPlate))!.records.length,
+        before + 1,
+      );
     });
   });
 

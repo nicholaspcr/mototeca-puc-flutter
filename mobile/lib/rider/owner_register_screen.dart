@@ -3,9 +3,9 @@ import 'package:flutter/material.dart';
 import '../app/routes.dart';
 import '../state/app_scope.dart';
 import '../theme.dart';
+import '../widgets/digit_input_formatters.dart';
 import '../widgets/feedback.dart';
 import '../widgets/mt_widgets.dart';
-import '../widgets/phone_input_formatter.dart';
 
 /// Cadastro do proprietário. No CPF: reading your own history doesn't need
 /// one, and collecting it anyway is personal data with no use (§8).

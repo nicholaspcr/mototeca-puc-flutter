@@ -5,6 +5,7 @@ import '../demo/demo_backend.dart';
 import '../demo/demo_client.dart';
 import '../state/app_scope.dart';
 import '../theme.dart';
+import '../widgets/digit_input_formatters.dart';
 import '../widgets/feedback.dart';
 import '../widgets/mt_widgets.dart';
 
@@ -90,6 +91,7 @@ class _ShopSignInScreenState extends State<ShopSignInScreen> {
                   mono: true,
                   controller: _cnpj,
                   keyboardType: TextInputType.number,
+                  inputFormatters: const [CnpjInputFormatter()],
                 ),
                 const SizedBox(height: 14),
                 MtField(

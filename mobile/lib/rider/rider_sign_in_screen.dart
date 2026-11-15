@@ -5,9 +5,9 @@ import '../demo/demo_backend.dart';
 import '../demo/demo_client.dart';
 import '../state/app_scope.dart';
 import '../theme.dart';
+import '../widgets/digit_input_formatters.dart';
 import '../widgets/feedback.dart';
 import '../widgets/mt_widgets.dart';
-import '../widgets/phone_input_formatter.dart';
 
 /// Entrar — pushed from the home screen, never the root
 /// (design/OwnerLogin.dc.html).
