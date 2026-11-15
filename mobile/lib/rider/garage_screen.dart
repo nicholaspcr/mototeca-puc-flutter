@@ -357,9 +357,9 @@ class _GarageScreenState extends State<GarageScreen> {
           ),
           const SizedBox(height: 8),
           const MtFootnote(
-            'Esta garagem existe só neste aparelho. Com uma conta ela é '
-            'guardada no servidor e passa a mostrar os serviços que as '
-            'oficinas registraram.',
+            'Esta garagem existe só neste aparelho. Com uma conta, cada moto '
+            'vinculada passa a mostrar os serviços que as oficinas '
+            'registraram.',
           ),
           const SizedBox(height: 12),
           OutlinedButton(

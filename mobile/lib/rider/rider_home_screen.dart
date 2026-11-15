@@ -148,7 +148,7 @@ class _RiderHomeScreenState extends State<RiderHomeScreen> {
           for (final benefit in const [
             'Reivindicar a moto como sua',
             'Ver os serviços registrados pelas oficinas',
-            'Guardar no servidor o que já está neste aparelho',
+            'Vincular à conta as motos deste aparelho',
           ]) ...[
             _benefit(benefit),
             const SizedBox(height: 8),

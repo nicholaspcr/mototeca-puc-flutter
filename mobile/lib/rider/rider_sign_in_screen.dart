@@ -132,9 +132,9 @@ class _RiderSignInScreenState extends State<RiderSignInScreen> {
                   bikes == 0
                       ? 'Suas motos passam a ser guardadas na conta, com os '
                             'serviços que as oficinas registraram.'
-                      : 'As $bikes ${bikes == 1 ? 'moto' : 'motos'} deste '
-                            'aparelho sobem para a sua conta. Nada é apagado '
-                            'se você desistir.',
+                      : '${bikes == 1 ? 'A moto deste aparelho continua' : 'As $bikes motos deste aparelho continuam'} '
+                            'aqui. Vincule cada uma à conta para ver os '
+                            'serviços das oficinas.',
                 ),
               ],
             ),
