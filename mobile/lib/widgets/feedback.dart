@@ -26,14 +26,14 @@ void showSuccess(BuildContext context, String message) {
 void _snack(BuildContext context, String message, Color background) {
   ScaffoldMessenger.of(context)
     ..hideCurrentSnackBar()
-    ..showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: background,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+    ..showSnackBar(mtSnackBar(message, background));
 }
+
+SnackBar mtSnackBar(String message, Color background) => SnackBar(
+  content: Text(message),
+  backgroundColor: background,
+  behavior: SnackBarBehavior.floating,
+);
 
 class MtLoading extends StatelessWidget {
   const MtLoading({super.key});
@@ -54,11 +54,13 @@ class MtEmptyState extends StatelessWidget {
     required this.message,
     this.icon = Icons.inbox_outlined,
     this.onRetry,
+    this.retryLabel = 'Tentar de novo',
   });
 
   final String message;
   final IconData icon;
   final VoidCallback? onRetry;
+  final String retryLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -81,10 +83,7 @@ class MtEmptyState extends StatelessWidget {
             ),
             if (onRetry != null) ...[
               const SizedBox(height: 14),
-              OutlinedButton(
-                onPressed: onRetry,
-                child: const Text('Tentar de novo'),
-              ),
+              OutlinedButton(onPressed: onRetry, child: Text(retryLabel)),
             ],
           ],
         ),

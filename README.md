@@ -14,9 +14,9 @@ action inside the app.
 | | Mototeca Oficina | Mototeca Motociclista |
 |---|---|---|
 | For | the mechanic at the counter | the motorcycle owner |
-| Works offline, no account | fill a service record, outbox | garage, reminders |
+| Works offline, no account | fill a service record, outbox | garage, maintenance notes |
 | Needs network, no account | plate lookup, service detail | plate lookup, service detail |
-| Signing in | publishes the outbox to the history | syncs the garage, claims a bike |
+| Signing in | publishes the outbox to the history | claims or links a bike, shows reminders |
 | Entry point | `mobile/lib/main_shop.dart` | `mobile/lib/main_rider.dart` |
 
 ## Architecture

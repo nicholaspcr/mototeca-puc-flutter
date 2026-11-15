@@ -77,6 +77,7 @@ class _RiderHomeScreenState extends State<RiderHomeScreen> {
               icon: Icons.notifications_none,
               title: 'Lembretes de manutenção',
               subtitle: 'Troca de óleo e revisões, pela quilometragem',
+              needsNetwork: true,
               onTap: () => Navigator.pushNamed(context, Routes.reminders),
             ),
             const SizedBox(height: 12),
@@ -110,6 +111,7 @@ class _RiderHomeScreenState extends State<RiderHomeScreen> {
   }
 
   String _garageSubtitle(AppState state) {
+    if (state.owner != null) return 'Motos da conta e deste aparelho';
     final count = state.garage.length;
     if (count == 0) return 'Nenhuma moto ainda — cadastre a primeira';
     final bike = state.garage.bikes.first;

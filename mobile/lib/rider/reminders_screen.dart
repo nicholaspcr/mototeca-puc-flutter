@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../app/routes.dart';
 import '../models/owner.dart';
 import '../state/app_scope.dart';
 import '../theme.dart';
@@ -21,7 +22,11 @@ class _RemindersScreenState extends State<RemindersScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _vehicles ??= AppScope.read(context).owners.myVehicles();
+    // Subscribes, so signing in from the empty state loads the reminders.
+    final state = AppScope.of(context);
+    _vehicles = state.owner == null
+        ? null
+        : _vehicles ?? state.owners.myVehicles();
   }
 
   Future<void> _reload() async {
@@ -41,22 +46,36 @@ class _RemindersScreenState extends State<RemindersScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: const MtAppBar(title: 'Lembretes'),
-      body: FutureBuilder<List<OwnedVehicle>>(
-        future: _vehicles,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const MtLoading();
-          }
-          if (snapshot.hasError) {
-            return MtEmptyState(
-              message: 'Não foi possível carregar os lembretes.',
-              icon: Icons.cloud_off_outlined,
-              onRetry: _reload,
-            );
-          }
-          return _body(snapshot.data ?? const []);
-        },
-      ),
+      body: AppScope.of(context).owner == null ? _signedOut() : _reminders(),
+    );
+  }
+
+  /// The reminders come from the workshops' records, which need an account.
+  Widget _signedOut() => MtEmptyState(
+    message:
+        'Os lembretes são calculados pelos serviços que as oficinas '
+        'registraram.\nEntre e vincule sua moto para recebê-los.',
+    icon: Icons.notifications_none,
+    retryLabel: 'Entrar',
+    onRetry: () => Navigator.pushNamed(context, Routes.signIn),
+  );
+
+  Widget _reminders() {
+    return FutureBuilder<List<OwnedVehicle>>(
+      future: _vehicles,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const MtLoading();
+        }
+        if (snapshot.hasError) {
+          return MtEmptyState(
+            message: 'Não foi possível carregar os lembretes.',
+            icon: Icons.cloud_off_outlined,
+            onRetry: _reload,
+          );
+        }
+        return _body(snapshot.data ?? const []);
+      },
     );
   }
 
