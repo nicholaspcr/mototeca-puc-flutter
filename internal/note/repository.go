@@ -18,8 +18,6 @@ func NewRepository(pool *pgxpool.Pool) *Repository {
 	return &Repository{pool: pool}
 }
 
-var _ Store = (*Repository)(nil)
-
 const columns = `n.id, n.done_on, n.description, n.mileage_km, n.cost_cents, n.photo_url, n.created_at`
 
 // owned limits a query to notes the owner wrote on a bike they still hold.
