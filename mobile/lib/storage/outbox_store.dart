@@ -213,8 +213,14 @@ class Outbox extends ChangeNotifier {
     await load();
   }
 
+  Future<FlushResult>? _flushing;
+
   /// Publishes oldest first and deletes what lands. A refused draft stays.
-  Future<FlushResult> flush(ServiceRecordRepository records) async {
+  /// A second call while one runs joins it, so no record is sent twice.
+  Future<FlushResult> flush(ServiceRecordRepository records) =>
+      _flushing ??= _flush(records).whenComplete(() => _flushing = null);
+
+  Future<FlushResult> _flush(ServiceRecordRepository records) async {
     await ensureLoaded();
     var sent = 0;
     var failed = 0;

@@ -68,13 +68,14 @@ class AppState extends ChangeNotifier {
   bool get isSignedIn => _workshop != null || _owner != null;
 
   /// Signs back in with the session saved on the last launch, if it has not
-  /// expired.
+  /// expired. A workshop's queue goes out right away, as on a fresh sign-in.
   Future<void> restoreSession() async {
     final sessions = _sessions;
     if (sessions == null || isSignedIn) return;
     final workshop = await sessions.loadWorkshop();
     if (workshop != null) {
       _useWorkshop(workshop);
+      await outbox.flush(serviceRecords);
       return;
     }
     final owner = await sessions.loadOwner();
