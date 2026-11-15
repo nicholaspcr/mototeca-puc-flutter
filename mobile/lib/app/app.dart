@@ -22,6 +22,7 @@ import '../state/app_scope.dart';
 import '../storage/garage_store.dart';
 import '../storage/session_store.dart';
 import '../theme.dart';
+import '../widgets/feedback.dart';
 import 'flavor.dart';
 import 'routes.dart';
 
@@ -44,6 +45,7 @@ class _MototecaAppState extends State<MototecaApp> {
       widget.state ?? AppState(sessions: demoMode ? null : SessionStore());
   late final bool _ownsState = widget.state == null;
   final _navigator = GlobalKey<NavigatorState>();
+  final _messenger = GlobalKey<ScaffoldMessengerState>();
 
   @override
   void initState() {
@@ -58,6 +60,9 @@ class _MototecaAppState extends State<MototecaApp> {
     if (!_state.sessionExpired) return;
     _state.acknowledgeExpiry();
     _navigator.currentState?.pushNamedAndRemoveUntil(Routes.home, (_) => false);
+    _messenger.currentState?.showSnackBar(
+      mtSnackBar('Sua sessão expirou. Entre de novo.', MtColors.petrol),
+    );
   }
 
   @override
