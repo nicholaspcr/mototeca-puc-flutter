@@ -9,6 +9,13 @@ import '../theme.dart';
 import '../widgets/feedback.dart';
 import '../widgets/mt_widgets.dart';
 
+typedef _Entry = ({
+  DateTime date,
+  int? km,
+  MaintenanceNote? note,
+  ServiceRecord? service,
+});
+
 /// Anotações — services the rider wrote down for one bike on the device.
 /// Signed in, the workshops' records for the plate join the same list.
 class MaintenanceNotesScreen extends StatefulWidget {
@@ -160,13 +167,29 @@ class _MaintenanceNotesScreenState extends State<MaintenanceNotesScreen> {
     );
   }
 
+  /// Same-day entries go by odometer: a note dated today may describe work
+  /// done before the service a workshop published this morning.
+  static int _newestFirst(_Entry a, _Entry b) {
+    DateTime day(_Entry entry) => DateUtils.dateOnly(entry.date.toLocal());
+    final byDay = day(b).compareTo(day(a));
+    if (byDay != 0) return byDay;
+    final byKm = (b.km ?? 0).compareTo(a.km ?? 0);
+    return byKm != 0 ? byKm : b.date.compareTo(a.date);
+  }
+
   Widget _list() {
     if (_loading) return const MtLoading();
     final entries = [
-      for (final note in _notes) (date: note.doneOn, note: note, service: null),
+      for (final note in _notes)
+        (date: note.doneOn, km: note.mileageKm, note: note, service: null),
       for (final service in _services)
-        (date: service.createdAt, note: null, service: service),
-    ]..sort((a, b) => b.date.compareTo(a.date));
+        (
+          date: service.createdAt,
+          km: service.mileageKm,
+          note: null,
+          service: service,
+        ),
+    ]..sort(_newestFirst);
 
     if (entries.isEmpty && !_servicesFailed) {
       return const MtEmptyState(
