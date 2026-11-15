@@ -1,5 +1,3 @@
-import 'dart:typed_data';
-
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -13,20 +11,7 @@ import '../state/app_scope.dart';
 import '../theme.dart';
 import '../widgets/feedback.dart';
 import '../widgets/mt_widgets.dart';
-
-/// A photo chosen but not yet uploaded. Bytes are held in memory because the
-/// upload only happens once the record exists to attach them to.
-class _PickedPhoto {
-  const _PickedPhoto({
-    required this.bytes,
-    required this.name,
-    required this.mimeType,
-  });
-
-  final Uint8List bytes;
-  final String name;
-  final String mimeType;
-}
+import 'photo_slot.dart';
 
 class _PartDraft {
   _PartDraft()
@@ -110,8 +95,8 @@ class _NewRecordScreenState extends State<NewRecordScreen> {
   late final _vehicleLabel = TextEditingController();
 
   final _picker = ImagePicker();
-  final _photos = <String, List<_PickedPhoto>>{'before': [], 'after': []};
-  _PickedPhoto? _invoice;
+  final _photos = <String, List<PickedPhoto>>{'before': [], 'after': []};
+  PickedPhoto? _invoice;
 
   // A correction stays on the same bike, so its vehicle is known up front.
   late VehicleSummary? _vehicle = widget.revising?.vehicle;
@@ -381,7 +366,7 @@ class _NewRecordScreenState extends State<NewRecordScreen> {
   static const _maxWidth = 1600.0;
   static const _imageQuality = 80;
 
-  static Future<_PickedPhoto> _read(XFile file) async => _PickedPhoto(
+  static Future<PickedPhoto> _read(XFile file) async => PickedPhoto(
     bytes: await file.readAsBytes(),
     name: file.name,
     mimeType: file.mimeType ?? 'image/jpeg',
@@ -696,7 +681,7 @@ class _NewRecordScreenState extends State<NewRecordScreen> {
           Row(
             children: [
               Expanded(
-                child: _PhotoSlot(
+                child: PhotoSlot(
                   key: const Key('novo-registro-fotos-antes'),
                   label: 'Fotos antes',
                   photos: _photos['before']!,
@@ -706,7 +691,7 @@ class _NewRecordScreenState extends State<NewRecordScreen> {
               ),
               const SizedBox(width: 10),
               Expanded(
-                child: _PhotoSlot(
+                child: PhotoSlot(
                   key: const Key('novo-registro-fotos-depois'),
                   label: 'Fotos depois',
                   photos: _photos['after']!,
@@ -717,7 +702,7 @@ class _NewRecordScreenState extends State<NewRecordScreen> {
             ],
           ),
           const SizedBox(height: 10),
-          _PhotoSlot(
+          PhotoSlot(
             key: const Key('novo-registro-nota-fiscal'),
             label: 'Foto da nota fiscal',
             icon: Icons.receipt_long_outlined,
@@ -785,106 +770,6 @@ class _NewRecordScreenState extends State<NewRecordScreen> {
             tooltip: 'Remover peça',
           ),
       ],
-    );
-  }
-}
-
-/// Tapping adds photos (or replaces the invoice); the corner button clears
-/// the slot.
-class _PhotoSlot extends StatelessWidget {
-  const _PhotoSlot({
-    super.key,
-    required this.label,
-    required this.photos,
-    required this.onTap,
-    required this.onClear,
-    this.icon = Icons.add_a_photo_outlined,
-  });
-
-  final String label;
-  final List<_PickedPhoto> photos;
-  final VoidCallback onTap;
-  final VoidCallback onClear;
-  final IconData icon;
-
-  @override
-  Widget build(BuildContext context) {
-    final cover = photos.firstOrNull;
-
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(MtSizes.controlRadius),
-      child: Container(
-        height: 100,
-        decoration: BoxDecoration(
-          color: MtColors.slate50,
-          border: Border.all(
-            color: cover == null ? MtColors.slate200 : MtColors.petrol,
-          ),
-          borderRadius: BorderRadius.circular(MtSizes.controlRadius),
-        ),
-        clipBehavior: Clip.antiAlias,
-        alignment: Alignment.center,
-        child: cover == null
-            ? Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(icon, color: const Color(0xFF94A3B8)),
-                  const SizedBox(height: 6),
-                  Text(
-                    label,
-                    style: const TextStyle(
-                      fontSize: 11,
-                      color: MtColors.slate500,
-                    ),
-                  ),
-                ],
-              )
-            : Stack(
-                fit: StackFit.expand,
-                children: [
-                  Image.memory(cover.bytes, fit: BoxFit.cover),
-                  if (photos.length > 1)
-                    Positioned(
-                      left: 6,
-                      bottom: 6,
-                      child: _Badge(child: Text('${photos.length} fotos')),
-                    ),
-                  Positioned(
-                    top: 0,
-                    right: 0,
-                    child: IconButton(
-                      tooltip: 'Remover',
-                      onPressed: onClear,
-                      icon: const _Badge(
-                        child: Icon(Icons.close, size: 14, color: Colors.white),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-      ),
-    );
-  }
-}
-
-class _Badge extends StatelessWidget {
-  const _Badge({required this.child});
-
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-      decoration: BoxDecoration(
-        color: MtColors.graphite.withValues(alpha: 0.75),
-        borderRadius: BorderRadius.circular(9999),
-      ),
-      child: DefaultTextStyle.merge(
-        style: const TextStyle(fontSize: 11, color: Colors.white),
-        child: child,
-      ),
     );
   }
 }
