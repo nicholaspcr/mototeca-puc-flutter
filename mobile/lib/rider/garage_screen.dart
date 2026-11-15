@@ -256,7 +256,7 @@ class _GarageScreenState extends State<GarageScreen> {
         const SizedBox(height: 16),
         _syncCard(),
         const SizedBox(height: 16),
-        _remindersCard(0),
+        _remindersCard(null),
       ],
     );
   }
@@ -372,7 +372,8 @@ class _GarageScreenState extends State<GarageScreen> {
     );
   }
 
-  Widget _remindersCard(int dueCount) {
+  /// [dueCount] is null signed out, when there are no reminders to count.
+  Widget _remindersCard(int? dueCount) {
     return InkWell(
       key: const Key('garagem-lembretes'),
       onTap: () => Navigator.pushNamed(context, Routes.reminders),
@@ -401,9 +402,11 @@ class _GarageScreenState extends State<GarageScreen> {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    dueCount == 1
-                        ? '1 manutenção próxima'
-                        : '$dueCount manutenções próximas',
+                    switch (dueCount) {
+                      null => 'Entre para receber os lembretes',
+                      1 => '1 manutenção próxima',
+                      _ => '$dueCount manutenções próximas',
+                    },
                     style: const TextStyle(
                       fontSize: 12,
                       color: MtColors.petrol,
