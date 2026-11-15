@@ -46,7 +46,6 @@ abstract class DigitInputFormatter extends TextInputFormatter {
   }
 }
 
-/// `(31) 99889-1997`.
 class PhoneInputFormatter extends DigitInputFormatter {
   const PhoneInputFormatter();
 
@@ -57,7 +56,6 @@ class PhoneInputFormatter extends DigitInputFormatter {
   String format(String digits) => formatPhone(digits);
 }
 
-/// `11.222.333/0001-81`.
 class CnpjInputFormatter extends DigitInputFormatter {
   const CnpjInputFormatter();
 

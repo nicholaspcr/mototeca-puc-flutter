@@ -1,7 +1,6 @@
 import '../api/api_client.dart';
 import '../models/workshop.dart';
 
-/// Signup and sign-in for the oficina side.
 class WorkshopRepository {
   const WorkshopRepository(this._client);
 

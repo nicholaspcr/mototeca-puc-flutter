@@ -213,7 +213,6 @@ class MtBadge extends StatelessWidget {
     required this.foreground,
   });
 
-  /// The badge naming which app a screen belongs to.
   MtBadge.flavor(AppFlavor flavor, {super.key})
     : label = flavor.badge,
       background = flavor.badgeColor,

@@ -7,7 +7,6 @@ import '../widgets/digit_input_formatters.dart';
 import '../widgets/feedback.dart';
 import '../widgets/mt_widgets.dart';
 
-/// Cadastrar Oficina — workshop sign-up by CNPJ.
 class WorkshopRegisterScreen extends StatefulWidget {
   const WorkshopRegisterScreen({super.key});
 

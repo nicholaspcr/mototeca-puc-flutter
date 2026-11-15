@@ -86,8 +86,6 @@ class ServiceDetailScreen extends StatelessWidget {
                     spacing: 6,
                     runSpacing: 6,
                     children: [
-                      // Every operation in the record carries the same weight,
-                      // so they all read as the same read-only tag.
                       for (final operation in record.operations)
                         MtChip.tag(label: operation.label),
                     ],

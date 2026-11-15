@@ -29,10 +29,10 @@ type Config struct {
 	// OTelEndpoint is the OTLP collector endpoint, used when
 	// OTelExporter == "otlp". Empty uses the exporter's own default.
 	OTelEndpoint string
-	// AuthSecret signs workshop session tokens. Required, and never defaulted:
+	// AuthSecret signs session tokens. Required, and never defaulted:
 	// a fallback key would silently make every deployment forgeable.
 	AuthSecret string
-	// AuthTokenTTL is how long a workshop session stays valid. Tokens are
+	// AuthTokenTTL is how long a session stays valid. Tokens are
 	// self-contained and cannot be revoked early, so this is kept short.
 	AuthTokenTTL time.Duration
 	// Storage is optional: an empty StorageEndpoint disables uploads.

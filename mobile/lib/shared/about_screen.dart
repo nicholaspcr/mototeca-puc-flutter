@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '../theme.dart';
 import '../widgets/mt_widgets.dart';
 
-/// Sobre o App — static information screen.
 class AboutScreen extends StatelessWidget {
   const AboutScreen({super.key});
 

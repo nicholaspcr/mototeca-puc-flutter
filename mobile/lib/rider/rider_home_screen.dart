@@ -7,7 +7,6 @@ import '../theme.dart';
 import '../widgets/mt_widgets.dart';
 
 /// Início — the root of the Motociclista app (design/Main.dc.html).
-/// Everything listed here runs on device data.
 class RiderHomeScreen extends StatefulWidget {
   const RiderHomeScreen({super.key});
 

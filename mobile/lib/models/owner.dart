@@ -88,5 +88,4 @@ class OwnedVehicle {
   }
 }
 
-/// Strips the punctuation people type into a phone field.
 String normalizePhone(String raw) => raw.replaceAll(RegExp(r'\D'), '');

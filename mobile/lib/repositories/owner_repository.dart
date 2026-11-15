@@ -2,7 +2,6 @@ import '../api/api_client.dart';
 import '../models/owner.dart';
 import '../models/vehicle.dart';
 
-/// Signup, sign-in and the bike list for the proprietário side.
 class OwnerRepository {
   const OwnerRepository(this._client);
 

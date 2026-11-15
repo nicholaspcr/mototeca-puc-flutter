@@ -45,5 +45,4 @@ class WorkshopSession {
       );
 }
 
-/// Strips the punctuation people type into a CNPJ field.
 String normalizeCnpj(String raw) => raw.replaceAll(RegExp(r'\D'), '');

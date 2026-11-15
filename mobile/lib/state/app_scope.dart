@@ -82,7 +82,6 @@ class AppState extends ChangeNotifier {
     if (owner != null) _useOwner(owner);
   }
 
-  /// Stores a workshop session and puts its token on every later request.
   void signIn(WorkshopSession session) {
     _useWorkshop(session);
     _sessions?.saveWorkshop(session);
@@ -126,7 +125,6 @@ class AppState extends ChangeNotifier {
   }
 }
 
-/// Exposes [AppState] to the widget tree: `AppScope.of(context)`.
 class AppScope extends InheritedNotifier<AppState> {
   const AppScope({super.key, required AppState state, required super.child})
     : super(notifier: state);

@@ -38,7 +38,7 @@ class ApiException implements Exception {
   final String message;
 
   /// True when the session is missing or expired and the user must sign in
-  /// again, which the app handles by returning to the login screen.
+  /// again.
   bool get isSessionExpired => code == ApiErrorCode.unauthenticated;
 
   @override
