@@ -35,7 +35,11 @@ The root `/` of each app is a home screen, never a login.
   removes each one that the API accepts.
 - **Motociclista.** Bikes and maintenance notes are kept on the device and
   can be added, edited and deleted. Signing in shows the account's bikes and
-  lets the owner claim one.
+  lets the owner claim one, or link a bike saved on the device. A bike's list
+  then mixes the owner's notes with the workshops' services, each labelled.
+
+Outside the demo, the session is saved with `shared_preferences`, so reopening
+the app keeps the user signed in until the token expires.
 
 ### Device database (mobile only)
 
@@ -133,6 +137,6 @@ Money is always integer cents.
 ## Not built yet
 
 - Uploading the outbox automatically when the connection returns.
-- Merging the bikes saved on the device into the account after sign-in.
+- Syncing maintenance notes to the server: they stay on the device.
 - Checking workshop CNPJs, sign-in by OTP, password reset, presigned photo
   URLs, iOS build.

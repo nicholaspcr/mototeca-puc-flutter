@@ -17,8 +17,10 @@ import '../shop/outbox_screen.dart';
 import '../shop/shop_home_screen.dart';
 import '../shop/shop_sign_in_screen.dart';
 import '../shop/workshop_register_screen.dart';
+import '../demo/demo_client.dart';
 import '../state/app_scope.dart';
 import '../storage/garage_store.dart';
+import '../storage/session_store.dart';
 import '../theme.dart';
 import 'flavor.dart';
 import 'routes.dart';
@@ -38,7 +40,8 @@ class MototecaApp extends StatefulWidget {
 }
 
 class _MototecaAppState extends State<MototecaApp> {
-  late final AppState _state = widget.state ?? AppState();
+  late final AppState _state =
+      widget.state ?? AppState(sessions: demoMode ? null : SessionStore());
   late final bool _ownsState = widget.state == null;
   final _navigator = GlobalKey<NavigatorState>();
 
@@ -46,6 +49,7 @@ class _MototecaAppState extends State<MototecaApp> {
   void initState() {
     super.initState();
     _state.addListener(_onStateChanged);
+    _state.restoreSession();
   }
 
   /// A session can expire on any request, including ones a FutureBuilder

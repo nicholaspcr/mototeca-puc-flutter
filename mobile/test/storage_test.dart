@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mototeca/api/api_client.dart';
@@ -11,7 +13,9 @@ import 'package:mototeca/repositories/service_record_repository.dart';
 import 'package:mototeca/repositories/workshop_repository.dart';
 import 'package:mototeca/storage/garage_store.dart';
 import 'package:mototeca/storage/outbox_store.dart';
+import 'package:mototeca/storage/session_store.dart';
 import 'package:mototeca/widgets/phone_input_formatter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite/sqflite.dart';
 
 import 'test_database.dart';
@@ -269,5 +273,33 @@ void main() {
       expect((result.sent, result.failed), (1, 1));
       expect(outbox.drafts.single.plate, 'XYZ9A99');
     });
+  });
+
+  group('SessionStore', () {
+    String token(DateTime expiry) =>
+        '${base64Url.encode(utf8.encode('o:owner-1:${expiry.millisecondsSinceEpoch ~/ 1000}'))}.sig';
+    OwnerSession session(String token) => OwnerSession(
+      owner: const Owner(id: 'owner-1', name: 'Marcos', phone: '31990001234'),
+      token: token,
+    );
+
+    test(
+      'a session comes back after a restart until its token expires',
+      () async {
+        SharedPreferences.setMockInitialValues({});
+        final now = DateTime(2026, 11, 15, 9);
+        await SessionStore().saveOwner(
+          session(token(now.add(const Duration(hours: 12)))),
+        );
+
+        final restored = await SessionStore(clock: () => now).loadOwner();
+        expect(restored?.owner.name, 'Marcos');
+        expect(await SessionStore(clock: () => now).loadWorkshop(), isNull);
+
+        final later = now.add(const Duration(hours: 13));
+        expect(await SessionStore(clock: () => later).loadOwner(), isNull);
+        expect(await SessionStore(clock: () => now).loadOwner(), isNull);
+      },
+    );
   });
 }

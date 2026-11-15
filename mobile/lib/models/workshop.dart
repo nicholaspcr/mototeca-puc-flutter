@@ -20,6 +20,14 @@ class Workshop {
     address: json['address'] as String?,
     verified: json['verified'] as bool? ?? false,
   );
+
+  Map<String, Object?> toJson() => {
+    'id': id,
+    'cnpj': cnpj,
+    'name': name,
+    'address': address,
+    'verified': verified,
+  };
 }
 
 class WorkshopSession {

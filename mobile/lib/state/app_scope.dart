@@ -11,10 +11,11 @@ import '../repositories/workshop_repository.dart';
 import '../storage/database.dart';
 import '../storage/garage_store.dart';
 import '../storage/outbox_store.dart';
+import '../storage/session_store.dart';
 
 /// The session (workshop or owner), the repositories and the device stores.
 class AppState extends ChangeNotifier {
-  AppState({ApiClient? client, AppDatabase? database})
+  AppState({ApiClient? client, AppDatabase? database, this._sessions})
     : _client = client ?? createApiClient(),
       _database = database ?? AppDatabase() {
     _client.onUnauthenticated = _expireSession;
@@ -28,6 +29,9 @@ class AppState extends ChangeNotifier {
 
   final ApiClient _client;
   final AppDatabase _database;
+
+  /// Null keeps the session in memory only, as the demo and the tests do.
+  final SessionStore? _sessions;
 
   late final WorkshopRepository workshops;
   late final OwnerRepository owners;
@@ -63,16 +67,40 @@ class AppState extends ChangeNotifier {
 
   bool get isSignedIn => _workshop != null || _owner != null;
 
+  /// Signs back in with the session saved on the last launch, if it has not
+  /// expired.
+  Future<void> restoreSession() async {
+    final sessions = _sessions;
+    if (sessions == null || isSignedIn) return;
+    final workshop = await sessions.loadWorkshop();
+    if (workshop != null) {
+      _useWorkshop(workshop);
+      return;
+    }
+    final owner = await sessions.loadOwner();
+    if (owner != null) _useOwner(owner);
+  }
+
   /// Stores a workshop session and puts its token on every later request.
   void signIn(WorkshopSession session) {
+    _useWorkshop(session);
+    _sessions?.saveWorkshop(session);
+  }
+
+  /// Signing in as one kind clears the other, so a stale token is never sent.
+  void signInAsOwner(OwnerSession session) {
+    _useOwner(session);
+    _sessions?.saveOwner(session);
+  }
+
+  void _useWorkshop(WorkshopSession session) {
     _workshop = session.workshop;
     _owner = null;
     _client.authToken = session.token;
     notifyListeners();
   }
 
-  /// Signing in as one kind clears the other, so a stale token is never sent.
-  void signInAsOwner(OwnerSession session) {
+  void _useOwner(OwnerSession session) {
     _owner = session.owner;
     _workshop = null;
     _client.authToken = session.token;
@@ -83,6 +111,7 @@ class AppState extends ChangeNotifier {
     _workshop = null;
     _owner = null;
     _client.authToken = null;
+    _sessions?.clear();
     notifyListeners();
   }
 

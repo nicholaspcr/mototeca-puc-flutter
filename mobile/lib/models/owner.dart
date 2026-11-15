@@ -13,6 +13,8 @@ class Owner {
     name: json['name'] as String? ?? '',
     phone: json['phone'] as String? ?? '',
   );
+
+  Map<String, Object?> toJson() => {'id': id, 'name': name, 'phone': phone};
 }
 
 class OwnerSession {
