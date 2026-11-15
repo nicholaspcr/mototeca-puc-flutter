@@ -133,6 +133,7 @@ class _GarageScreenState extends State<GarageScreen> {
       final linked = await _claimOrRegister(claim);
       if (!linked || !mounted) return;
       showSuccess(context, 'Moto vinculada.');
+      await AppScope.read(context).publishNotes();
       await _reload();
     } catch (error) {
       if (!mounted) return;
@@ -160,7 +161,8 @@ class _GarageScreenState extends State<GarageScreen> {
     }
   }
 
-  /// Notes stay on the device, so an account bike gets a device copy for them.
+  /// Notes are written on the device first, so an account bike gets a device
+  /// copy for them.
   Future<void> _openNotes(OwnedVehicle vehicle) async {
     try {
       final bike = await AppScope.read(context).garage.localCopy(
@@ -307,7 +309,7 @@ class _GarageScreenState extends State<GarageScreen> {
           const SizedBox(height: 4),
           const MtFootnote(
             'Vincule à conta para ver os serviços que as oficinas '
-            'registraram. As anotações continuam neste aparelho.',
+            'registraram e publicar suas anotações no histórico da placa.',
           ),
           const SizedBox(height: 12),
           for (final bike in unlinked) ...[

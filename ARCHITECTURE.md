@@ -37,6 +37,9 @@ The root `/` of each app is a home screen, never a login.
   can be added, edited and deleted. Signing in shows the account's bikes and
   lets the owner claim one, or link a bike saved on the device. A bike's list
   then mixes the owner's notes with the workshops' services, each labelled.
+  Notes on a linked bike, with their one photo, are published to the plate's
+  history on sign-in, on linking and on saving. Once published, a note can
+  only be deleted, and only while the owner still holds the bike.
 
 Outside the demo, the session is saved with `shared_preferences`, so reopening
 the app keeps the user signed in until the token expires.
@@ -52,7 +55,8 @@ The web build runs the same SQLite as WebAssembly (`web/sqlite3.wasm`, from
 
 ```
 bikes              plate (unique), label, year, mileage_km
-maintenance_notes  bike_id -> bikes, done_on, description, mileage_km, cost_cents
+maintenance_notes  bike_id -> bikes, done_on, description, mileage_km, cost_cents,
+                   client_id, server_id, photo, photo_type, photo_sent
 outbox_drafts      plate, vehicle_label, mileage_km, mechanic_name, cost_cents, notes, saved_at
 outbox_operations  draft_id -> outbox_drafts, operation
 outbox_parts       draft_id -> outbox_drafts, name, quantity, cost_cents
@@ -85,12 +89,15 @@ non-2xx status, in Portuguese, ready to show.
 
 Contracts are in `proto/`. `make generate` writes `internal/gen/`, which is
 never edited by hand. Each domain in `internal/` (`vehicle`, `workshop`,
-`owner`, `servicerecord`) has the same files: `types`, `validate`, `store`
-(interface), `repository` (Postgres), `handler`. Unit tests use a fake store.
+`owner`, `servicerecord`, `note`) has the same files: `types`, `validate`,
+`store` (interface), `repository` (Postgres), `handler`. `note` has no handler
+of its own: `owner` writes notes and `servicerecord` lists them with the
+plate's history. Unit tests use a fake store.
 Tests tagged `integration` use a real database.
 
 Photos do not go through RPC. They are uploaded as multipart to
-`POST /v1/service-records/{id}/attachments` and stored in S3-compatible
+`POST /v1/service-records/{id}/attachments` (workshop) or
+`POST /v1/maintenance-notes/{id}/photo` (owner) and stored in S3-compatible
 storage.
 
 ## Data model
@@ -103,6 +110,8 @@ ServiceRecord vehicle, workshop, mechanic, mileage_km, cost_cents, notes, supers
   operations  one or more from a fixed list (oil, brakes, tyres, ...)
   parts       name, quantity, cost_cents
   attachments photo (before/after) or invoice
+MaintenanceNote vehicle, owner, client_id, done_on, description, mileage_km,
+                cost_cents, photo_url
 ```
 
 Money is always integer cents.
@@ -117,6 +126,10 @@ Money is always integer cents.
 - **Claiming a bike.** The plate is public, so a claim also needs the last 6
   characters of the chassi. When a bike is sold, the owner releases it and the
   history stays with the plate.
+- **Owner notes stand apart.** A note the owner wrote travels in its own list,
+  labelled "Informado pelo dono" in both apps and in the PDF. It never counts
+  for the odometer check or the oil-change reminder. The device sends a
+  `client_id` with each note, so a retried upload does not publish a copy.
 - **Public lookup** shows plate, make, model and year. It never shows the
   chassi or the owner.
 
@@ -130,13 +143,14 @@ Money is always integer cents.
   five minutes.
 - Every endpoint is rate-limited per IP. The limits are stricter on logins,
   sign-ups, claims and the plate lookup. RPC bodies are capped at 1 MiB.
-- Uploads are limited to 8 MiB and 20 files per record. The file type is
-  detected from the content, and each file is stored under a random UUID name.
+- Uploads are limited to 8 MiB, 20 files per record and one photo per note.
+  The file type is detected from the content, and each file is stored under a
+  random UUID name.
 - `AUTH_SECRET` is required and has no default outside docker compose.
 
 ## Not built yet
 
 - Uploading the outbox automatically when the connection returns.
-- Syncing maintenance notes to the server: they stay on the device.
+- Deleting from the device a published note written on another phone.
 - Checking workshop CNPJs, sign-in by OTP, password reset, presigned photo
   URLs, iOS build.

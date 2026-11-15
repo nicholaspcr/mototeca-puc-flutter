@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:sqflite/sqflite.dart';
 
 import 'database_factory_io.dart'
@@ -8,7 +10,7 @@ class AppDatabase {
   AppDatabase({DatabaseFactory? factory, this.path = 'mototeca.db'})
     : _factory = factory ?? platformDatabaseFactory();
 
-  static const version = 1;
+  static const version = 2;
 
   final DatabaseFactory _factory;
   final String path;
@@ -27,11 +29,48 @@ class AppDatabase {
         for (final statement in schema) {
           await db.execute(statement);
         }
+        await _migrate(db, from: 1);
       },
+      onUpgrade: (db, from, _) => _migrate(db, from: from),
     ),
   );
 
   Future<void> close() async => (await _database)?.close();
+}
+
+/// Version 2 lets a note be published: the id the device gives it, the id the
+/// server answered with, and its one photo.
+Future<void> _migrate(Database db, {required int from}) async {
+  if (from < 2) {
+    for (final column in [
+      'client_id TEXT',
+      'server_id TEXT',
+      'photo BLOB',
+      'photo_type TEXT',
+      'photo_sent INTEGER NOT NULL DEFAULT 0',
+    ]) {
+      await db.execute('ALTER TABLE maintenance_notes ADD COLUMN $column');
+    }
+    for (final row in await db.query('maintenance_notes', columns: ['id'])) {
+      await db.update(
+        'maintenance_notes',
+        {'client_id': newClientId()},
+        where: 'id = ?',
+        whereArgs: [row['id']],
+      );
+    }
+  }
+}
+
+/// A random UUID (version 4), the form the API expects for a client id.
+String newClientId() {
+  final random = Random.secure();
+  final bytes = List<int>.generate(16, (_) => random.nextInt(256));
+  bytes[6] = (bytes[6] & 0x0f) | 0x40;
+  bytes[8] = (bytes[8] & 0x3f) | 0x80;
+  final hex = bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
+  return '${hex.substring(0, 8)}-${hex.substring(8, 12)}-'
+      '${hex.substring(12, 16)}-${hex.substring(16, 20)}-${hex.substring(20)}';
 }
 
 const schema = [

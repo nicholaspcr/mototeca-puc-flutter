@@ -1,15 +1,22 @@
 import '../api/api_client.dart';
 import '../api/api_exception.dart';
+import '../models/history_note.dart';
 import '../models/service_operation.dart';
 import '../models/service_record.dart';
 import '../models/vehicle.dart';
 
-/// The history of one plate: the vehicle plus every record, newest first.
+/// The history of one plate: the vehicle, every workshop record and the
+/// owners' own notes, each newest first.
 class PlateHistory {
-  const PlateHistory({required this.vehicle, required this.records});
+  const PlateHistory({
+    required this.vehicle,
+    required this.records,
+    this.notes = const [],
+  });
 
   final VehicleSummary vehicle;
   final List<ServiceRecord> records;
+  final List<HistoryNote> notes;
 }
 
 /// What the oficina dashboard needs in one call.
@@ -91,6 +98,9 @@ class ServiceRecordRepository {
           body['vehicle'] as Map<String, dynamic>? ?? const {},
         ),
         records: ServiceRecord.listFromJson(body['records'] as List<dynamic>?),
+        notes: HistoryNote.listFromJson(
+          body['maintenanceNotes'] as List<dynamic>?,
+        ),
       );
     } on ApiException catch (e) {
       if (e.code == ApiErrorCode.notFound) return null;

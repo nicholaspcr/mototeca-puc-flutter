@@ -230,6 +230,11 @@ class MtBadge extends StatelessWidget {
       background = const Color(0x2422C55E),
       foreground = MtColors.successText;
 
+  /// An owner's own note: no workshop vouches for it.
+  const MtBadge.ownerNote({super.key, this.label = 'Informado pelo dono'})
+    : background = MtColors.slate100,
+      foreground = MtColors.slate500;
+
   const MtBadge.online({super.key})
     : label = 'Precisa de internet',
       background = const Color(0x29EAB308),

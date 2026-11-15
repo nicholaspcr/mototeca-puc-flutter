@@ -52,26 +52,19 @@ Future<Uint8List> buildHistoryPdf(PlateHistory history, {DateTime? now}) {
         if (history.records.isEmpty)
           pw.Text('Nenhum serviço registrado para esta placa.')
         else
-          pw.TableHelper.fromTextArray(
+          _table(
             headers: ['Data', 'Serviço', 'Oficina', 'Km', 'Valor'],
-            data: [
+            rows: [
               for (final record in history.records)
                 [
                   record.formattedDate,
                   record.operationsLabel,
-                  record.workshopName,
+                  _latin1(record.workshopName),
                   '${record.mileageKm}',
-                  // The built-in font is Latin-1 only, which has no em dash.
-                  record.costCents == null ? '-' : record.formattedCost,
+                  _cost(record.costCents),
                 ],
             ],
-            headerStyle: pw.TextStyle(
-              color: PdfColors.white,
-              fontWeight: pw.FontWeight.bold,
-            ),
-            headerDecoration: const pw.BoxDecoration(color: _petrol),
-            cellStyle: const pw.TextStyle(fontSize: 10),
-            columnWidths: {
+            widths: {
               0: const pw.FixedColumnWidth(62),
               1: const pw.FlexColumnWidth(3),
               2: const pw.FlexColumnWidth(2),
@@ -79,9 +72,73 @@ Future<Uint8List> buildHistoryPdf(PlateHistory history, {DateTime? now}) {
               4: const pw.FixedColumnWidth(70),
             },
           ),
+        if (history.notes.isNotEmpty) ...[
+          pw.SizedBox(height: 24),
+          pw.Text(
+            'Anotações do dono',
+            style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold),
+          ),
+          pw.SizedBox(height: 4),
+          pw.Text(
+            'Informadas pelo próprio dono; nenhuma oficina as confirmou.',
+            style: const pw.TextStyle(color: _slate),
+          ),
+          pw.SizedBox(height: 10),
+          _table(
+            headers: ['Data', 'O que foi feito', 'Km', 'Valor'],
+            rows: [
+              for (final note in history.notes)
+                [
+                  formatDate(note.doneOn),
+                  _latin1(note.description),
+                  note.mileageKm == null ? '-' : '${note.mileageKm}',
+                  _cost(note.costCents),
+                ],
+            ],
+            widths: {
+              0: const pw.FixedColumnWidth(62),
+              1: const pw.FlexColumnWidth(5),
+              2: const pw.FixedColumnWidth(50),
+              3: const pw.FixedColumnWidth(70),
+            },
+          ),
+        ],
       ],
     ),
   );
 
   return document.save();
 }
+
+// The built-in font is Latin-1 only, which has no em dash.
+String _cost(int? cents) => cents == null ? '-' : formatCents(cents);
+
+/// Typed text can hold what the built-in font cannot draw, such as the curly
+/// quotes a phone keyboard inserts.
+String _latin1(String text) => String.fromCharCodes(
+  text.runes.map(
+    (rune) => switch (rune) {
+      < 0x100 => rune,
+      0x2018 || 0x2019 => 0x27,
+      0x201C || 0x201D => 0x22,
+      0x2013 || 0x2014 => 0x2D,
+      _ => 0x3F,
+    },
+  ),
+);
+
+pw.Widget _table({
+  required List<String> headers,
+  required List<List<String>> rows,
+  required Map<int, pw.TableColumnWidth> widths,
+}) => pw.TableHelper.fromTextArray(
+  headers: headers,
+  data: rows,
+  headerStyle: pw.TextStyle(
+    color: PdfColors.white,
+    fontWeight: pw.FontWeight.bold,
+  ),
+  headerDecoration: const pw.BoxDecoration(color: _petrol),
+  cellStyle: const pw.TextStyle(fontSize: 10),
+  columnWidths: widths,
+);

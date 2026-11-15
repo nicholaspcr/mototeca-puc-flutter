@@ -193,9 +193,44 @@ void main() {
     expectMessage('Anotação salva.');
     expect(state.garage.bikes.single.plate, demoPlate);
 
-    expect(find.text('Sua anotação'), findsOneWidget);
+    // The bike is linked, so the note went straight to the plate's history.
+    expect(find.text('Sua anotação · no histórico da placa'), findsOneWidget);
     expect(find.text('Oficina · Oficina do Zé'), findsWidgets);
-    expect(find.text('Oficina · Moto Center BH'), findsWidgets);
+    await reveal(tester, find.text('Informado pelo dono'));
+    await reveal(tester, find.text('Oficina · Moto Center BH'));
+  });
+
+  testWidgets('Motociclista com conta: apaga do histórico uma anotação', (
+    tester,
+  ) async {
+    final state = await pumpApp(tester, AppFlavor.rider);
+    await signIn(tester);
+    await tap(tester, find.byKey(const Key('garagem-adicionar')));
+    await type(tester, 'adicionar-moto-placa', demoPlate);
+    await type(tester, 'adicionar-moto-chassi', demoChassi.substring(11));
+    await tap(tester, find.byKey(const Key('adicionar-moto-continuar')));
+
+    await tap(tester, find.byKey(const Key('vehicle-$demoPlate')));
+    await tap(tester, find.byKey(const Key('anotacao-nova')));
+    await type(tester, 'anotacao-descricao', 'Lavagem da corrente');
+    await tap(tester, find.byKey(const Key('anotacao-salvar')));
+
+    // Published, so it opens read-only, with delete as the one action.
+    await tap(tester, find.text('Lavagem da corrente'));
+    expect(find.byKey(const Key('anotacao-descricao')), findsNothing);
+    await tap(tester, find.byKey(const Key('anotacao-apagar')));
+    await tap(tester, find.byKey(const Key('anotacao-apagar-confirmar')));
+    expectMessage('Anotação apagada.');
+
+    // Had the server kept it, the history would bring it back.
+    expect(find.text('Lavagem da corrente'), findsNothing);
+    final history = await tester.runAsync(
+      () => state.serviceRecords.historyByPlate(demoPlate),
+    );
+    expect(
+      history!.notes.map((n) => n.description),
+      isNot(contains('Lavagem da corrente')),
+    );
   });
 
   group('Oficina', () {
@@ -299,6 +334,8 @@ void main() {
     await tap(tester, find.byKey(const Key('portal-consultar')));
 
     expect(find.textContaining('Oficina do Zé'), findsWidgets);
-    expect(find.textContaining('Moto Center BH'), findsWidgets);
+    expect(find.textContaining('1 anotação do dono'), findsOneWidget);
+    await reveal(tester, find.text('Informado pelo dono'));
+    await reveal(tester, find.textContaining('Moto Center BH'));
   });
 }

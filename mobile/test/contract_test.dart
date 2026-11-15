@@ -87,6 +87,16 @@ void main() {
     expect(record.parts.first.costCents, isNotNull);
     // Sub-second precision in the timestamp must not break parsing.
     expect(record.createdAt.year, 2026);
+
+    final note = history.notes.single;
+    expect(note.description, 'Troca de óleo em casa');
+    // A calendar day must stay that day in any time zone.
+    expect(
+      (note.doneOn.year, note.doneOn.month, note.doneOn.day),
+      (2026, 9, 14),
+    );
+    expect(note.costCents, 4500);
+    expect(note.photoUrl, isNotNull);
   });
 
   test('parses a real owner Login response', () async {

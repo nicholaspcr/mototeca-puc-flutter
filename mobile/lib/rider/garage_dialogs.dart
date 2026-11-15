@@ -69,6 +69,11 @@ class _ClaimDialogState extends State<ClaimDialog> {
           controller: _chassiSuffix,
           textCapitalization: TextCapitalization.characters,
         ),
+        const SizedBox(height: 14),
+        const MtFootnote(
+          'As anotações desta moto entram no histórico público da placa, '
+          'que oficinas e compradores veem.',
+        ),
       ],
     );
   }

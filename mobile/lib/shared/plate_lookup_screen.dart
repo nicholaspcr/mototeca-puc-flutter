@@ -2,13 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:printing/printing.dart';
 
 import '../app/routes.dart';
+import '../models/history_note.dart';
 import '../reports/history_pdf.dart';
+import '../models/service_record.dart';
 import '../repositories/service_record_repository.dart';
 import '../state/app_scope.dart';
 import '../theme.dart';
 import '../widgets/feedback.dart';
 import '../widgets/mt_widgets.dart';
-import '../shared/service_detail_screen.dart';
+import '../widgets/note_sheet.dart';
+import '../widgets/photo_image.dart';
+import 'service_detail_screen.dart';
 
 /// Consultar Placa — public plate lookup, no account required.
 class PlateLookupScreen extends StatefulWidget {
@@ -152,6 +156,15 @@ class _PlateLookupScreenState extends State<PlateLookupScreen> {
 
   List<Widget> _results(PlateHistory history) {
     final vehicle = history.vehicle;
+    final services = history.records.length;
+    final notes = history.notes.length;
+    final entries = <((DateTime, int?), Widget)>[
+      for (final record in history.records)
+        ((record.createdAt, record.mileageKm), _recordCard(record)),
+      for (final note in history.notes)
+        ((note.doneOn, note.mileageKm), _noteCard(note)),
+    ]..sort((a, b) => newestFirst(a.$1, b.$1));
+
     return [
       MtCard(
         child: Column(
@@ -163,8 +176,12 @@ class _PlateLookupScreenState extends State<PlateLookupScreen> {
             ),
             const SizedBox(height: 4),
             Text(
-              'Placa ${vehicle.plate} · ${history.records.length} '
-              '${history.records.length == 1 ? 'serviço' : 'serviços'} registrados',
+              [
+                'Placa ${vehicle.plate}',
+                '$services ${services == 1 ? 'serviço registrado' : 'serviços registrados'}',
+                if (notes > 0)
+                  '$notes ${notes == 1 ? 'anotação do dono' : 'anotações do dono'}',
+              ].join(' · '),
               style: const TextStyle(fontSize: 13, color: MtColors.slate500),
             ),
             const SizedBox(height: 10),
@@ -182,72 +199,109 @@ class _PlateLookupScreenState extends State<PlateLookupScreen> {
         style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
       ),
       const SizedBox(height: 12),
-      if (history.records.isEmpty)
+      if (entries.isEmpty)
         const MtEmptyState(
           message: 'Esta moto ainda não tem serviços registrados.',
           icon: Icons.history_outlined,
         ),
-      for (final record in history.records) ...[
-        InkWell(
-          key: Key('history-${record.id}'),
-          onTap: () => Navigator.pushNamed(
-            context,
-            Routes.serviceDetail,
-            arguments: ServiceDetailArgs(record: record),
-          ),
-          borderRadius: BorderRadius.circular(MtSizes.cardRadius),
-          child: MtCard(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            child: Column(
+      for (final (_, card) in entries) ...[card, const SizedBox(height: 10)],
+    ];
+  }
+
+  Widget _recordCard(ServiceRecord record) => _entryCard(
+    key: Key('history-${record.id}'),
+    title: record.operationsLabel,
+    date: record.formattedDate,
+    details: [
+      record.workshopName,
+      ?record.mechanicName,
+      '${record.mileageKm} km',
+    ],
+    body: record.notes,
+    onTap: () => Navigator.pushNamed(
+      context,
+      Routes.serviceDetail,
+      arguments: ServiceDetailArgs(record: record),
+    ),
+  );
+
+  Widget _noteCard(HistoryNote note) => _entryCard(
+    key: Key('history-note-${note.id}'),
+    title: note.description,
+    date: formatDate(note.doneOn),
+    details: [
+      if (note.mileageKm != null) '${note.mileageKm} km',
+      if (note.photoUrl != null) 'com foto',
+    ],
+    badge: const MtBadge.ownerNote(),
+    onTap: () => showNoteSheet(
+      context,
+      description: note.description,
+      doneOn: note.doneOn,
+      mileageKm: note.mileageKm,
+      costCents: note.costCents,
+      photo: switch (note.photoUrl) {
+        final url? => photoImage(url),
+        null => null,
+      },
+    ),
+  );
+
+  Widget _entryCard({
+    required Key key,
+    required String title,
+    required String date,
+    required List<String> details,
+    required VoidCallback onTap,
+    String? body,
+    Widget? badge,
+  }) {
+    return InkWell(
+      key: key,
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(MtSizes.cardRadius),
+      child: MtCard(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      child: Text(
-                        record.operationsLabel,
-                        style: const TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
                     ),
-                    const SizedBox(width: 10),
-                    Text(
-                      record.formattedDate,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: MtColors.slate500,
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(width: 10),
                 Text(
-                  [
-                    record.workshopName,
-                    ?record.mechanicName,
-                    '${record.mileageKm} km',
-                  ].join(' · '),
+                  date,
                   style: const TextStyle(
                     fontSize: 12,
                     color: MtColors.slate500,
                   ),
                 ),
-                if (record.notes != null && record.notes!.isNotEmpty) ...[
-                  const SizedBox(height: 8),
-                  Text(
-                    record.notes!,
-                    style: const TextStyle(fontSize: 13, height: 1.4),
-                  ),
-                ],
               ],
             ),
-          ),
+            if (details.isNotEmpty) ...[
+              const SizedBox(height: 4),
+              Text(
+                details.join(' · '),
+                style: const TextStyle(fontSize: 12, color: MtColors.slate500),
+              ),
+            ],
+            if (body != null && body.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Text(body, style: const TextStyle(fontSize: 13, height: 1.4)),
+            ],
+            if (badge != null) ...[const SizedBox(height: 8), badge],
+          ],
         ),
-        const SizedBox(height: 10),
-      ],
-    ];
+      ),
+    );
   }
 }

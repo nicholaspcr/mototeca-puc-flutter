@@ -18,6 +18,7 @@ class MtColors {
   static const warningText = Color(0xFF854D0E);
   static const successText = Color(0xFF166534);
   static const danger = Color(0xFFEF4444);
+  static const dangerText = Color(0xFFB91C1C);
 }
 
 class MtSizes {

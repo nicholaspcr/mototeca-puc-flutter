@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/widgets.dart';
 
 import '../api/api_client.dart';
@@ -68,7 +70,8 @@ class AppState extends ChangeNotifier {
   bool get isSignedIn => _workshop != null || _owner != null;
 
   /// Signs back in with the session saved on the last launch, if it has not
-  /// expired. A workshop's queue goes out right away, as on a fresh sign-in.
+  /// expired. Anything waiting to be published goes out right away, as on a
+  /// fresh sign-in.
   Future<void> restoreSession() async {
     final sessions = _sessions;
     if (sessions == null || isSignedIn) return;
@@ -79,7 +82,10 @@ class AppState extends ChangeNotifier {
       return;
     }
     final owner = await sessions.loadOwner();
-    if (owner != null) _useOwner(owner);
+    if (owner != null) {
+      _useOwner(owner);
+      await publishNotes();
+    }
   }
 
   void signIn(WorkshopSession session) {
@@ -91,7 +97,13 @@ class AppState extends ChangeNotifier {
   void signInAsOwner(OwnerSession session) {
     _useOwner(session);
     _sessions?.saveOwner(session);
+    unawaited(publishNotes());
   }
+
+  /// Sends the rider's unpublished notes on linked bikes. Returns how many
+  /// went up; 0 when signed out.
+  Future<int> publishNotes() async =>
+      _owner == null ? 0 : garage.publish(owners);
 
   void _useWorkshop(WorkshopSession session) {
     _workshop = session.workshop;

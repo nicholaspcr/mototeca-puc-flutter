@@ -11,7 +11,7 @@ import '../state/app_scope.dart';
 import '../theme.dart';
 import '../widgets/feedback.dart';
 import '../widgets/mt_widgets.dart';
-import 'photo_slot.dart';
+import '../widgets/photo_slot.dart';
 
 class _PartDraft {
   _PartDraft()

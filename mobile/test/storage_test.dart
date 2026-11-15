@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -10,14 +11,16 @@ import 'package:mototeca/models/service_operation.dart';
 import 'package:mototeca/models/service_record.dart';
 import 'package:mototeca/models/vehicle.dart';
 import 'package:mototeca/models/workshop.dart';
+import 'package:mototeca/repositories/owner_repository.dart';
 import 'package:mototeca/repositories/service_record_repository.dart';
 import 'package:mototeca/repositories/workshop_repository.dart';
+import 'package:mototeca/storage/database.dart';
 import 'package:mototeca/storage/garage_store.dart';
 import 'package:mototeca/storage/outbox_store.dart';
 import 'package:mototeca/storage/session_store.dart';
 import 'package:mototeca/widgets/digit_input_formatters.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:sqflite/sqflite.dart';
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import 'test_database.dart';
 
@@ -206,6 +209,92 @@ void main() {
 
       final db = await database.database;
       expect(await db.query('maintenance_notes'), isEmpty);
+    });
+  });
+
+  group('publishing notes', () {
+    test('a linked bike\'s note goes up once, with its photo', () async {
+      final client = ApiClient(
+        baseUrl: 'demo://mototeca',
+        httpClient: DemoClient(backend: DemoBackend(), latency: Duration.zero),
+      );
+      final owners = OwnerRepository(client);
+      client.authToken = (await owners.login(
+        phone: demoPhone,
+        password: demoPassword,
+      )).token;
+      await owners.claimVehicle(demoPlate, demoChassi.substring(11));
+
+      final garage = LocalGarage(testDatabase());
+      await garage.save(const LocalBike(plate: demoPlate, label: 'CG'));
+      await garage.save(const LocalBike(plate: 'XYZ9A99', label: 'Outra'));
+      final [linked, other] = garage.bikes;
+      for (final bike in [linked, other]) {
+        await garage.saveNote(
+          MaintenanceNote(
+            bikeId: bike.id!,
+            doneOn: DateTime(2026, 9, 1),
+            description: 'Troca de óleo',
+            photo: Uint8List.fromList([1, 2, 3]),
+            photoType: 'image/png',
+          ),
+        );
+      }
+
+      expect(
+        await Future.wait([garage.publish(owners), garage.publish(owners)]),
+        [1, 1],
+      );
+      expect(await garage.publish(owners), 0);
+
+      final published = (await ServiceRecordRepository(
+        client,
+      ).historyByPlate(demoPlate))!.notes;
+      final mine = published.where((n) => n.description == 'Troca de óleo');
+      expect(mine, hasLength(1));
+      expect(mine.single.photoUrl, isNotNull);
+      expect((await garage.notes(linked.id!)).single.isPublished, isTrue);
+      expect((await garage.notes(other.id!)).single.isPublished, isFalse);
+    });
+
+    test('upgrading from version 1 keeps notes and gives each an id', () async {
+      sqfliteFfiInit();
+      final path = '${Directory.systemTemp.createTempSync().path}/v1.db';
+      final v1 = await databaseFactoryFfiNoIsolate.openDatabase(
+        path,
+        options: OpenDatabaseOptions(
+          version: 1,
+          onCreate: (db, _) async {
+            for (final statement in schema) {
+              await db.execute(statement);
+            }
+          },
+        ),
+      );
+      final bikeId = await v1.insert('bikes', {
+        'plate': 'ABC1D23',
+        'label': 'CG',
+        'created_at': DateTime(2026).toIso8601String(),
+      });
+      await v1.insert('maintenance_notes', {
+        'bike_id': bikeId,
+        'done_on': DateTime(2026, 3, 1).toIso8601String(),
+        'description': 'Óleo',
+      });
+      await v1.close();
+
+      final upgraded = AppDatabase(
+        factory: databaseFactoryFfiNoIsolate,
+        path: path,
+      );
+      final note = (await LocalGarage(upgraded).notes(bikeId)).single;
+      final row = (await (await upgraded.database).query('maintenance_notes'))
+          .single;
+      await upgraded.close();
+
+      expect(note.description, 'Óleo');
+      expect(note.isPublished, isFalse);
+      expect(row['client_id'], matches(RegExp(r'^[0-9a-f-]{36}$')));
     });
   });
 

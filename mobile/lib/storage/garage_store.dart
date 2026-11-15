@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:sqflite/sqflite.dart';
 
 import '../models/vehicle.dart';
+import '../repositories/owner_repository.dart';
 import 'database.dart';
 
 /// A bike the rider keeps on the device, with or without an account.
@@ -38,6 +39,8 @@ class LocalBike {
 }
 
 /// A service the rider wrote down: done at home, or at a shop not on Mototeca.
+/// On a bike linked to the account it is also published to the plate's
+/// history, after which it can only be deleted.
 @immutable
 class MaintenanceNote {
   const MaintenanceNote({
@@ -47,6 +50,9 @@ class MaintenanceNote {
     required this.description,
     this.mileageKm,
     this.costCents,
+    this.photo,
+    this.photoType,
+    this.serverId,
   });
 
   final int? id;
@@ -55,6 +61,13 @@ class MaintenanceNote {
   final String description;
   final int? mileageKm;
   final int? costCents;
+  final Uint8List? photo;
+  final String? photoType;
+
+  /// Set once the note is in the plate's public history.
+  final String? serverId;
+
+  bool get isPublished => serverId != null;
 
   factory MaintenanceNote.fromRow(Map<String, Object?> row) => MaintenanceNote(
     id: row['id'] as int,
@@ -63,6 +76,9 @@ class MaintenanceNote {
     description: row['description'] as String,
     mileageKm: row['mileage_km'] as int?,
     costCents: row['cost_cents'] as int?,
+    photo: row['photo'] as Uint8List?,
+    photoType: row['photo_type'] as String?,
+    serverId: row['server_id'] as String?,
   );
 
   Map<String, Object?> toRow() => {
@@ -71,6 +87,8 @@ class MaintenanceNote {
     'description': description.trim(),
     'mileage_km': mileageKm,
     'cost_cents': costCents,
+    'photo': photo,
+    'photo_type': photoType,
   };
 }
 
@@ -183,7 +201,10 @@ class LocalGarage extends ChangeNotifier {
     final db = await _db.database;
     await db.transaction((txn) async {
       if (note.id == null) {
-        await txn.insert('maintenance_notes', note.toRow());
+        await txn.insert('maintenance_notes', {
+          ...note.toRow(),
+          'client_id': newClientId(),
+        });
       } else {
         await txn.update(
           'maintenance_notes',
@@ -208,5 +229,75 @@ class LocalGarage extends ChangeNotifier {
     final db = await _db.database;
     await db.delete('maintenance_notes', where: 'id = ?', whereArgs: [id]);
     notifyListeners();
+  }
+
+  Future<int>? _publishing;
+
+  /// Publishes the notes of bikes linked to the account, and photos whose
+  /// note went up before them. Returns how many notes went up. A second call
+  /// while one runs joins it, so no note is sent twice.
+  Future<int> publish(OwnerRepository owners) =>
+      _publishing ??= _publish(owners).whenComplete(() => _publishing = null);
+
+  Future<int> _publish(OwnerRepository owners) async {
+    final db = await _db.database;
+    final pending = await db.rawQuery('''
+      SELECT n.*, b.plate FROM maintenance_notes n
+      JOIN bikes b ON b.id = n.bike_id
+      WHERE n.server_id IS NULL OR (n.photo IS NOT NULL AND n.photo_sent = 0)
+      ORDER BY n.done_on, n.id''');
+    if (pending.isEmpty) return 0;
+
+    final Set<String> linked;
+    try {
+      linked = {
+        for (final bike in await owners.myVehicles()) bike.vehicle.plate,
+      };
+    } on Object {
+      return 0;
+    }
+
+    var published = 0;
+    for (final row in pending) {
+      if (!linked.contains(row['plate'])) continue;
+      final note = MaintenanceNote.fromRow(row);
+      try {
+        var serverId = note.serverId;
+        if (serverId == null) {
+          serverId = (await owners.addNote(
+            plate: row['plate'] as String,
+            clientId: row['client_id'] as String,
+            doneOn: note.doneOn,
+            description: note.description,
+            mileageKm: note.mileageKm,
+            costCents: note.costCents,
+          )).id;
+          await _update(note.id!, {'server_id': serverId});
+          published++;
+        }
+        if (note.photo case final photo?) {
+          await owners.uploadNotePhoto(
+            noteId: serverId,
+            bytes: photo,
+            contentType: note.photoType ?? 'image/jpeg',
+          );
+          await _update(note.id!, {'photo_sent': 1});
+        }
+      } on Object {
+        continue;
+      }
+    }
+    if (published > 0) notifyListeners();
+    return published;
+  }
+
+  Future<void> _update(int id, Map<String, Object?> values) async {
+    final db = await _db.database;
+    await db.update(
+      'maintenance_notes',
+      values,
+      where: 'id = ?',
+      whereArgs: [id],
+    );
   }
 }

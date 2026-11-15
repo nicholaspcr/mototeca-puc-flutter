@@ -38,6 +38,9 @@ class DemoClient extends http.BaseClient {
   static final _uploadPath = RegExp(
     r'^/?v1/service-records/([^/]+)/attachments$',
   );
+  static final _notePhotoPath = RegExp(
+    r'^/?v1/maintenance-notes/([^/]+)/photo$',
+  );
 
   @override
   Future<http.StreamedResponse> send(http.BaseRequest request) async {
@@ -45,10 +48,19 @@ class DemoClient extends http.BaseClient {
 
     final token = request.headers['Authorization']?.replaceFirst('Bearer ', '');
     try {
-      final body = switch (_uploadPath.firstMatch(request.url.path)) {
-        final match? => await _upload(match.group(1)!, token, request),
-        null => backend.call(
-          request.url.path.replaceFirst('/', ''),
+      final path = request.url.path;
+      final body = switch ((
+        _uploadPath.firstMatch(path),
+        _notePhotoPath.firstMatch(path),
+      )) {
+        (final match?, _) => await _upload(match.group(1)!, token, request),
+        (_, final match?) => backend.uploadNotePhoto(
+          match.group(1)!,
+          token,
+          bytes: await _file(request),
+        ),
+        _ => backend.call(
+          path.replaceFirst('/', ''),
           await _json(request),
           token,
         ),
@@ -66,7 +78,15 @@ class DemoClient extends http.BaseClient {
     String recordId,
     String? token,
     http.BaseRequest request,
-  ) async {
+  ) async => backend.upload(
+    recordId,
+    token,
+    bytes: await _file(request),
+    kind: (request as http.MultipartRequest).fields['kind'] ?? 'photo',
+    phase: request.fields['phase'],
+  );
+
+  Future<Uint8List> _file(http.BaseRequest request) async {
     if (request is! http.MultipartRequest || request.files.isEmpty) {
       throw DemoFailure(
         400,
@@ -74,17 +94,8 @@ class DemoClient extends http.BaseClient {
         'envie o arquivo como multipart/form-data',
       );
     }
-
     final file = request.files.first;
-    return backend.upload(
-      recordId,
-      token,
-      bytes: Uint8List.fromList(
-        await file.finalize().expand((c) => c).toList(),
-      ),
-      kind: request.fields['kind'] ?? 'photo',
-      phase: request.fields['phase'],
-    );
+    return Uint8List.fromList(await file.finalize().expand((c) => c).toList());
   }
 
   Future<Map<String, dynamic>> _json(http.BaseRequest request) async {
