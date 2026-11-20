@@ -62,8 +62,7 @@ class _WorkshopRegisterScreenState extends State<WorkshopRegisterScreen> {
         padding: const EdgeInsets.all(MtSizes.screenPadding),
         children: [
           const MtFootnote(
-            'Crie a conta da sua oficina para registrar serviços. '
-            'O CNPJ é verificado antes do primeiro registro.',
+            'Crie a conta da sua oficina para registrar serviços.',
           ),
           const SizedBox(height: 16),
           MtCard(
@@ -72,7 +71,7 @@ class _WorkshopRegisterScreenState extends State<WorkshopRegisterScreen> {
                 MtField(
                   label: 'CNPJ',
                   hint: '00.000.000/0001-00',
-                  helper: 'Usado para verificar a oficina',
+                  helper: 'Assina cada registro que a oficina publicar',
                   mono: true,
                   controller: _cnpj,
                   keyboardType: TextInputType.number,

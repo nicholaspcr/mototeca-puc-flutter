@@ -16,7 +16,6 @@ class RemindersScreen extends StatefulWidget {
 }
 
 class _RemindersScreenState extends State<RemindersScreen> {
-  bool _whatsapp = true;
   Future<List<OwnedVehicle>>? _vehicles;
 
   @override
@@ -105,7 +104,7 @@ class _RemindersScreenState extends State<RemindersScreen> {
               ),
               const SizedBox(height: 2),
               const Text(
-                'Avisos enviados por WhatsApp, por km rodado ou tempo decorrido.',
+                'Calculados pela quilometragem dos serviços das oficinas.',
                 style: TextStyle(
                   fontSize: 12,
                   color: MtColors.warningText,
@@ -125,39 +124,6 @@ class _RemindersScreenState extends State<RemindersScreen> {
           _reminderCard(vehicle),
           const SizedBox(height: 14),
         ],
-        MtCard(
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Avisos por WhatsApp',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    SizedBox(height: 2),
-                    Text(
-                      'Receber lembretes no celular cadastrado',
-                      style: TextStyle(fontSize: 12, color: MtColors.slate500),
-                    ),
-                  ],
-                ),
-              ),
-              Switch(
-                key: const Key('lembretes-whatsapp'),
-                value: _whatsapp,
-                activeThumbColor: Colors.white,
-                activeTrackColor: MtColors.petrol,
-                onChanged: (value) => setState(() => _whatsapp = value),
-              ),
-            ],
-          ),
-        ),
       ],
     );
   }

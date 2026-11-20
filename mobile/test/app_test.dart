@@ -160,7 +160,7 @@ void main() {
     await type(tester, 'adicionar-moto-placa', demoPlate);
     await type(tester, 'adicionar-moto-chassi', '999999');
     await tap(tester, find.byKey(const Key('adicionar-moto-continuar')));
-    expectMessage('o final do chassi não confere com esta placa');
+    expectMessage('O final do chassi não confere com esta placa.');
 
     await tap(tester, find.byKey(const Key('garagem-adicionar')));
     await type(tester, 'adicionar-moto-placa', demoPlate);

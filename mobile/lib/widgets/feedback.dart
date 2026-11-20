@@ -7,13 +7,21 @@ import '../theme.dart';
 /// can't disagree about what went wrong.
 void showApiError(BuildContext context, Object error) {
   final message = switch (error) {
-    ApiException e => e.message,
+    ApiException e => _sentence(e.message),
     // A plain string is a validation message the screen wrote itself.
     String message => message,
     _ => 'Algo deu errado. Tente novamente.',
   };
 
   _snack(context, message, MtColors.danger);
+}
+
+/// The server writes fragments ("esta placa já está cadastrada"); on screen
+/// they read as sentences.
+String _sentence(String text) {
+  if (text.isEmpty) return text;
+  final capital = text[0].toUpperCase() + text.substring(1);
+  return capital.endsWith('.') ? capital : '$capital.';
 }
 
 /// Shown when SQLite refuses a write the screen did not foresee.
