@@ -69,9 +69,7 @@ same Wi-Fi (or sharing its Personal Hotspot over the cable):
 RESET=1 sh scripts/iphone.sh   # API + sample data on this Mac, both apps on the phone
 ```
 
-The script points the apps at the Mac's address and fills the database with
-the sample data above (`scripts/seed.sh`). On the first install, trust your
-Apple ID on the phone under Settings > General > VPN & Device Management.
+Step by step, with troubleshooting: [IPHONE.md](IPHONE.md).
 
 ## Tests
 
