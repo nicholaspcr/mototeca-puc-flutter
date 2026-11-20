@@ -7,8 +7,11 @@
 | User | mechanic, many times a day | owner, a few times a year |
 | Sign-in | CNPJ + password | phone + password |
 | Android flavor | `shop` (`.oficina`) | `rider` (`.motociclista`) |
+| iOS bundle id | `br.edu.puc.mototeca.oficina` | `br.edu.puc.mototeca.motociclista` |
 
-Both apps are built from `mobile/` and talk to the same API. A screen goes in
+Both apps are built from `mobile/` and talk to the same API. iOS has one
+Runner target; `scripts/iphone.sh` writes `ios/Flutter/App.xcconfig` to pick
+the bundle id and name, so both apps install side by side. A screen goes in
 `lib/shared/` only when both apps build it unchanged; otherwise each app has
 its own screen.
 
@@ -153,4 +156,4 @@ Money is always integer cents.
 - Uploading the outbox automatically when the connection returns.
 - Deleting from the device a published note written on another phone.
 - Checking workshop CNPJs, sign-in by OTP, password reset, presigned photo
-  URLs, iOS build.
+  URLs.

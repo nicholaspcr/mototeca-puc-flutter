@@ -1,0 +1,8 @@
+#include? "Pods/Target Support Files/Pods-Runner/Pods-Runner.debug.xcconfig"
+#include "Generated.xcconfig"
+
+// One Runner target builds either app; scripts/iphone.sh writes App.xcconfig
+// to pick which one, so both install side by side like the Android flavors.
+MOTOTECA_APP_ID = motociclista
+MOTOTECA_APP_NAME = Mototeca
+#include? "App.xcconfig"
