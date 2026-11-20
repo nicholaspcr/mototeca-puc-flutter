@@ -60,6 +60,19 @@ cd mobile && flutter run -d chrome -t lib/main_shop.dart \
   --dart-define=MOTOTECA_API_URL=http://localhost:8080
 ```
 
+## Run on an iPhone
+
+On a Mac with Xcode, Flutter and Docker, with the iPhone plugged in and on the
+same Wi-Fi (or sharing its Personal Hotspot over the cable):
+
+```bash
+RESET=1 sh scripts/iphone.sh   # API + sample data on this Mac, both apps on the phone
+```
+
+The script points the apps at the Mac's address and fills the database with
+the sample data above (`scripts/seed.sh`). On the first install, trust your
+Apple ID on the phone under Settings > General > VPN & Device Management.
+
 ## Tests
 
 ```bash
